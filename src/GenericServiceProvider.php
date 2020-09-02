@@ -21,7 +21,7 @@ class GenericServiceProvider extends ServiceProvider {
 
         // Publish the VueJS files inside public folder of main project (Copia os arquivos do vue minificados dessa biblioteca para pasta public do projeto que instalar essa lib)
         $this->publishes([
-            __DIR__.'/../public/js' => public_path('vendor/codificar/generic'),
+            __DIR__.'/../public/js' => public_path('vendor/codificar/laravel-payment-gateways'),
         ], 'public_vuejs_libs');
     }
 

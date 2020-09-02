@@ -1,6 +1,6 @@
 {
-    "name": "codificar/generic",
-    "description": "A generic library for laravel.",
+    "name": "codificar/payment-gateways",
+    "description": "Library for payment gateways",
     "authors": [{
         "name": "Codificar",
         "email": "libs@codificar.com.br"
