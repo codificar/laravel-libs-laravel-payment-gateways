@@ -1,0 +1,14 @@
+{
+    "name": "codificar/generic",
+    "description": "A generic library for laravel.",
+    "authors": [{
+        "name": "Codificar",
+        "email": "libs@codificar.com.br"
+    }],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Codificar\\Generic\\": "src/"
+        }
+    }
+}
