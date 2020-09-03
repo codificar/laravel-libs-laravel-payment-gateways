@@ -28,7 +28,8 @@
                 "Codificar\\PaymentGateways\\ServiceProvider"
             ],
             "aliases": {
-                "Omnipay": "Codificar\\PaymentGateways\\Facade"
+                "Omnipay": "Codificar\\PaymentGateways\\Facade",                
+                "PaymentFactory": "Codificar\\PaymentGateways\\PaymentFacade"
             }
         }
     },

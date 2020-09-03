@@ -2,6 +2,7 @@
 
 namespace Codificar\PaymentGateways;
 
+use Codificar\PaymentGateways\Libs\PaymentFactory;
 use Omnipay\Common\GatewayFactory;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
@@ -48,6 +49,10 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             $defaults = $app['config']->get('omnipay.defaults', array());
             return new GatewayManager($app, new GatewayFactory, $defaults);
         });
+
+        $this->app->singleton('PaymentFactory', function ($app) {
+            return new PaymentFactory();
+        });
     }
 
     /**
@@ -57,6 +62,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
      */
     public function provides()
     {
-        return array('omnipay');
+        return array('omnipay', 'PaymentFactory');
     }
 }
