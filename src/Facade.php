@@ -1,4 +1,6 @@
-<?php namespace Barryvdh\Omnipay;
+<?php 
+
+namespace Codificar\Generic;
 
 use Omnipay\Common\CreditCard;
 
