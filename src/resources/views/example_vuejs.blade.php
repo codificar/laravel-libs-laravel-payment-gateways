@@ -20,24 +20,14 @@
 	<div id="VueJs">
 		
 		<genericvuejs 
-			admins-list="{{ json_encode($admins_list )}}"	
-			
+			admins-list="{{ json_encode($admins_list )}}"
 		>
 		</genericvuejs>
 		
 	</div>
-
-		
-
-	</div>
-
 @stop
 
 @section('javascripts')
 <script src="/libs/generic/lang.trans/generic"> </script> 
-
-
-
-<script src="{{ elixir('vendor/codificar/generic/generic.vue.js') }}"> </script> 
-       
+<script src="{{ elixir('vendor/codificar/laravel-payment-gateways/generic.vue.js') }}"> </script> 
 @stop
