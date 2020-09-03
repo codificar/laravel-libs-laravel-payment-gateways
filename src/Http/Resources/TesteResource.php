@@ -1,6 +1,6 @@
 <?php
 
-namespace Codificar\Generic\Http\Resources;
+namespace Codificar\PaymentGateways\Http\Resources;
 
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;

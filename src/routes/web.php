@@ -3,7 +3,7 @@
 
 // Rotas do painel 
 
-Route::group(array('namespace' => 'Codificar\Generic\Http\Controllers'), function () {
+Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
     
     // (View painel admin)
     Route::group(['prefix' => 'admin/libs', 'middleware' => 'auth.admin'], function () {
@@ -13,7 +13,7 @@ Route::group(array('namespace' => 'Codificar\Generic\Http\Controllers'), functio
 });
 
 // Rotas dos apps
-Route::group(array('namespace' => 'Codificar\Generic\Http\Controllers'), function () {
+Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
 
     Route::group(['prefix' => 'libs/generic'], function () {
 

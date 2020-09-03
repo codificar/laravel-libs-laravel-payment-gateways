@@ -1,6 +1,6 @@
 <?php
 
-namespace Codificar\Generic\Models;
+namespace Codificar\PaymentGateways\Models;
 
 use Illuminate\Database\Eloquent\Relations\Model;
 use Illuminate\Http\Request;

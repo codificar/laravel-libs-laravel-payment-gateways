@@ -1,6 +1,6 @@
 <?php 
 
-namespace Codificar\Generic;
+namespace Codificar\PaymentGateways;
 
 use Omnipay\Common\GatewayFactory;
 

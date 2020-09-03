@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Codificar\\Generic\\": "src/"
+            "Codificar\\PaymentGateways\\": "src/"
         }
     },
     "extra": {
@@ -25,10 +25,10 @@
         },
         "laravel": {
             "providers": [
-                "Codificar\\Generic\\ServiceProvider"
+                "Codificar\\PaymentGateways\\ServiceProvider"
             ],
             "aliases": {
-                "Omnipay": "Codificar\\Generic\\Facade"
+                "Omnipay": "Codificar\\PaymentGateways\\Facade"
             }
         }
     },

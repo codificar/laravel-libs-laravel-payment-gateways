@@ -1,16 +1,16 @@
 <?php
 
-namespace Codificar\Generic\Http\Controllers;
+namespace Codificar\PaymentGateways\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 
 // Importar models
-use Codificar\Generic\Models\Generic;
+use Codificar\PaymentGateways\Models\Generic;
 
 // Importar Resource
-use Codificar\Generic\Http\Resources\TesteResource;
+use Codificar\PaymentGateways\Http\Resources\TesteResource;
 
 
 use Input, Validator, View, Response;
