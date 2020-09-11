@@ -21,7 +21,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
 
         // Load laravel views (Carregas as views do Laravel, blade)
-        $this->loadViewsFrom(__DIR__ . '/resources/views', 'generic');
+        $this->loadViewsFrom(__DIR__ . '/resources/views', 'gateways');
 
         // Load Migrations (Carrega todas as migrations)
         $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');

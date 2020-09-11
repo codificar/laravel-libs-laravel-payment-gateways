@@ -19,10 +19,10 @@
 @section('content')
 	<div id="VueJs">
 		
-		<genericvuejs 
+		<settingsgateways 
 			admins-list="{{ json_encode($admins_list )}}"
 		>
-		</genericvuejs>
+		</settingsgateways>
 		
 	</div>
 @stop

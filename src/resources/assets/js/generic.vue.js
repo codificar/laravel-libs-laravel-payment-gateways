@@ -6,7 +6,7 @@ import Vue from 'vue';
 
 
 // Generic settings
-import GenericVuejs from './pages/example.vue';
+import SettingsGateways from './pages/settings_gateways.vue';
 
 
 //Allows localization using trans()
@@ -27,7 +27,7 @@ new Vue({
     },
 
     components: {
-        genericvuejs: GenericVuejs
+        settingsgateways: SettingsGateways
     },
 
     created: function () {

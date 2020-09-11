@@ -6,14 +6,14 @@
 Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
     
     // (View painel admin)
-    Route::group(['prefix' => 'admin/libs', 'middleware' => 'auth.admin'], function () {
-        Route::get('/example_vuejs', array('as' => 'webAdminGeneric', 'uses' => 'GenericController@getExampleVuejs'));
+    Route::group(['prefix' => 'admin/settings', 'middleware' => 'auth.admin'], function () {
+        Route::get('/gateways', array('as' => 'webAdminSettingsGateways', 'uses' => 'GatewaysController@getSettings'));
     });
 
 });
 
 // Rotas dos apps
-Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
+/* Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
 
     Route::group(['prefix' => 'libs/generic'], function () {
 
@@ -21,7 +21,7 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
     
     });
 
-});
+}); */
 
 /**
  * Rota para permitir utilizar arquivos de traducao do laravel (dessa lib) no vue js
