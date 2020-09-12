@@ -28,42 +28,59 @@ class GatewaysController extends Controller
         ],
         'stripe' => [
             'stripe_secret',
-            'stripe_publishable_key'
+            'stripe_publishable_key',
+            'stripe_connect',
+            'stripe_total_split_refund'
         ],
         'zoop' => [
             'zoop_marketplace_id',
             'zoop_publishable_key',
             'zoop_seller_id'
+        ],
+        'bancard' => [
+            'bancard_public_key',
+            'bancard_private_key'
+        ],
+        'transbank' => [
+            'transbank_private_key',
+            'transbank_commerce_code',
+            'transbank_public_cert'
         ]
     ];
 
     public $payment_gateways =  array(
         array('value' => 'pagarme', 'name' => 'setting.pagarme'),
-        array('value' => 'byebnk', 'name' => 'setting.byebnk'),
         array('value' => 'stripe', 'name' => 'setting.stripe'),
-        array('value' => 'braintree', 'name' => 'setting.braintree'),
         array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
-        array('value' => 'mercadopago', 'name' => 'setting.mercadopago')
+        array('value' => 'transbank', 'name' => 'setting.transbank')
     );
+
     /**
-     * View the generic report
-     * 
+     * Recupera settings e acessa view
      * @return View
      */
     public function getSettings()
     {
         // Enums
         $enums = array(
+            'default_payment' => '',
             'auto_transfer_provider_payment' => Config::get('enum.auto_transfer_provider_payment'),
             'auto_transfer_schedule_at_after_selected_number_of_days' => Config::get('enum.auto_transfer_schedule_at_after_selected_number_of_days'),
-            'payment' => Config::get('enum.payment'),
             'stripe_connect' => config('enum.stripe_connect'),
             'stripe_total_split_refund' => config('enum.stripe_total_split_refund')
         );
 
         //recupera settings
         $settings = [];
+
+        //recupera valores
+        foreach ($enums as $key => $conf) {
+            $setting = Settings::where('key', '=', $key)->first();
+            $settings[$key] = $setting ? $setting->value : null;
+        }
+
+        //recupera valores
         foreach ($this->keys_gateways as $key => $values) {
             foreach ($values as $value) {
                 $temp_setting = Settings::where('key', '=', $value)->first();
@@ -81,12 +98,24 @@ class GatewaysController extends Controller
     }
 
     /**
-     *  Update each value on Settings table
+     * @api{post}/libs/settings/save/gateways
+     * Save payment default and confs
+     * @return Json
      */
     public function saveSettings(GatewaysFormRequest $request)
     {
+        //recupera e salva payment default
+        foreach ($request->settings as $key => $value) {
+            $setting = Settings::where('key', '=', $key)->first();
+            if ($setting && $value) {
+                $setting->value = $value;
+                $setting->save();
+            }
+        }
+
+        //salva confs
         $first_setting = Settings::first();
-        foreach ($request->settings[$request->default_payment] as $key => $value) {
+        foreach ($request->settings[$request->settings['default_payment']] as $key => $value) {
             $temp_setting = Settings::where('key', '=', $key)->first();
             if ($temp_setting && $value) {
                 $temp_setting->value = $value;

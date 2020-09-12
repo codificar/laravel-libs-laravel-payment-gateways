@@ -3,55 +3,42 @@ import axios from "axios";
 import moment from "moment";
 export default {
   props: [
-    "EditPermission",
-    "DeletePermission",
-    "StatusBilling",
-    "Institution",
     "PaymentGateways",
     "Enums",
     "Settings",
-    "csrfToken",
   ],
   data() {
     return {
       payment_gateways: {},
       enums: {},
-      default_payment: "",
-      auto_transfer_provider_payment: "",
-      auto_transfer_schedule_at_after_selected_number_of_days: "",
-      stripe_connect: "",
-      stripe_total_split_refund: "",
       settings: {},
     };
   },
   methods: {
     saveSettings() {
       this.$swal({
-        title: this.trans("billing.edit_confirm"),
+        title: this.trans("setting.edit_confirm"),
         type: "warning",
         showCancelButton: true,
-        confirmButtonText: this.trans("billing.yes"),
-        cancelButtonText: this.trans("billing.no"),
+        confirmButtonText: this.trans("setting.yes"),
+        cancelButtonText: this.trans("setting.no"),
       }).then((result) => {
         if (result.value) {
           //Submit form if its valid and email doesnt exists
           new Promise((resolve, reject) => {
             axios
               .post("/libs/settings/save/gateways", {
-                default_payment: this.default_payment,
                 settings: this.settings,
               })
               .then((response) => {
                 if (response.data.success) {
                   this.$swal({
-                    title: this.trans("billing.success_set_billing"),
+                    title: this.trans("setting.success_set_gateway"),
                     type: "success",
-                  }).then((result) => {
-                    //$("#modalSetBilling").modal("hide");
-                  });
+                  }).then((result) => {});
                 } else {
                   this.$swal({
-                    title: this.trans("billing.failed_set_billing"),
+                    title: this.trans("setting.failed_set_gateway"),
                     html:
                       '<label class="alert alert-danger alert-dismissable text-left">' +
                       response.data.errors +
@@ -76,7 +63,6 @@ export default {
       : null;
     this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
     this.Enums ? (this.enums = JSON.parse(this.Enums)) : null;
-    console.log(this.payment_gateways);
   },
 };
 </script>
@@ -107,7 +93,7 @@ export default {
                 </label>
 
                 <select
-                  v-model="default_payment"
+                  v-model="settings.default_payment"
                   name="default_payment"
                   class="select form-control"
                 >
@@ -115,14 +101,14 @@ export default {
                     v-for="method in payment_gateways"
                     v-bind:value="method.value"
                     v-bind:key="method.value"
-                  >{{ method.name }}</option>
+                  >{{ trans(method.name) }}</option>
                 </select>
               </div>
             </div>
           </div>
 
           <!--Configurações do Pagar.Me-->
-          <div class="panel panel-default pagarme" v-if="default_payment == 'pagarme'">
+          <div class="panel panel-default pagarme" v-if="settings.default_payment == 'pagarme'">
             <div class="panel-heading">
               <h3 class="panel-title">{{trans('setting.pagarme_settings')}}</h3>
               <hr />
@@ -203,7 +189,7 @@ export default {
           <!-- / Configurações do Pagar.Me-->
 
           <!--Configurações do Strip-->
-          <div class="panel panel-default stripe" v-if="default_payment == 'stripe'">
+          <div class="panel panel-default stripe" v-if="settings.default_payment == 'stripe'">
             <div class="panel-heading">
               <h3 class="panel-title">{{trans('setting.stripe_settings')}}</h3>
               <hr />
@@ -270,7 +256,7 @@ export default {
                     </label>
 
                     <select
-                      v-model="stripe_connect"
+                      v-model="settings.stripe.stripe_connect"
                       name="stripe_connect"
                       class="select form-control"
                     >
@@ -278,7 +264,7 @@ export default {
                         v-for="method in enums.stripe_connect"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ method.name }}</option>
+                      >{{ trans(method.name) }}</option>
                     </select>
                   </div>
                 </div>
@@ -298,7 +284,7 @@ export default {
                     </label>
 
                     <select
-                      v-model="stripe_total_split_refund"
+                      v-model="settings.stripe.stripe_total_split_refund"
                       name="stripe_total_split_refund"
                       class="select form-control"
                     >
@@ -306,7 +292,7 @@ export default {
                         v-for="method in enums.stripe_total_split_refund"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ method.name }}</option>
+                      >{{ trans(method.name) }}</option>
                     </select>
                   </div>
                 </div>
@@ -316,7 +302,7 @@ export default {
           <!--/ Configurações do Strip-->
 
           <!--Configurações do Zoop-->
-          <div class="panel panel-default zoop">
+          <div class="panel panel-default zoop" v-if="settings.default_payment == 'zoop'">
             <div class="panel-heading">
               <h3 class="panel-title">{{trans('setting.zoop_settings')}}</h3>
               <hr />
@@ -396,6 +382,144 @@ export default {
           </div>
           <!-- / Configurações do Zoop-->
 
+          <!--Configurações do Bancard-->
+          <div class="panel panel-default bancard" v-if="settings.default_payment == 'bancard'">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.bancard_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.bancard_public_key')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.bancard_public_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-bancard"
+                      v-model="settings.bancard.bancard_public_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.bancard_private_key')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.bancard_private_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-bancard"
+                      v-model="settings.bancard.bancard_private_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Bancard-->
+
+          <!--Configurações do Transbank-->
+          <div class="panel panel-default transbank" v-if="settings.default_payment == 'transbank'">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.transbank_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.transbank_private_key')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.transbank_private_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-tranbank"
+                      v-model="settings.transbank.transbank_private_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.transbank_commerce_code')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.transbank_commerce_code')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-tranbank"
+                      v-model="settings.transbank.transbank_commerce_code"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.transbank_public_cert')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.transbank_public_cert')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-tranbank"
+                      v-model="settings.transbank.transbank_public_cert"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Transbank-->
+
           <!--Configurações Avançadas-->
           <div class="panel panel-default">
             <div class="panel-heading">
@@ -420,7 +544,7 @@ export default {
                     </label>
 
                     <select
-                      v-model="auto_transfer_provider_payment"
+                      v-model="settings.auto_transfer_provider_payment"
                       name="auto_transfer_provider_payment"
                       class="select form-control"
                     >
@@ -428,7 +552,7 @@ export default {
                         v-for="method in enums.auto_transfer_provider_payment"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ method.name }}</option>
+                      >{{ trans(method.name) }}</option>
                     </select>
                   </div>
                 </div>
@@ -445,7 +569,7 @@ export default {
                     </label>
 
                     <select
-                      v-model="auto_transfer_schedule_at_after_selected_number_of_days"
+                      v-model="settings.auto_transfer_schedule_at_after_selected_number_of_days"
                       name="auto_transfer_schedule_at_after_selected_number_of_days"
                       class="select form-control"
                     >
@@ -453,7 +577,7 @@ export default {
                         v-for="method in enums.auto_transfer_schedule_at_after_selected_number_of_days"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ method.name }}</option>
+                      >{{ trans(method.name) }}</option>
                     </select>
                   </div>
                 </div>
@@ -466,7 +590,7 @@ export default {
             <div class="form-group text-right">
               <button v-on:click="saveSettings()" class="btn btn-success">
                 <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
-                {{trans('keywords.save')}}
+                {{trans('setting.save')}}
               </button>
             </div>
           </div>

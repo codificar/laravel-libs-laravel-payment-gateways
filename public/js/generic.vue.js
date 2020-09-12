@@ -47419,16 +47419,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  props: ["EditPermission", "DeletePermission", "StatusBilling", "Institution", "PaymentGateways", "Enums", "Settings", "csrfToken"],
+  props: ["PaymentGateways", "Enums", "Settings"],
   data: function data() {
     return {
       payment_gateways: {},
       enums: {},
-      default_payment: "",
-      auto_transfer_provider_payment: "",
-      auto_transfer_schedule_at_after_selected_number_of_days: "",
-      stripe_connect: "",
-      stripe_total_split_refund: "",
       settings: {}
     };
   },
@@ -47438,29 +47433,26 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
       var _this = this;
 
       this.$swal({
-        title: this.trans("billing.edit_confirm"),
+        title: this.trans("setting.edit_confirm"),
         type: "warning",
         showCancelButton: true,
-        confirmButtonText: this.trans("billing.yes"),
-        cancelButtonText: this.trans("billing.no")
+        confirmButtonText: this.trans("setting.yes"),
+        cancelButtonText: this.trans("setting.no")
       }).then(function (result) {
         if (result.value) {
           //Submit form if its valid and email doesnt exists
           new Promise(function (resolve, reject) {
             __WEBPACK_IMPORTED_MODULE_0_axios___default.a.post("/libs/settings/save/gateways", {
-              default_payment: _this.default_payment,
               settings: _this.settings
             }).then(function (response) {
               if (response.data.success) {
                 _this.$swal({
-                  title: _this.trans("billing.success_set_billing"),
+                  title: _this.trans("setting.success_set_gateway"),
                   type: "success"
-                }).then(function (result) {
-                  //$("#modalSetBilling").modal("hide");
-                });
+                }).then(function (result) {});
               } else {
                 _this.$swal({
-                  title: _this.trans("billing.failed_set_billing"),
+                  title: _this.trans("setting.failed_set_gateway"),
                   html: '<label class="alert alert-danger alert-dismissable text-left">' + response.data.errors + "</label>",
                   type: "error"
                 }).then(function (result) {});
@@ -47479,7 +47471,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     this.PaymentGateways ? this.payment_gateways = JSON.parse(this.PaymentGateways) : null;
     this.Settings ? this.settings = JSON.parse(this.Settings) : null;
     this.Enums ? this.enums = JSON.parse(this.Enums) : null;
-    console.log(this.payment_gateways);
   }
 });
 
@@ -48654,8 +48645,8 @@ var render = function() {
                       {
                         name: "model",
                         rawName: "v-model",
-                        value: _vm.default_payment,
-                        expression: "default_payment"
+                        value: _vm.settings.default_payment,
+                        expression: "settings.default_payment"
                       }
                     ],
                     staticClass: "select form-control",
@@ -48670,9 +48661,13 @@ var render = function() {
                             var val = "_value" in o ? o._value : o.value
                             return val
                           })
-                        _vm.default_payment = $event.target.multiple
-                          ? $$selectedVal
-                          : $$selectedVal[0]
+                        _vm.$set(
+                          _vm.settings,
+                          "default_payment",
+                          $event.target.multiple
+                            ? $$selectedVal
+                            : $$selectedVal[0]
+                        )
                       }
                     }
                   },
@@ -48680,7 +48675,7 @@ var render = function() {
                     return _c(
                       "option",
                       { key: method.value, domProps: { value: method.value } },
-                      [_vm._v(_vm._s(method.name))]
+                      [_vm._v(_vm._s(_vm.trans(method.name)))]
                     )
                   }),
                   0
@@ -48689,7 +48684,7 @@ var render = function() {
             ])
           ]),
           _vm._v(" "),
-          _vm.default_payment == "pagarme"
+          _vm.settings.default_payment == "pagarme"
             ? _c("div", { staticClass: "panel panel-default pagarme" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
@@ -48906,7 +48901,7 @@ var render = function() {
               ])
             : _vm._e(),
           _vm._v(" "),
-          _vm.default_payment == "stripe"
+          _vm.settings.default_payment == "stripe"
             ? _c("div", { staticClass: "panel panel-default stripe" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
@@ -49086,8 +49081,8 @@ var render = function() {
                               {
                                 name: "model",
                                 rawName: "v-model",
-                                value: _vm.stripe_connect,
-                                expression: "stripe_connect"
+                                value: _vm.settings.stripe.stripe_connect,
+                                expression: "settings.stripe.stripe_connect"
                               }
                             ],
                             staticClass: "select form-control",
@@ -49102,9 +49097,13 @@ var render = function() {
                                     var val = "_value" in o ? o._value : o.value
                                     return val
                                   })
-                                _vm.stripe_connect = $event.target.multiple
-                                  ? $$selectedVal
-                                  : $$selectedVal[0]
+                                _vm.$set(
+                                  _vm.settings.stripe,
+                                  "stripe_connect",
+                                  $event.target.multiple
+                                    ? $$selectedVal
+                                    : $$selectedVal[0]
+                                )
                               }
                             }
                           },
@@ -49115,7 +49114,7 @@ var render = function() {
                                 key: method.value,
                                 domProps: { value: method.value }
                               },
-                              [_vm._v(_vm._s(method.name))]
+                              [_vm._v(_vm._s(_vm.trans(method.name)))]
                             )
                           }),
                           0
@@ -49164,8 +49163,10 @@ var render = function() {
                               {
                                 name: "model",
                                 rawName: "v-model",
-                                value: _vm.stripe_total_split_refund,
-                                expression: "stripe_total_split_refund"
+                                value:
+                                  _vm.settings.stripe.stripe_total_split_refund,
+                                expression:
+                                  "settings.stripe.stripe_total_split_refund"
                               }
                             ],
                             staticClass: "select form-control",
@@ -49180,10 +49181,13 @@ var render = function() {
                                     var val = "_value" in o ? o._value : o.value
                                     return val
                                   })
-                                _vm.stripe_total_split_refund = $event.target
-                                  .multiple
-                                  ? $$selectedVal
-                                  : $$selectedVal[0]
+                                _vm.$set(
+                                  _vm.settings.stripe,
+                                  "stripe_total_split_refund",
+                                  $event.target.multiple
+                                    ? $$selectedVal
+                                    : $$selectedVal[0]
+                                )
                               }
                             }
                           },
@@ -49196,7 +49200,7 @@ var render = function() {
                                 key: method.value,
                                 domProps: { value: method.value }
                               },
-                              [_vm._v(_vm._s(method.name))]
+                              [_vm._v(_vm._s(_vm.trans(method.name)))]
                             )
                           }),
                           0
@@ -49208,211 +49212,582 @@ var render = function() {
               ])
             : _vm._e(),
           _vm._v(" "),
-          _c("div", { staticClass: "panel panel-default zoop" }, [
-            _c("div", { staticClass: "panel-heading" }, [
-              _c("h3", { staticClass: "panel-title" }, [
-                _vm._v(_vm._s(_vm.trans("setting.zoop_settings")))
-              ]),
-              _vm._v(" "),
-              _c("hr")
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "panel-body" }, [
-              _c("div", { staticClass: "row" }, [
-                _c("div", { staticClass: "col-lg-6" }, [
-                  _c("div", { staticClass: "form-group" }, [
-                    _c("label", { attrs: { for: "usr" } }, [
-                      _vm._v(
-                        "\n                    " +
-                          _vm._s(_vm.trans("setting.zoop_marketplace_id")) +
-                          "\n                    "
-                      ),
-                      _c(
-                        "a",
-                        {
-                          staticClass: "question-field",
-                          attrs: {
-                            href: "#",
-                            "data-toggle": "tooltip",
-                            title: _vm.trans(
-                              "settingTableSeeder.zoop_marketplace_id"
-                            )
-                          }
-                        },
-                        [
-                          _c("span", {
-                            staticClass: "mdi mdi-comment-question-outline"
-                          })
-                        ]
-                      ),
-                      _vm._v(" "),
-                      _c("span", { staticClass: "required-field" }, [
-                        _vm._v("*")
-                      ])
-                    ]),
-                    _vm._v(" "),
-                    _c("input", {
-                      directives: [
-                        {
-                          name: "model",
-                          rawName: "v-model",
-                          value: _vm.settings.zoop.zoop_marketplace_id,
-                          expression: "settings.zoop.zoop_marketplace_id"
-                        }
-                      ],
-                      staticClass: "form-control input-zoop",
-                      attrs: { type: "text" },
-                      domProps: {
-                        value: _vm.settings.zoop.zoop_marketplace_id
-                      },
-                      on: {
-                        input: function($event) {
-                          if ($event.target.composing) {
-                            return
-                          }
-                          _vm.$set(
-                            _vm.settings.zoop,
-                            "zoop_marketplace_id",
-                            $event.target.value
-                          )
-                        }
-                      }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "help-block with-errors" })
-                  ])
+          _vm.settings.default_payment == "zoop"
+            ? _c("div", { staticClass: "panel panel-default zoop" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.zoop_settings")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
                 ]),
                 _vm._v(" "),
-                _c("div", { staticClass: "col-lg-6" }, [
-                  _c("div", { staticClass: "form-group" }, [
-                    _c("label", { attrs: { for: "usr" } }, [
-                      _vm._v(
-                        "\n                    " +
-                          _vm._s(_vm.trans("setting.zoop_publishable_key")) +
-                          "\n                    "
-                      ),
-                      _c(
-                        "a",
-                        {
-                          staticClass: "question-field",
-                          attrs: {
-                            href: "#",
-                            "data-toggle": "tooltip",
-                            title: _vm.trans(
-                              "settingTableSeeder.zoop_publishable_key"
-                            )
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.zoop_marketplace_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.zoop_marketplace_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.zoop.zoop_marketplace_id,
+                              expression: "settings.zoop.zoop_marketplace_id"
+                            }
+                          ],
+                          staticClass: "form-control input-zoop",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.zoop.zoop_marketplace_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.zoop,
+                                "zoop_marketplace_id",
+                                $event.target.value
+                              )
+                            }
                           }
-                        },
-                        [
-                          _c("span", {
-                            staticClass: "mdi mdi-comment-question-outline"
-                          })
-                        ]
-                      ),
-                      _vm._v(" "),
-                      _c("span", { staticClass: "required-field" }, [
-                        _vm._v("*")
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
                       ])
                     ]),
                     _vm._v(" "),
-                    _c("input", {
-                      directives: [
-                        {
-                          name: "model",
-                          rawName: "v-model",
-                          value: _vm.settings.zoop.zoop_publishable_key,
-                          expression: "settings.zoop.zoop_publishable_key"
-                        }
-                      ],
-                      staticClass: "form-control input-zoop",
-                      attrs: { type: "text" },
-                      domProps: {
-                        value: _vm.settings.zoop.zoop_publishable_key
-                      },
-                      on: {
-                        input: function($event) {
-                          if ($event.target.composing) {
-                            return
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.zoop_publishable_key")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.zoop_publishable_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.zoop.zoop_publishable_key,
+                              expression: "settings.zoop.zoop_publishable_key"
+                            }
+                          ],
+                          staticClass: "form-control input-zoop",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.zoop.zoop_publishable_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.zoop,
+                                "zoop_publishable_key",
+                                $event.target.value
+                              )
+                            }
                           }
-                          _vm.$set(
-                            _vm.settings.zoop,
-                            "zoop_publishable_key",
-                            $event.target.value
-                          )
-                        }
-                      }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "help-block with-errors" })
-                  ])
-                ])
-              ]),
-              _vm._v(" "),
-              _c("div", { staticClass: "row" }, [
-                _c("div", { staticClass: "col-lg-6" }, [
-                  _c("div", { staticClass: "form-group" }, [
-                    _c("label", { attrs: { for: "usr" } }, [
-                      _vm._v(
-                        "\n                    " +
-                          _vm._s(_vm.trans("setting.zoop_seller_id")) +
-                          "\n                    "
-                      ),
-                      _c(
-                        "a",
-                        {
-                          staticClass: "question-field",
-                          attrs: {
-                            href: "#",
-                            "data-toggle": "tooltip",
-                            title: _vm.trans(
-                              "settingTableSeeder.zoop_seller_id"
-                            )
-                          }
-                        },
-                        [
-                          _c("span", {
-                            staticClass: "mdi mdi-comment-question-outline"
-                          })
-                        ]
-                      ),
-                      _vm._v(" "),
-                      _c("span", { staticClass: "required-field" }, [
-                        _vm._v("*")
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
                       ])
-                    ]),
-                    _vm._v(" "),
-                    _c("input", {
-                      directives: [
-                        {
-                          name: "model",
-                          rawName: "v-model",
-                          value: _vm.settings.zoop.zoop_seller_id,
-                          expression: "settings.zoop.zoop_seller_id"
-                        }
-                      ],
-                      staticClass: "form-control input-zoop",
-                      attrs: { type: "text" },
-                      domProps: { value: _vm.settings.zoop.zoop_seller_id },
-                      on: {
-                        input: function($event) {
-                          if ($event.target.composing) {
-                            return
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.zoop_seller_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.zoop_seller_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.zoop.zoop_seller_id,
+                              expression: "settings.zoop.zoop_seller_id"
+                            }
+                          ],
+                          staticClass: "form-control input-zoop",
+                          attrs: { type: "text" },
+                          domProps: { value: _vm.settings.zoop.zoop_seller_id },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.zoop,
+                                "zoop_seller_id",
+                                $event.target.value
+                              )
+                            }
                           }
-                          _vm.$set(
-                            _vm.settings.zoop,
-                            "zoop_seller_id",
-                            $event.target.value
-                          )
-                        }
-                      }
-                    }),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "help-block with-errors" })
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
                   ])
                 ])
               ])
-            ])
-          ]),
+            : _vm._e(),
+          _vm._v(" "),
+          _vm.settings.default_payment == "bancard"
+            ? _c("div", { staticClass: "panel panel-default bancard" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.bancard_settings")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.bancard_public_key")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.bancard_public_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.bancard.bancard_public_key,
+                              expression: "settings.bancard.bancard_public_key"
+                            }
+                          ],
+                          staticClass: "form-control input-bancard",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.bancard.bancard_public_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.bancard,
+                                "bancard_public_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.bancard_private_key")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.bancard_private_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.bancard.bancard_private_key,
+                              expression: "settings.bancard.bancard_private_key"
+                            }
+                          ],
+                          staticClass: "form-control input-bancard",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.bancard.bancard_private_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.bancard,
+                                "bancard_private_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
+          _vm._v(" "),
+          _vm.settings.default_payment == "transbank"
+            ? _c("div", { staticClass: "panel panel-default transbank" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.transbank_settings")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.transbank_private_key")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.transbank_private_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.transbank.transbank_private_key,
+                              expression:
+                                "settings.transbank.transbank_private_key"
+                            }
+                          ],
+                          staticClass: "form-control input-tranbank",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.transbank.transbank_private_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.transbank,
+                                "transbank_private_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.transbank_commerce_code")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.transbank_commerce_code"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.transbank.transbank_commerce_code,
+                              expression:
+                                "settings.transbank.transbank_commerce_code"
+                            }
+                          ],
+                          staticClass: "form-control input-tranbank",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value:
+                              _vm.settings.transbank.transbank_commerce_code
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.transbank,
+                                "transbank_commerce_code",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.transbank_public_cert")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.transbank_public_cert"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.transbank.transbank_public_cert,
+                              expression:
+                                "settings.transbank.transbank_public_cert"
+                            }
+                          ],
+                          staticClass: "form-control input-tranbank",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.transbank.transbank_public_cert
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.transbank,
+                                "transbank_public_cert",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
           _vm._v(" "),
           _c("div", { staticClass: "panel panel-default" }, [
             _c("div", { staticClass: "panel-heading" }, [
@@ -49466,8 +49841,9 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.auto_transfer_provider_payment,
-                            expression: "auto_transfer_provider_payment"
+                            value: _vm.settings.auto_transfer_provider_payment,
+                            expression:
+                              "settings.auto_transfer_provider_payment"
                           }
                         ],
                         staticClass: "select form-control",
@@ -49482,10 +49858,13 @@ var render = function() {
                                 var val = "_value" in o ? o._value : o.value
                                 return val
                               })
-                            _vm.auto_transfer_provider_payment = $event.target
-                              .multiple
-                              ? $$selectedVal
-                              : $$selectedVal[0]
+                            _vm.$set(
+                              _vm.settings,
+                              "auto_transfer_provider_payment",
+                              $event.target.multiple
+                                ? $$selectedVal
+                                : $$selectedVal[0]
+                            )
                           }
                         }
                       },
@@ -49498,7 +49877,7 @@ var render = function() {
                             key: method.value,
                             domProps: { value: method.value }
                           },
-                          [_vm._v(_vm._s(method.name))]
+                          [_vm._v(_vm._s(_vm.trans(method.name)))]
                         )
                       }),
                       0
@@ -49536,9 +49915,10 @@ var render = function() {
                             name: "model",
                             rawName: "v-model",
                             value:
-                              _vm.auto_transfer_schedule_at_after_selected_number_of_days,
+                              _vm.settings
+                                .auto_transfer_schedule_at_after_selected_number_of_days,
                             expression:
-                              "auto_transfer_schedule_at_after_selected_number_of_days"
+                              "settings.auto_transfer_schedule_at_after_selected_number_of_days"
                           }
                         ],
                         staticClass: "select form-control",
@@ -49556,10 +49936,13 @@ var render = function() {
                                 var val = "_value" in o ? o._value : o.value
                                 return val
                               })
-                            _vm.auto_transfer_schedule_at_after_selected_number_of_days = $event
-                              .target.multiple
-                              ? $$selectedVal
-                              : $$selectedVal[0]
+                            _vm.$set(
+                              _vm.settings,
+                              "auto_transfer_schedule_at_after_selected_number_of_days",
+                              $event.target.multiple
+                                ? $$selectedVal
+                                : $$selectedVal[0]
+                            )
                           }
                         }
                       },
@@ -49573,7 +49956,7 @@ var render = function() {
                               key: method.value,
                               domProps: { value: method.value }
                             },
-                            [_vm._v(_vm._s(method.name))]
+                            [_vm._v(_vm._s(_vm.trans(method.name)))]
                           )
                         }
                       ),
@@ -49604,7 +49987,7 @@ var render = function() {
                   }),
                   _vm._v(
                     "\n              " +
-                      _vm._s(_vm.trans("keywords.save")) +
+                      _vm._s(_vm.trans("setting.save")) +
                       "\n            "
                   )
                 ]
