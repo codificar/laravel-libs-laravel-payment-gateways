@@ -1,27 +1,22 @@
 <?php
 
-
-// Rotas do painel 
-
+// Rotas do painel
 Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
-    
+
     // (View painel admin)
     Route::group(['prefix' => 'admin/settings', 'middleware' => 'auth.admin'], function () {
         Route::get('/gateways', array('as' => 'webAdminSettingsGateways', 'uses' => 'GatewaysController@getSettings'));
     });
-
 });
 
-// Rotas dos apps
-/* Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
+// Rotas apis
+Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
 
-    Route::group(['prefix' => 'libs/generic'], function () {
+    Route::group(['prefix' => 'libs/settings'], function () {
 
-        Route::get('/example', 'GenericController@getAppApiExample');
-    
+        Route::post('/save/gateways', array('as' => 'webAdminSaveSettingsGateways', 'uses' => 'GatewaysController@saveSettings'));
     });
-
-}); */
+});
 
 /**
  * Rota para permitir utilizar arquivos de traducao do laravel (dessa lib) no vue js
@@ -31,7 +26,7 @@ Route::get('/libs/generic/lang.trans/{file}', function () {
     $lang = config('app.locale');
     $files = array();
     foreach ($fileNames as $fileName) {
-        array_push($files, __DIR__.'/../resources/lang/' . $lang . '/' . $fileName . '.php');
+        array_push($files, __DIR__ . '/../resources/lang/' . $lang . '/' . $fileName . '.php');
     }
     $strings = [];
     foreach ($files as $file) {

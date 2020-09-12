@@ -20,7 +20,9 @@
 	<div id="VueJs">
 		
 		<settingsgateways 
-			admins-list="{{ json_encode($admins_list )}}"
+			payment-gateways="{{ json_encode($payment_gateways)}}"
+			settings="{{ json_encode($settings)}}"
+			enums="{{ json_encode($enums)}}"
 		>
 		</settingsgateways>
 		

@@ -7,40 +7,47 @@ export default {
     "DeletePermission",
     "StatusBilling",
     "Institution",
-    "AdminsList",
+    "PaymentGateways",
+    "Enums",
     "Settings",
-    "csrfToken"
+    "csrfToken",
   ],
   data() {
     return {
+      payment_gateways: {},
+      enums: {},
+      default_payment: "",
+      auto_transfer_provider_payment: "",
+      auto_transfer_schedule_at_after_selected_number_of_days: "",
+      stripe_connect: "",
+      stripe_total_split_refund: "",
       settings: {},
-      adminlists: {},
     };
   },
   methods: {
-    setBilling() {
+    saveSettings() {
       this.$swal({
         title: this.trans("billing.edit_confirm"),
         type: "warning",
         showCancelButton: true,
         confirmButtonText: this.trans("billing.yes"),
-        cancelButtonText: this.trans("billing.no")
-      }).then(result => {
+        cancelButtonText: this.trans("billing.no"),
+      }).then((result) => {
         if (result.value) {
           //Submit form if its valid and email doesnt exists
           new Promise((resolve, reject) => {
             axios
-              .post("/admin/billing/set", {
-                settings: this.settings
+              .post("/libs/settings/save/gateways", {
+                default_payment: this.default_payment,
+                settings: this.settings,
               })
-              .then(response => {
-                console.log(response);
+              .then((response) => {
                 if (response.data.success) {
                   this.$swal({
                     title: this.trans("billing.success_set_billing"),
-                    type: "success"
-                  }).then(result => {
-                    $("#modalSetBilling").modal("hide");
+                    type: "success",
+                  }).then((result) => {
+                    //$("#modalSetBilling").modal("hide");
                   });
                 } else {
                   this.$swal({
@@ -49,11 +56,11 @@ export default {
                       '<label class="alert alert-danger alert-dismissable text-left">' +
                       response.data.errors +
                       "</label>",
-                    type: "error"
-                  }).then(result => {});
+                    type: "error",
+                  }).then((result) => {});
                 }
               })
-              .catch(error => {
+              .catch((error) => {
                 console.log(error);
                 reject(error);
                 return false;
@@ -61,162 +68,406 @@ export default {
           });
         }
       });
-    }
+    },
   },
   created() {
-     this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
-
-	this.AdminsList ? (this.adminlists = JSON.parse(this.AdminsList)) : null;
-  console.log('lista:', this.adminlists);
-  }
+    this.PaymentGateways
+      ? (this.payment_gateways = JSON.parse(this.PaymentGateways))
+      : null;
+    this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
+    this.Enums ? (this.enums = JSON.parse(this.Enums)) : null;
+    console.log(this.payment_gateways);
+  },
 };
 </script>
 <template>
   <div>
     <!-- Row -->
     <div class="tab-content">
-      <div class="col-lg-12">
-        <div class="card card-outline-info">
-          <div class="card-header">
-            <h4 class="m-b-0 text-white">{{trans('billing.billing_settings')}}</h4>
+      <div class="card-outline-info">
+        <!--Payment Gateway-->
+        <div class="card-header">
+          <h4 class="m-b-0 text-white">{{ trans('setting.pay_gateway') }}</h4>
+        </div>
+        <div class="card-block">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{trans('setting.default_pay_gate')}}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('settingTableSeeder.default_pay_gate')"
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+
+                <select
+                  v-model="default_payment"
+                  name="default_payment"
+                  class="select form-control"
+                >
+                  <option
+                    v-for="method in payment_gateways"
+                    v-bind:value="method.value"
+                    v-bind:key="method.value"
+                  >{{ method.name }}</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="card-block">
-            <div class="row">
-              <form data-toggle="validator" class="col-lg-12" v-on:submit.prevent="setBilling()">
-                <input type="hidden" name="_token" :value="csrfToken" />
-                <div class="col-md-12 col-sm-12">
+
+          <!--Configurações do Pagar.Me-->
+          <div class="panel panel-default pagarme" v-if="default_payment == 'pagarme'">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.pagarme_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.how_billing_works') }}</label>
+                    <label for="usr">
+                      {{trans('setting.pay_encryption_key_me')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.pay_encryption_key_me')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
                     <input
                       type="text"
-                      class="form-control"
-                      name="how_billing_works"
-                      id="how_billing_works"
-                      required
-                      v-model="settings.how_billing_works"
+                      class="form-control input-pagarme"
+                      v-model="settings.pagarme.pagarme_encryption_key"
                     />
+                    <div class="help-block with-errors"></div>
                   </div>
                 </div>
-
-                <div class="col-md-12 col-sm-12">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.minimum_bill_generation_value') }}</label>
+                    <label for="usr">
+                      {{trans('setting.pagarme_recipient_id')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.pagarme_recipient_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
                     <input
                       type="text"
-                      class="form-control"
-                      name="minimum_bill_generation_value"
-                      id="minimum_bill_generation_value"
-                      required
-                      v-model="settings.minimum_bill_generation_value"
+                      class="form-control input-pagarme"
+                      v-model="settings.pagarme.pagarme_recipient_id"
                     />
+                    <div class="help-block with-errors"></div>
                   </div>
                 </div>
-
-                <div class="col-md-12 col-sm-12">
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.billing_expiration_day') }}</label>
+                    <label for="usr">
+                      {{trans('setting.pagarme_api_key')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.pagarme_api_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
                     <input
-                      type="number"
-                      min="0"
-                      max="31"
-                      class="form-control"
-                      name="billing_expiration_day"
-                      id="billing_expiration_day"
-                      required
-                      v-model="settings.billing_expiration_day"
+                      type="text"
+                      class="form-control input-pagarme"
+                      v-model="settings.pagarme.pagarme_api_key"
                     />
+                    <div class="help-block with-errors"></div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Pagar.Me-->
 
-                <div class="col-md-12 col-sm-12">
+          <!--Configurações do Strip-->
+          <div class="panel panel-default stripe" v-if="default_payment == 'stripe'">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.stripe_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.allow_debit_note_on_billing') }}</label>
+                    <label for="usr">
+                      {{trans('setting.stripe_secret')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.stripe_secret')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-strip"
+                      v-model="settings.stripe.stripe_secret"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.stripe_public')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.stripe_public')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-strip"
+                      v-model="settings.stripe.stripe_publishable_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.stripe_connect')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.stripe_connect')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+
                     <select
-                      v-model="settings.allow_debit_note_on_billing"
-                      name="allow_debit_note_on_billing"
+                      v-model="stripe_connect"
+                      name="stripe_connect"
                       class="select form-control"
                     >
                       <option
-                        v-for="method in [{'value': '1', 'name': 'Sim'},{'value': '0', 'name': 'Não'}]"
+                        v-for="method in enums.stripe_connect"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >{{ method.name }}</option>
                     </select>
                   </div>
                 </div>
-
-                <div class="col-md-12 col-sm-12" v-if="settings.allow_debit_note_on_billing == 1">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.debit_note_percentage') }}</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      class="form-control"
-                      name="debit_note_percentage"
-                      id="debit_note_percentage"
-                      required
-                      v-model="settings.debit_note_percentage"
-                    />
-                  </div>
-                </div>
+                    <label for="usr">
+                      {{trans('setting.stripe_total_split_refund')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.stripe_total_split_refund_message')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
 
-                <div class="col-md-12 col-sm-12">
-                  <div class="form-group">
-                    <label class="control-label">{{trans('setting.is_automatic_billing') }}</label>
                     <select
-                      v-model="settings.is_automatic_billing"
-                      name="is_automatic_billing"
+                      v-model="stripe_total_split_refund"
+                      name="stripe_total_split_refund"
                       class="select form-control"
                     >
                       <option
-                        v-for="method in [{'value': '1', 'name': 'Sim'},{'value': '0', 'name': 'Não'}]"
+                        v-for="method in enums.stripe_total_split_refund"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >{{ method.name }}</option>
                     </select>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+          <!--/ Configurações do Strip-->
 
-                <div class="col-md-12 col-sm-12" v-if="settings.is_automatic_billing == 1">
+          <!--Configurações do Zoop-->
+          <div class="panel panel-default zoop">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.zoop_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.billing_after_days') }}</label>
+                    <label for="usr">
+                      {{trans('setting.zoop_marketplace_id')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.zoop_marketplace_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
                     <input
-                      type="number"
-                      min="0"
-                      max="31"
-                      class="form-control"
-                      name="billing_after_days"
-                      id="billing_after_days"
-                      required
-                      v-model="settings.billing_after_days"
+                      type="text"
+                      class="form-control input-zoop"
+                      v-model="settings.zoop.zoop_marketplace_id"
                     />
+                    <div class="help-block with-errors"></div>
                   </div>
                 </div>
-
-                <div class="col-md-12 col-sm-12" v-if="settings.is_automatic_billing == 1">
+                <div class="col-lg-6">
                   <div class="form-group">
-                    <label class="control-label">{{trans('setting.billing_period') }}</label>
+                    <label for="usr">
+                      {{trans('setting.zoop_publishable_key')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.zoop_publishable_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-zoop"
+                      v-model="settings.zoop.zoop_publishable_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.zoop_seller_id')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.zoop_seller_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-zoop"
+                      v-model="settings.zoop.zoop_seller_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Zoop-->
+
+          <!--Configurações Avançadas-->
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{trans('setting.advanced_settings')}}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.automatic_transfer_payment_provider')}}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.automatic_transfer_payment_provider')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field"></span>
+                    </label>
+
                     <select
-                      v-model="settings.billing_period"
-                      name="billing_period"
+                      v-model="auto_transfer_provider_payment"
+                      name="auto_transfer_provider_payment"
                       class="select form-control"
                     >
                       <option
-                        v-for="method in [{'value': 'weekly', 'name': trans('setting.billing_period_weekly')},{'value': 'biweekly', 'name': trans('setting.billing_period_biweekly')},{'value': 'monthly', 'name': trans('setting.billing_period_monthly')}]"
+                        v-for="method in enums.auto_transfer_provider_payment"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >{{ method.name }}</option>
                     </select>
                   </div>
                 </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{trans('setting.automatic_transfer_payment_days')}}*
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.automatic_transfer_payment_days')"
+                      ></a>
+                    </label>
 
-                <!-- Action -->
-                <br />
-                <div class="form-group">
-                  <button type="submmit" class="btn btn-success pull-right">{{trans('billing.save')}}</button>
+                    <select
+                      v-model="auto_transfer_schedule_at_after_selected_number_of_days"
+                      name="auto_transfer_schedule_at_after_selected_number_of_days"
+                      class="select form-control"
+                    >
+                      <option
+                        v-for="method in enums.auto_transfer_schedule_at_after_selected_number_of_days"
+                        v-bind:value="method.value"
+                        v-bind:key="method.value"
+                      >{{ method.name }}</option>
+                    </select>
+                  </div>
                 </div>
-              </form>
+              </div>
+            </div>
+          </div>
+
+          <!--Save-->
+          <div class="panel panel-default">
+            <div class="form-group text-right">
+              <button v-on:click="saveSettings()" class="btn btn-success">
+                <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
+                {{trans('keywords.save')}}
+              </button>
             </div>
           </div>
         </div>

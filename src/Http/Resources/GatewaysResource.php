@@ -6,25 +6,26 @@ use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class TesteResource
+ * Class GatewaysResource
  *
  * @package MotoboyApp
  *
  *
  * @OA\Schema(
- *         schema="TesteResource",
+ *         schema="GatewaysResource",
  *         type="object",
- *         description="Retorno Retorno do relatorio de saques do prestador",
+ *         description="Retorno ao salvar confs dos gateways",
  *         title="Generic Details Resource",
  *        allOf={
- *           @OA\Schema(ref="#/components/schemas/TesteResource"),
+ *           @OA\Schema(ref="#/components/schemas/GatewaysResource"),
  *           @OA\Schema(
  *              required={"success", "request"},
  *           )
  *       }
  * )
  */
-class TesteResource extends JsonResource {
+class GatewaysResource extends JsonResource
+{
 
     /**
      * Transform the resource into an array.
@@ -32,12 +33,11 @@ class TesteResource extends JsonResource {
      * @param  \Illuminate\Http\Request  $request
      * @return array
      */
-    public function toArray($request) {
+    public function toArray($request)
+    {
 
         return [
-            'success' => true,
-            'teste' => $this['teste'],
+            'success' => true
         ];
     }
-
 }

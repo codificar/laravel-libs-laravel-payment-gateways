@@ -7,10 +7,11 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * Class ExempleFormRequest
+ * Class GatewaysFormRequest
  *
  */
-class ExempleFormRequest extends FormRequest {
+class GatewaysFormRequest extends FormRequest
+{
 
     public $ride;
     /**
@@ -18,7 +19,8 @@ class ExempleFormRequest extends FormRequest {
      *
      * @return bool
      */
-    public function authorize() {
+    public function authorize()
+    {
         return true;
     }
 
@@ -29,32 +31,28 @@ class ExempleFormRequest extends FormRequest {
      */
     public function rules()
     {
-        return [
-            'teste'     => ['required', 'string'],
-            'teste2'    => ['required', 'string']
-        ];
+        return [];
     }
 
     public function messages()
     {
-        return [
-            'teste'     => 'teste is required',
-            'teste2'     => 'teste2 is required',
-        ];
+        return [];
     }
 
     /**
      * Retorna um json caso a validação falhe.
      * @throws HttpResponseException
      */
-    protected function failedValidation(Validator $validator) {
+    protected function failedValidation(Validator $validator)
+    {
         throw new HttpResponseException(
-        response()->json(
+            response()->json(
                 [
                     'success' => false,
                     'errors' => $validator->errors()->all(),
                     'error_code' => \ApiErrors::REQUEST_FAILED
                 ]
-        ));
+            )
+        );
     }
 }
