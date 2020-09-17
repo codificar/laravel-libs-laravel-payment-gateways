@@ -3,7 +3,8 @@
 namespace Codificar\PaymentGateways;
 
 //use Omnipay\Common\CreditCard;
-use Codificar\PaymentGateways\Libs\PaymentFactory;
+//use Codificar\PaymentGateways\Libs\PaymentFactory;
+use Codificar\PaymentGateways\Omnipay\PaymentFactory;
 
 class PaymentFacade extends \Illuminate\Support\Facades\Facade
 {

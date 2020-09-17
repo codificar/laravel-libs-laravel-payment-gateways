@@ -2,7 +2,8 @@
 
 namespace Codificar\PaymentGateways;
 
-use Codificar\PaymentGateways\Libs\PaymentFactory;
+//use Codificar\PaymentGateways\Libs\PaymentFactory;
+use Codificar\PaymentGateways\Omnipay\PaymentFactory;
 use Omnipay\Common\GatewayFactory;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
