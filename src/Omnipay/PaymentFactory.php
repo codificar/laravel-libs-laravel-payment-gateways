@@ -14,9 +14,26 @@ class PaymentFactory
 
     public static function createGateway()
     {
+        $parameters = [];
         switch (Settings::findByKey('default_payment')) {
             case self::PAYMENT_GATEWAY_PAGARME:
-                return (new PagarmeLib());
+                $omnipay = "Pagarme";
+                $parameters['apiKey'] = Settings::findByKey('pagarme_api_key');
+                break;
+
+            case self::PAYMENT_GATEWAY_STRIPE:
+                $omnipay = "Stripe";
+                break;
+
+            case self::PAYMENT_GATEWAY_ZOOP:
+                $omnipay = "Zoop";
+                break;
+
+            case self::PAYMENT_GATEWAY_BANCARD:
+                $omnipay = "Bancard";
+                break;
         }
+
+        return (new GatewayLib($omnipay, $parameters));
     }
 }

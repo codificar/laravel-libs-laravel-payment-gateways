@@ -21,9 +21,8 @@ use Omnipay\Omnipay;
 use Omnipay\Pagarme\CreditCard;
 use Settings;
 
-class PagarmeLib implements IOmnipay
+class GatewayLib implements IGateway
 {
-
 	const SPLIT_TYPE_AMOUNT 		= 'amount';
 	const SPLIT_TYPE_PERCENTAGE 	= 'percentage';
 
@@ -38,114 +37,77 @@ class PagarmeLib implements IOmnipay
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
 	private $gateway;
+	private $parameters;
 
-	public function __construct()
+	public function __construct($omnipay, $parameters = [])
 	{
-		$this->gateway = Omnipay::create('Pagarme');
+		//create gateway
+		$this->gateway = Omnipay::create($omnipay);
 
-		// Initialise the gateway
-		$this->gateway = $this->gateway->initialize(array(
-			'apiKey' => Settings::findByKey('pagarme_api_key'),
-		));
+		//store data
+		$this->parameters = $parameters;
 
-		//$this->setApiKey();
+		//inicializa gateway
+		$this->initialize();
 	}
 
-	/* private function setApiKey()
+	private function initialize()
 	{
-		PagarMe::setApiKey(Settings::findByKey('pagarme_api_key'));
-	} */
+		// Initialise the gateway
+		$this->gateway = $this->gateway->initialize($this->parameters);
+	}
 
 	public function createCard(Payment $payment, $user = null)
 	{
-
-		//recupera user
-		if (!$user) {
-			$user = $payment->User;
-		}
-
-		$new_card = new CreditCard(array(
-			'firstName'    => 'Example',
-			'lastName'     => 'Customer',
-			'number'       => '5555555555554444',
-			'expiryMonth'  => '01',
-			'expiryYear'   => '2021',
-			'cvv'          => '456',
-		));
-
-		// Do a create card transaction on the gateway
-		$response = $this->gateway->createCard(array(
-			'card'              => $new_card,
-			'customerReference' => $user->email,
-		))->send();
-
-		dd($response);
-
-		$cardNumber 			= $payment->getCardNumber();
-		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-		$cardExpirationYear 	= $payment->getCardExpirationYear();
-		$cardCvv 				= $payment->getCardCvc();
-		$cardHolder 			= $payment->getCardHolder();
-
-
-		$cardExpirationYear = $cardExpirationYear % 100;
-
-		$arrCreditCard = array(
-			'firstName'    => $user->first_name,
-			'lastName'     => $user->last_name,
-			//'name'         => 'Example Customer',
-			//'birthday'     => '1988-02-28',
-			//'gender'       => 'M',
-			'number'       => $cardNumber,
-			'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-			'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-			'cvv'          => $cardCvv,
-			'email'        => $user->email,
-			'holder_document_number' => '059.152.100-82' // CPF or CNPJ
-			/* 'address1'     => 'Street name, Street number, Complementary',
-			'address2'     => 'Neighborhood',
-			'postcode'     => '05443100',
-			'phone'        => '19 3242 8855',
-			'holder_document_number' => '246.375.149-23', // CPF or CNPJ */
-		);
-
-		// Create a credit card object
-		// This card can be used for testing.
-		$card = new CreditCard($arrCreditCard);
-
-		//$response = $this->gateway->createCard($arrCreditCard);
-
-		$response = $this->gateway->createCard(array(
-			'card'              => $card,
-			'customerReference' => $user->email,
-		))->send();
-
-		dd($response);
-
 		try {
 
+			//recupera user
+			if (!$user) {
+				$user = $payment->User;
+			}
 
+			$cardNumber 			= $payment->getCardNumber();
+			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
+			$cardExpirationYear 	= $payment->getCardExpirationYear();
+			$cardCvv 				= $payment->getCardCvc();
+			$cardHolder 			= $payment->getCardHolder();
 
 			$cardExpirationYear = $cardExpirationYear % 100;
 
-			$card = new PagarMe_Card(array(
-				"card_number" 				=> $cardNumber,
-				"card_holder_name" 			=> $cardHolder,
-				"card_expiration_month" 	=> str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-				"card_expiration_year" 		=> str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-				"card_cvv" 					=> $cardCvv,
-			));
-
-			$card->create();
-
-			return array(
-				"success" 					=> true,
-				"token" 					=> $card->id,
-				"card_token" 				=> $card->id,
-				"customer_id" 				=> $card->id,
-				"card_type" 				=> strtolower($card->brand),
-				"last_four" 				=> $card->last_digits,
+			$arrCreditCard = array(
+				'firstName'    => $user->first_name,
+				'lastName'     => $user->last_name,
+				'holder_name'  => $cardHolder,
+				'number'       => $cardNumber,
+				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+				'cvv'          => $cardCvv,
+				'email'        => $user->email,
+				'holder_document_number' => $user->document // CPF or CNPJ
 			);
+
+			// Create a credit card object
+			// This card can be used for testing.
+			$card = new CreditCard($arrCreditCard);
+
+			$response = $this->gateway->createCard(array(
+				'card'              => $card
+			))->send();
+
+
+			if ($response->isSuccessful()) {
+
+				$data = $response->getData();
+
+				return array(
+					"success" 					=> true,
+					"token" 					=> $data['id'],
+					"card_token" 				=> $data['id'],
+					"customer_id" 				=> $data['id'],
+					"card_type" 				=> strtolower($data['brand']),
+					"last_four" 				=> $data['last_digits'],
+				);
+			}
 		} catch (PagarMe_Exception  $ex) {
 
 			\Log::error($ex->getMessage());
@@ -162,47 +124,72 @@ class PagarmeLib implements IOmnipay
 	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
 	public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
 	{
-
-		
-
-		// Create a credit card object
-		// This card can be used for testing.
-		$card = new CreditCard(array(
-			'firstName'    => 'Example',
-			'lastName'     => 'Customer',
-			'number'       => '4242424242424242',
-			'expiryMonth'  => '01',
-			'expiryYear'   => '2021',
-			'cvv'          => '123',
-			'email'        => 'customer@example.com',
-			'address1'     => 'Street name, Street number, Neighborhood',
-			'address2'     => 'address complementary',
-			'postcode'     => '05443100',
-			'phone'        => '19 3242 8855',
-			'holder_document_number' => '059.152.100-82',
-		));
-
-		// Do an authorize transaction on the gateway
-		$transaction = $this->gateway->authorize(array(
-			'amount'           => '10.00',
-			'soft_descriptor'  => 'test',
-			'payment_method'   => 'credit_card',
-			'card'             => $card,
-			'metadata'         => array(
-				'product_id' => 'ID1111',
-				'invoice_id' => 'IV2222',
-			),
-		));
-		$response = $transaction->send();
-
-		dd($response);
-
 		try {
-			// valor inteiro do pagamento transferido para o admin
-			$card = PagarMe_Card::findById($payment->card_token);
 
-			if ($card == null)
-				throw new PagarMe_Exception("Cartão não encontrado", 1);
+			//recupera user
+			/* if (!$user) {
+				$user = $payment->User;
+			}
+
+			$cardNumber 			= $payment->getCardNumber();
+			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
+			$cardExpirationYear 	= $payment->getCardExpirationYear();
+			$cardCvv 				= $payment->getCardCvc();
+			$cardHolder 			= $payment->getCardHolder();
+
+			$cardExpirationYear = $cardExpirationYear % 100;
+
+			$arrCreditCard = array(
+				'firstName'    => $user->first_name,
+				'lastName'     => $user->last_name,
+				'holder_name'  => $cardHolder,
+				'number'       => $cardNumber,
+				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+				'cvv'          => $cardCvv,
+				'email'        => $user->email,
+				'holder_document_number' => $user->document // CPF or CNPJ
+			);
+
+			// Create a credit card object
+			// This card can be used for testing.
+			$card = new CreditCard($arrCreditCard); */
+
+
+			$transaction = $this->gateway->authorize(array(
+				'amount'           => '10.00',
+				'soft_descriptor'  => 'test',
+				'payment_method'   => 'credit_card',
+				//'card'             => $card,
+				'card_hash'      	   => $payment->card_token,
+				'metadata'         => array(
+					'product_id' => 'ID1111',
+					'invoice_id' => 'IV2222',
+				),
+			));
+			$response = $transaction->send();
+			
+			dd($response);
+
+			// Do a purchase transaction on the gateway
+			$transaction = $this->gateway->purchase(array(
+				'amount'           => $amount,
+				'soft_descriptor'  => $description,
+				'payment_method'   => 'credit_card',
+				//'card'           => $card,
+				'card_hash'      	   => $payment->card_token,
+				'metadata'         => array(
+					'product_id' => 'ID1111',
+					'invoice_id' => 'IV2222',
+				),
+			));
+			$response = $transaction->send();
+
+			if ($response->isSuccessful()) {
+				dd($response);
+			}
+
+			dd($response);
 
 			$pagarMeTransaction = new PagarMe_Transaction(array(
 				"amount" 	=> 	floor($amount * 100),

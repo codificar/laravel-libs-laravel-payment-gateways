@@ -8,7 +8,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 
-interface IOmnipay
+interface IGateway
 {
 
     /**
