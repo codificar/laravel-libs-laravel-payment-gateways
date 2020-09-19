@@ -127,7 +127,7 @@ class GatewayLib implements IGateway
 		try {
 
 			//recupera user
-			/* if (!$user) {
+			if (!$user) {
 				$user = $payment->User;
 			}
 
@@ -138,6 +138,7 @@ class GatewayLib implements IGateway
 			$cardHolder 			= $payment->getCardHolder();
 
 			$cardExpirationYear = $cardExpirationYear % 100;
+
 
 			$arrCreditCard = array(
 				'firstName'    => $user->first_name,
@@ -153,75 +154,43 @@ class GatewayLib implements IGateway
 
 			// Create a credit card object
 			// This card can be used for testing.
-			$card = new CreditCard($arrCreditCard); */
+			$card = new CreditCard($arrCreditCard);
 
-
-			$transaction = $this->gateway->authorize(array(
-				'amount'           => '10.00',
-				'soft_descriptor'  => 'test',
-				'payment_method'   => 'credit_card',
-				//'card'             => $card,
-				'card_hash'      	   => $payment->card_token,
-				'metadata'         => array(
-					'product_id' => 'ID1111',
-					'invoice_id' => 'IV2222',
-				),
-			));
-			$response = $transaction->send();
-			
-			dd($response);
 
 			// Do a purchase transaction on the gateway
 			$transaction = $this->gateway->purchase(array(
 				'amount'           => $amount,
 				'soft_descriptor'  => $description,
 				'payment_method'   => 'credit_card',
-				//'card'           => $card,
-				'card_hash'      	   => $payment->card_token,
+				'card'           => $card,
+				//'card_hash' 	=> 	$payment->card_token,
 				'metadata'         => array(
 					'product_id' => 'ID1111',
 					'invoice_id' => 'IV2222',
 				),
 			));
+
 			$response = $transaction->send();
 
-			if ($response->isSuccessful()) {
-				dd($response);
-			}
-
-			dd($response);
-
-			$pagarMeTransaction = new PagarMe_Transaction(array(
-				"amount" 	=> 	floor($amount * 100),
-				"card_id" 	=> 	$payment->card_token,
-				"capture" 	=> 	boolval($capture),
-				"customer" 	=> 	$this->getCustomer($payment),
-				"billing"	=> 	$this->getBilling($payment->User),
-				"items"		=>  $this->getItems(1, $description, floor($amount * 100))
-			));
-
-			\Log::debug("[charge]parameters:" . print_r($pagarMeTransaction, 1));
-
-			$pagarMeTransaction->charge();
-
-			\Log::debug("[charge]response:" . print_r($pagarMeTransaction, 1));
-
-			if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
+			if (!$response->isSuccessful()) {
 				return array(
 					"success" 					=> false,
 					"type" 						=> 'api_charge_error',
 					"code" 						=> 'api_charge_error',
 					"message" 					=> trans("paymentError.refused"),
-					"transaction_id"			=> $pagarMeTransaction->id
+					"transaction_id"			=> null //$pagarMeTransaction->id
 				);
 			}
+
+
+			$data = $response->getData();
 
 			return array(
 				'success' => true,
 				'captured' => $capture,
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'status' => $pagarMeTransaction->status,
-				'transaction_id' => $pagarMeTransaction->id
+				'paid' => ($data['status'] == self::PAGARME_PAID),
+				'status' => $data['status'],
+				'transaction_id' => $data['id']
 			);
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
@@ -395,27 +364,28 @@ class GatewayLib implements IGateway
 		}
 	}
 
-	public function refund(Transaction $transaction, Payment $payment)
+	public function refund(Transaction $transaction, Payment $payment = null)
 	{
 
 		if ($transaction && $transaction->status != Transaction::REFUNDED) {
 
 			try {
 
-				$refund = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+				$transaction = $this->gateway->refund(array(
+					'transactionReference'     => $transaction->gateway_transaction_id,
+				));
+				$response = $transaction->send();
 
-				\Log::debug("[refund]parameters:" . print_r($refund, 1));
+				if ($response->isSuccessful()) {
 
+					$data = $response->getData();
 
-				$refund->refund();
-
-				\Log::debug("[refund]response:" . print_r($refund, 1));
-
-				return array(
-					"success" 			=> true,
-					"status" 			=> $refund->status,
-					"transaction_id" 	=> $refund->id,
-				);
+					return array(
+						"success" 			=> true,
+						"status" 			=> $data['status'],
+						"transaction_id" 	=> $data['id'],
+					);
+				}
 			} catch (Exception $ex) {
 
 				\Log::error($ex->__toString());
@@ -508,15 +478,18 @@ class GatewayLib implements IGateway
 
 	public function retrieve(Transaction $transaction, Payment $payment = null)
 	{
-		$pagarmeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+		$transactionx = $this->gateway->fetchTransaction();
+		$transactionx->setTransactionReference($transaction->gateway_transaction_id);
+		$response = $transactionx->send();
+		$data = $response->getData();
 
 		return array(
 			'success' => true,
-			'transaction_id' => $pagarmeTransaction->id,
-			'amount' => $pagarmeTransaction->amount,
+			'transaction_id' => $data['id'],
+			'amount' => $data['amount'],
 			'destination' => '',
-			'status' => $pagarmeTransaction->status,
-			'card_last_digits' => $pagarmeTransaction->card_last_digits,
+			'status' => $data['status'],
+			'card_last_digits' => $data['card']['last_digits'],
 		);
 	}
 
@@ -641,6 +614,42 @@ class GatewayLib implements IGateway
 	public function deleteCard(Payment $payment, User $user = null)
 	{
 		try {
+
+			//recupera user
+			if (!$user) {
+				$user = $payment->User;
+			}
+
+			$cardNumber 			= $payment->getCardNumber();
+			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
+			$cardExpirationYear 	= $payment->getCardExpirationYear();
+			$cardCvv 				= $payment->getCardCvc();
+			$cardHolder 			= $payment->getCardHolder();
+
+			$cardExpirationYear = $cardExpirationYear % 100;
+
+			$arrCreditCard = array(
+				'firstName'    => $user->first_name,
+				'lastName'     => $user->last_name,
+				'holder_name'  => $cardHolder,
+				'number'       => $cardNumber,
+				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+				'cvv'          => $cardCvv,
+				'email'        => $user->email,
+				'holder_document_number' => $user->document // CPF or CNPJ
+			);
+
+			// Create a credit card object
+			// This card can be used for testing.
+			$card = new CreditCard($arrCreditCard);
+
+			$response = $this->gateway->deleteCard(array(
+				       'card'              => $card,
+				       //'customerReference' => $customer_id,
+				   ))->send();
+
+				   dd($response);
 
 			self::setApiKey();
 
