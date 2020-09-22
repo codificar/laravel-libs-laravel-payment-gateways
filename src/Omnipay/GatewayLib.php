@@ -94,6 +94,7 @@ class GatewayLib implements IGateway
 				'card'              => $card
 			))->send();
 
+			//dd($response);
 
 			if ($response->isSuccessful()) {
 
@@ -131,43 +132,12 @@ class GatewayLib implements IGateway
 				$user = $payment->User;
 			}
 
-			$cardNumber 			= $payment->getCardNumber();
-			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-			$cardExpirationYear 	= $payment->getCardExpirationYear();
-			$cardCvv 				= $payment->getCardCvc();
-			$cardHolder 			= $payment->getCardHolder();
-
-			$cardExpirationYear = $cardExpirationYear % 100;
-
-
-			$arrCreditCard = array(
-				'firstName'    => $user->first_name,
-				'lastName'     => $user->last_name,
-				'holder_name'  => $cardHolder,
-				'number'       => $cardNumber,
-				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-				'cvv'          => $cardCvv,
-				'email'        => $user->email,
-				'holder_document_number' => $user->document // CPF or CNPJ
-			);
-
-			// Create a credit card object
-			// This card can be used for testing.
-			$card = new CreditCard($arrCreditCard);
-
-
 			// Do a purchase transaction on the gateway
 			$transaction = $this->gateway->purchase(array(
 				'amount'           => $amount,
 				'soft_descriptor'  => $description,
 				'payment_method'   => 'credit_card',
-				'card'           => $card,
-				//'card_hash' 	=> 	$payment->card_token,
-				'metadata'         => array(
-					'product_id' => 'ID1111',
-					'invoice_id' => 'IV2222',
-				),
+				'cardReference' 	=> 	$payment->card_token
 			));
 
 			$response = $transaction->send();
@@ -181,7 +151,6 @@ class GatewayLib implements IGateway
 					"transaction_id"			=> null //$pagarMeTransaction->id
 				);
 			}
-
 
 			$data = $response->getData();
 
@@ -221,36 +190,21 @@ class GatewayLib implements IGateway
 			else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
 				$totalAmount =  floor($totalAmount * 100);
 
-			if (PagarMe_Recipient::findById(Settings::findByKey('pagarme_recipient_id')) == null)
-				throw new PagarMe_Exception("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
-
 			$bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
 
-			if ($bank_account == null)
-				throw new PagarMe_Exception("Conta do prestador nao encontrada.", 1);
+			//$parameters = $this->gateway->getParameters();
 
-			$recipient = PagarMe_Recipient::findById($bank_account->recipient_id);
-
-			if ($recipient == null)
-				throw new PagarMe_Exception("Recebedor não foi encontrado", 1);
-
-			$card = PagarMe_Card::findById($payment->card_token);
-
-			if ($card == null)
-				throw new PagarMe_Exception("Cartão não encontrado", 1);
-
-			//split de pagamento com o prestador
-			$pagarmeTransaction = new PagarMe_Transaction(array(
-				"amount" 		=> 	$totalAmount,
-				"card_id" 		=> 	$payment->card_token,
-				"capture" 		=> 	boolval($capture),
-				"customer" 		=> 	$this->getCustomer($payment),
-				"billing"		=> 	$this->getBilling($payment->User),
-				"items"			=>  $this->getItems(1, $description, $totalAmount),
-				"split_rules" 	=> 	array(
+			//dd($parameters);
+			// Do a purchase transaction on the gateway
+			$transaction = $this->gateway->purchase(array(
+				'amount'           => $totalAmount,
+				'soft_descriptor'  => $description,
+				'payment_method'   => 'credit_card',
+				'cardReference'    => $payment->card_token,
+				"options" 	=> 	['split_rules' =>
 					//prestador
 					array(
-						"recipient_id" 			=> 	$recipient->id,
+						"recipient_id" 			=> 	$bank_account->recipient_id,
 						"amount"	 			=>  $providerAmount,
 						"charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
 						"liable" => true  //assume risco de transação (possíveis estornos)
@@ -262,31 +216,32 @@ class GatewayLib implements IGateway
 						"charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
 						"liable" => true  //assume risco da transação (possíveis estornos)
 					)
-				)
+				]
 			));
 
-			\Log::debug("[charge]parameters:" . print_r($pagarmeTransaction, 1));
+			$response = $transaction->send();
 
-			$pagarmeTransaction->charge();
+			dd($response);
 
-			\Log::debug("[charge]response:" . print_r($pagarmeTransaction, 1));
 
-			if ($pagarmeTransaction->status == self::PAGARME_REFUSED) {
+			if (!$response->isSuccessful()) {
 				return array(
 					"success" 					=> false,
 					"type" 						=> 'api_charge_error',
 					"code" 						=> 'api_charge_error',
 					"message" 					=> trans("paymentError.refused"),
-					"transaction_id"			=> $pagarmeTransaction->id
+					"transaction_id"			=> null
 				);
 			}
+
+			$data = $response->getData();
 
 			return array(
 				'success' => true,
 				'captured' => $capture,
-				'paid' => ($pagarmeTransaction->status == self::PAGARME_PAID),
-				'status' => $pagarmeTransaction->status,
-				'transaction_id' => $pagarmeTransaction->id
+				'paid' => ($data['status'] == self::PAGARME_PAID),
+				'status' => $data['status'],
+				'transaction_id' => $data['id']
 			);
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
@@ -645,11 +600,11 @@ class GatewayLib implements IGateway
 			$card = new CreditCard($arrCreditCard);
 
 			$response = $this->gateway->deleteCard(array(
-				       'card'              => $card,
-				       //'customerReference' => $customer_id,
-				   ))->send();
+				'card'              => $card,
+				//'customerReference' => $customer_id,
+			))->send();
 
-				   dd($response);
+			dd($response);
 
 			self::setApiKey();
 
