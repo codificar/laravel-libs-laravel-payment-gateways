@@ -23,6 +23,7 @@ class PaymentFactory
 
             case self::PAYMENT_GATEWAY_STRIPE:
                 $omnipay = "Stripe";
+                $parameters['apiKey'] = Settings::findByKey('stripe_secret_key');
                 break;
 
             case self::PAYMENT_GATEWAY_ZOOP:

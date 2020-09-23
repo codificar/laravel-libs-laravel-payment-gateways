@@ -59,6 +59,7 @@ class GatewayLib implements IGateway
 
 	public function createCard(Payment $payment, $user = null)
 	{
+
 		try {
 
 			//recupera user
@@ -90,9 +91,15 @@ class GatewayLib implements IGateway
 			// This card can be used for testing.
 			$card = new CreditCard($arrCreditCard);
 
+			//dd($this->gateway->getParameters());
+
 			$response = $this->gateway->createCard(array(
-				'card'              => $card
+				'card'              => $card,
 			))->send();
+
+			/* $response = $this->gateway->createToken(array(
+				'card'              => $card,
+			))->send(); */
 
 			//dd($response);
 
@@ -132,15 +139,21 @@ class GatewayLib implements IGateway
 				$user = $payment->User;
 			}
 
+			$token = "tok_visa";
+
 			// Do a purchase transaction on the gateway
 			$transaction = $this->gateway->purchase(array(
 				'amount'           => $amount,
 				'soft_descriptor'  => $description,
 				'payment_method'   => 'credit_card',
-				'cardReference' 	=> 	$payment->card_token
+				'currency' => 'brl',
+				'token' => $token,
+				//'cardReference' 	=> 	$payment->card_token
 			));
 
 			$response = $transaction->send();
+
+			dd($response);
 
 			if (!$response->isSuccessful()) {
 				return array(
@@ -194,31 +207,42 @@ class GatewayLib implements IGateway
 
 			//$parameters = $this->gateway->getParameters();
 
+			
+			$token = "tok_visa";
+			$destination =  array(
+				"amount"        => $providerAmount,
+				"account"       => $provider->getBankAccount()->recipient_id,
+			);
 			//dd($parameters);
 			// Do a purchase transaction on the gateway
 			$transaction = $this->gateway->purchase(array(
 				'amount'           => $totalAmount,
 				'soft_descriptor'  => $description,
 				'payment_method'   => 'credit_card',
-				'cardReference'    => $payment->card_token,
-				"options" 	=> 	['split_rules' =>
-					//prestador
-					array(
-						"recipient_id" 			=> 	$bank_account->recipient_id,
-						"amount"	 			=>  $providerAmount,
-						"charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
-						"liable" => true  //assume risco de transação (possíveis estornos)
-					),
-					//admin
-					array(
-						"recipient_id" => Settings::findByKey('pagarme_recipient_id'),
-						"amount" =>  $admin_value,
-						"charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
-						"liable" => true  //assume risco da transação (possíveis estornos)
-					)
-				]
+				'currency' => 'brl',
+				'token' => $token,
+				'destination' => $destination,
+				//'cardReference'    => $payment->card_token,
 			));
 
+			/* $transaction = $transaction->setSplitRules(array(
+				//prestador
+				array(
+					"recipient_id" 			=> 	$bank_account->recipient_id,
+					"amount"	 			=>  $providerAmount,
+					"charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
+					"liable" => true  //assume risco de transação (possíveis estornos)
+				),
+				//admin
+				array(
+					"recipient_id" => Settings::findByKey('pagarme_recipient_id'),
+					"amount" =>  $admin_value,
+					"charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
+					"liable" => true  //assume risco da transação (possíveis estornos)
+				)
+			)); */
+
+		//	dd($transaction);
 			$response = $transaction->send();
 
 			dd($response);
