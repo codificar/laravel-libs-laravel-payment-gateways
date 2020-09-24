@@ -29,7 +29,7 @@ class PaymentFactory
                 return (new BancardLib());
 
             case self::PAYMENT_GATEWAY_GERENCIANET:
-                return (new \GerenciaNetLib());
+                return (new GerenciaNetLib());
         }
     }
 
@@ -37,7 +37,7 @@ class PaymentFactory
     {
         switch (Settings::findByKey('default_payment_boleto')) {
             case self::PAYMENT_GATEWAY_GERENCIANET:
-                return (new \GerenciaNetLib());
+                return (new GerenciaNetLib());
         }
     }
 }

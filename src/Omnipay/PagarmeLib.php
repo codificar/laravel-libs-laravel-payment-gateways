@@ -21,9 +21,8 @@ use Omnipay\Omnipay;
 use Omnipay\Pagarme\CreditCard;
 use Settings;
 
-class PagarmeLib implements IOmnipay
+class PagarmeLib implements IGateway
 {
-
 	const SPLIT_TYPE_AMOUNT 		= 'amount';
 	const SPLIT_TYPE_PERCENTAGE 	= 'percentage';
 
@@ -38,114 +37,84 @@ class PagarmeLib implements IOmnipay
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
 	private $gateway;
+	private $parameters;
 
-	public function __construct()
+	public function __construct($omnipay, $parameters = [])
 	{
-		$this->gateway = Omnipay::create('Pagarme');
+		//create gateway
+		$this->gateway = Omnipay::create($omnipay);
 
-		// Initialise the gateway
-		$this->gateway = $this->gateway->initialize(array(
-			'apiKey' => Settings::findByKey('pagarme_api_key'),
-		));
+		//store data
+		$this->parameters = $parameters;
 
-		//$this->setApiKey();
+		//inicializa gateway
+		$this->initialize();
 	}
 
-	/* private function setApiKey()
+	private function initialize()
 	{
-		PagarMe::setApiKey(Settings::findByKey('pagarme_api_key'));
-	} */
+		// Initialise the gateway
+		$this->gateway = $this->gateway->initialize($this->parameters);
+	}
 
+	/*
+	 * Método para criar cartao 
+     * @return array
+     */
 	public function createCard(Payment $payment, $user = null)
 	{
-
-		//recupera user
-		if (!$user) {
-			$user = $payment->User;
-		}
-
-		$new_card = new CreditCard(array(
-			'firstName'    => 'Example',
-			'lastName'     => 'Customer',
-			'number'       => '5555555555554444',
-			'expiryMonth'  => '01',
-			'expiryYear'   => '2021',
-			'cvv'          => '456',
-		));
-
-		// Do a create card transaction on the gateway
-		$response = $this->gateway->createCard(array(
-			'card'              => $new_card,
-			'customerReference' => $user->email,
-		))->send();
-
-		dd($response);
-
-		$cardNumber 			= $payment->getCardNumber();
-		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-		$cardExpirationYear 	= $payment->getCardExpirationYear();
-		$cardCvv 				= $payment->getCardCvc();
-		$cardHolder 			= $payment->getCardHolder();
-
-
-		$cardExpirationYear = $cardExpirationYear % 100;
-
-		$arrCreditCard = array(
-			'firstName'    => $user->first_name,
-			'lastName'     => $user->last_name,
-			//'name'         => 'Example Customer',
-			//'birthday'     => '1988-02-28',
-			//'gender'       => 'M',
-			'number'       => $cardNumber,
-			'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-			'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-			'cvv'          => $cardCvv,
-			'email'        => $user->email,
-			'holder_document_number' => '059.152.100-82' // CPF or CNPJ
-			/* 'address1'     => 'Street name, Street number, Complementary',
-			'address2'     => 'Neighborhood',
-			'postcode'     => '05443100',
-			'phone'        => '19 3242 8855',
-			'holder_document_number' => '246.375.149-23', // CPF or CNPJ */
-		);
-
-		// Create a credit card object
-		// This card can be used for testing.
-		$card = new CreditCard($arrCreditCard);
-
-		//$response = $this->gateway->createCard($arrCreditCard);
-
-		$response = $this->gateway->createCard(array(
-			'card'              => $card,
-			'customerReference' => $user->email,
-		))->send();
-
-		dd($response);
-
 		try {
 
+			//recupera user
+			if (!$user) {
+				$user = $payment->User;
+			}
 
+			$cardNumber 			= $payment->getCardNumber();
+			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
+			$cardExpirationYear 	= $payment->getCardExpirationYear();
+			$cardCvv 				= $payment->getCardCvc();
+			$cardHolder 			= $payment->getCardHolder();
 
 			$cardExpirationYear = $cardExpirationYear % 100;
 
-			$card = new PagarMe_Card(array(
-				"card_number" 				=> $cardNumber,
-				"card_holder_name" 			=> $cardHolder,
-				"card_expiration_month" 	=> str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-				"card_expiration_year" 		=> str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-				"card_cvv" 					=> $cardCvv,
-			));
-
-			$card->create();
-
-			return array(
-				"success" 					=> true,
-				"token" 					=> $card->id,
-				"card_token" 				=> $card->id,
-				"customer_id" 				=> $card->id,
-				"card_type" 				=> strtolower($card->brand),
-				"last_four" 				=> $card->last_digits,
+			$arrCreditCard = array(
+				'firstName'    => $user->first_name,
+				'lastName'     => $user->last_name,
+				'holder_name'  => $cardHolder,
+				'number'       => $cardNumber,
+				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+				'cvv'          => $cardCvv,
+				'email'        => $user->email,
+				'holder_document_number' => $user->document // CPF or CNPJ
 			);
+
+			// Create a credit card object
+			// This card can be used for testing.
+			$card = new CreditCard($arrCreditCard);
+
+			//gera card
+			$response = $this->gateway->createCard(array(
+				'card'              => $card,
+			))->send();
+
+			//retorno
+			if ($response->isSuccessful()) {
+
+				$data = $response->getData();
+
+				$return = array(
+					"success" 					=> true,
+					"token" 					=> $data['id'],
+					"card_token" 				=> $data['id'],
+					"customer_id" 				=> $data['id'],
+					"card_type" 				=> strtolower($data['brand']),
+					"last_four" 				=> $data['last_digits'],
+				);
+
+				return $return;
+			}
 		} catch (PagarMe_Exception  $ex) {
 
 			\Log::error($ex->getMessage());
@@ -159,83 +128,61 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
-	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
+	/*
+	 * Método que realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
+     * @return array
+     */
 	public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
 	{
-
-		
-
-		// Create a credit card object
-		// This card can be used for testing.
-		$card = new CreditCard(array(
-			'firstName'    => 'Example',
-			'lastName'     => 'Customer',
-			'number'       => '4242424242424242',
-			'expiryMonth'  => '01',
-			'expiryYear'   => '2021',
-			'cvv'          => '123',
-			'email'        => 'customer@example.com',
-			'address1'     => 'Street name, Street number, Neighborhood',
-			'address2'     => 'address complementary',
-			'postcode'     => '05443100',
-			'phone'        => '19 3242 8855',
-			'holder_document_number' => '059.152.100-82',
-		));
-
-		// Do an authorize transaction on the gateway
-		$transaction = $this->gateway->authorize(array(
-			'amount'           => '10.00',
-			'soft_descriptor'  => 'test',
-			'payment_method'   => 'credit_card',
-			'card'             => $card,
-			'metadata'         => array(
-				'product_id' => 'ID1111',
-				'invoice_id' => 'IV2222',
-			),
-		));
-		$response = $transaction->send();
-
-		dd($response);
-
 		try {
-			// valor inteiro do pagamento transferido para o admin
-			$card = PagarMe_Card::findById($payment->card_token);
 
-			if ($card == null)
-				throw new PagarMe_Exception("Cartão não encontrado", 1);
+			$capture = false;
 
-			$pagarMeTransaction = new PagarMe_Transaction(array(
-				"amount" 	=> 	floor($amount * 100),
-				"card_id" 	=> 	$payment->card_token,
-				"capture" 	=> 	boolval($capture),
-				"customer" 	=> 	$this->getCustomer($payment),
-				"billing"	=> 	$this->getBilling($payment->User),
-				"items"		=>  $this->getItems(1, $description, floor($amount * 100))
-			));
+			//recupera user
+			if (!$user) {
+				$user = $payment->User;
+			}
 
-			\Log::debug("[charge]parameters:" . print_r($pagarMeTransaction, 1));
+			$dataCharge = array(
+				'amount'           => $amount,
+				'soft_descriptor'  => $description,
+				'payment_method'   => 'credit_card',
+				'cardReference' 	=> 	$payment->card_token
+			);
 
-			$pagarMeTransaction->charge();
+			if ($capture) {
+				//realiza charge já captura
+				$transaction = $this->gateway->purchase($dataCharge);
+			} else {
+				//autoriza pagamento para capturar depois
+				$transaction = $this->gateway->authorize($dataCharge);
+			}
 
-			\Log::debug("[charge]response:" . print_r($pagarMeTransaction, 1));
+			//envia transacao
+			$response = $transaction->send();
 
-			if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
+			//verifica se falhou
+			if (!$response->isSuccessful()) {
 				return array(
 					"success" 					=> false,
 					"type" 						=> 'api_charge_error',
 					"code" 						=> 'api_charge_error',
 					"message" 					=> trans("paymentError.refused"),
-					"transaction_id"			=> $pagarMeTransaction->id
+					"transaction_id"			=> null //$pagarMeTransaction->id
 				);
 			}
 
-			return array(
+			//recupera retorno
+			$data = $response->getData();
+			$return = array(
 				'success' => true,
 				'captured' => $capture,
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'status' => $pagarMeTransaction->status,
-				'transaction_id' => $pagarMeTransaction->id
+				'paid' => ($data['status'] == self::PAGARME_PAID),
+				'status' => $data['status'],
+				'transaction_id' => $data['id']
 			);
+
+			return $return;
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
 
@@ -249,7 +196,10 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
-	//relaliza cobrança no cartão do usuário com repasse ao prestador
+	/*
+	 * Método que realiza no cartão do usuário com repasse ao prestador
+     * @return array
+     */
 	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
 	{
 		try {
@@ -265,72 +215,69 @@ class PagarmeLib implements IOmnipay
 			else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
 				$totalAmount =  floor($totalAmount * 100);
 
-			if (PagarMe_Recipient::findById(Settings::findByKey('pagarme_recipient_id')) == null)
-				throw new PagarMe_Exception("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
-
 			$bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
 
-			if ($bank_account == null)
-				throw new PagarMe_Exception("Conta do prestador nao encontrada.", 1);
+			//$parameters = $this->gateway->getParameters();
 
-			$recipient = PagarMe_Recipient::findById($bank_account->recipient_id);
 
-			if ($recipient == null)
-				throw new PagarMe_Exception("Recebedor não foi encontrado", 1);
-
-			$card = PagarMe_Card::findById($payment->card_token);
-
-			if ($card == null)
-				throw new PagarMe_Exception("Cartão não encontrado", 1);
-
-			//split de pagamento com o prestador
-			$pagarmeTransaction = new PagarMe_Transaction(array(
-				"amount" 		=> 	$totalAmount,
-				"card_id" 		=> 	$payment->card_token,
-				"capture" 		=> 	boolval($capture),
-				"customer" 		=> 	$this->getCustomer($payment),
-				"billing"		=> 	$this->getBilling($payment->User),
-				"items"			=>  $this->getItems(1, $description, $totalAmount),
-				"split_rules" 	=> 	array(
-					//prestador
-					array(
-						"recipient_id" 			=> 	$recipient->id,
-						"amount"	 			=>  $providerAmount,
-						"charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
-						"liable" => true  //assume risco de transação (possíveis estornos)
-					),
-					//admin
-					array(
-						"recipient_id" => Settings::findByKey('pagarme_recipient_id'),
-						"amount" =>  $admin_value,
-						"charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
-						"liable" => true  //assume risco da transação (possíveis estornos)
-					)
-				)
+			$token = "tok_visa";
+			$destination =  array(
+				"amount"        => $providerAmount,
+				"account"       => $provider->getBankAccount()->recipient_id,
+			);
+			//dd($parameters);
+			// Do a purchase transaction on the gateway
+			$transaction = $this->gateway->purchase(array(
+				'amount'           => $totalAmount,
+				'soft_descriptor'  => $description,
+				'payment_method'   => 'credit_card',
+				'currency' => 'brl',
+				'token' => $token,
+				'destination' => $destination,
+				//'cardReference'    => $payment->card_token,
 			));
 
-			\Log::debug("[charge]parameters:" . print_r($pagarmeTransaction, 1));
+			/* $transaction = $transaction->setSplitRules(array(
+				//prestador
+				array(
+					"recipient_id" 			=> 	$bank_account->recipient_id,
+					"amount"	 			=>  $providerAmount,
+					"charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
+					"liable" => true  //assume risco de transação (possíveis estornos)
+				),
+				//admin
+				array(
+					"recipient_id" => Settings::findByKey('pagarme_recipient_id'),
+					"amount" =>  $admin_value,
+					"charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
+					"liable" => true  //assume risco da transação (possíveis estornos)
+				)
+			)); */
 
-			$pagarmeTransaction->charge();
+			//	dd($transaction);
+			$response = $transaction->send();
 
-			\Log::debug("[charge]response:" . print_r($pagarmeTransaction, 1));
+			dd($response);
 
-			if ($pagarmeTransaction->status == self::PAGARME_REFUSED) {
+
+			if (!$response->isSuccessful()) {
 				return array(
 					"success" 					=> false,
 					"type" 						=> 'api_charge_error',
 					"code" 						=> 'api_charge_error',
 					"message" 					=> trans("paymentError.refused"),
-					"transaction_id"			=> $pagarmeTransaction->id
+					"transaction_id"			=> null
 				);
 			}
+
+			$data = $response->getData();
 
 			return array(
 				'success' => true,
 				'captured' => $capture,
-				'paid' => ($pagarmeTransaction->status == self::PAGARME_PAID),
-				'status' => $pagarmeTransaction->status,
-				'transaction_id' => $pagarmeTransaction->id
+				'paid' => ($data['status'] == self::PAGARME_PAID),
+				'status' => $data['status'],
+				'transaction_id' => $data['id']
 			);
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
@@ -345,55 +292,44 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
-	private function getCustomer(Payment $payment)
-	{
-		$user = $payment->User;
-
-		$customer = array(
-			"name" 				=> $user->getFullName(),
-			"document_number" 	=> $user->document,
-			"email" 			=> $user->email,
-			"address" 		=> array(
-				"street" 		=> $user->getStreet(),
-				"neighborhood" 	=> $user->getNeighborhood(),
-				"zipcode" 		=> $user->getZipcode(),
-				"street_number" => $user->getStreetNumber()
-			),
-			"phone" 	=> array(
-				"ddd" 		=> $user->getLongDistance(),
-				"number" 	=> $user->getPhoneNumber()
-			)
-		);
-
-		return $customer;
-	}
-
-
+	/*
+	 * Método que realiza a captura de uma valor pre-autorizado
+     * @return array
+     */
 	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
 		try {
-			$amount *= 100;
 
-			$pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+			//estrutura a captura
+			$capture = $this->gateway->capture(array(
+				'amount'        => $amount,
+				'currency'      => Settings::getCurrency(),
+			));
 
-			if ($pagarMeTransaction == null)
-				throw new PagarMe_Exception("Transaction not found.", 1);
+			//seta a transação
+			$capture->setTransactionReference($transaction->gateway_transaction_id);
 
-			if ($amount > $pagarMeTransaction->amount)
-				$amount = $pagarMeTransaction->amount;
+			//realiza a captura
+			$response = $capture->send();
 
-			\Log::debug("[capture]parameters:" . print_r($pagarMeTransaction, 1));
+			if (!$response->isSuccessful()) {
+				return array(
+					"success" 					=> false,
+					"type" 						=> 'api_charge_error',
+					"code" 						=> 'api_charge_error',
+					"message" 					=> trans("paymentError.refused"),
+					"transaction_id"			=> null //$pagarMeTransaction->id
+				);
+			}
 
-			$pagarMeTransaction->capture(floor($amount));
-
-			\Log::debug("[capture]response:" . print_r($pagarMeTransaction, 1));
-
+			//recupera dados
+			$data = $response->getData();
 			return array(
 				'success' => true,
-				'status' => $pagarMeTransaction->status,
-				'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'transaction_id' => $pagarMeTransaction->id
+				'status' => $data['status'],
+				'captured' => $data['captured'],
+				'paid' => $data['paid'],
+				'transaction_id' => $data['id']
 			);
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
@@ -408,27 +344,32 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
-	public function refund(Transaction $transaction, Payment $payment)
+	/*
+	 * Método que estorna o valor de uma transação
+     * @return array
+     */
+	public function refund(Transaction $transaction, Payment $payment = null)
 	{
 
 		if ($transaction && $transaction->status != Transaction::REFUNDED) {
 
 			try {
 
-				$refund = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+				$transaction = $this->gateway->refund(array(
+					'transactionReference'     => $transaction->gateway_transaction_id,
+				));
+				$response = $transaction->send();
 
-				\Log::debug("[refund]parameters:" . print_r($refund, 1));
+				if ($response->isSuccessful()) {
 
+					$data = $response->getData();
 
-				$refund->refund();
-
-				\Log::debug("[refund]response:" . print_r($refund, 1));
-
-				return array(
-					"success" 			=> true,
-					"status" 			=> $refund->status,
-					"transaction_id" 	=> $refund->id,
-				);
+					return array(
+						"success" 			=> true,
+						"status" 			=> $data['status'],
+						"transaction_id" 	=> $data['id'],
+					);
+				}
 			} catch (Exception $ex) {
 
 				\Log::error($ex->__toString());
@@ -456,6 +397,10 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
+	/*
+	 * Método que estorna o valor de uma transação com split
+     * @return array
+     */
 	public function refundWithSplit(Transaction $transaction, Payment $payment)
 	{
 		\Log::debug('refund with split');
@@ -463,6 +408,10 @@ class PagarmeLib implements IOmnipay
 		return ($this->refund($transaction, $payment));
 	}
 
+	/*
+	 * Método que captura um valor pre-autorizado com split
+     * @return array
+     */
 	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
 	{
 
@@ -519,17 +468,28 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
+	/*
+	 * Método que recupera transação
+     * @return array
+     */
 	public function retrieve(Transaction $transaction, Payment $payment = null)
 	{
-		$pagarmeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+		//recupera transação
+		$retrieve = $this->gateway->fetchTransaction();
+		$retrieve->setTransactionReference($transaction->gateway_transaction_id);
+		$response = $retrieve->send();
 
+		//recupera dados
+		$data = $response->getData();
+
+		//retorno
 		return array(
 			'success' => true,
-			'transaction_id' => $pagarmeTransaction->id,
-			'amount' => $pagarmeTransaction->amount,
+			'transaction_id' => $data['id'],
+			'amount' => $data['amount'],
 			'destination' => '',
-			'status' => $pagarmeTransaction->status,
-			'card_last_digits' => $pagarmeTransaction->card_last_digits,
+			'status' => $data['status'],
+			'card_last_digits' => $data['card']['last_digits'],
 		);
 	}
 
@@ -651,18 +611,33 @@ class PagarmeLib implements IOmnipay
 		}
 	}
 
+	/*
+	 * Método que deleta cartao do usuario
+     * @return array
+     */
 	public function deleteCard(Payment $payment, User $user = null)
 	{
 		try {
 
-			self::setApiKey();
+			//recupera user
+			if (!$user) {
+				$user = $payment->User;
+			}
 
-			/*
-			$card = PagarMe_Card::findById($payment->card_token);
-			
-			if($card)
-				$card->delete();
-			*/
+			//estrutura remoção de cartao
+			$response = $this->gateway->deleteCard(array(
+				'cardReference' 	=> 	$payment->card_token,
+				//'customerReference' => $payment->customer_id
+			))->send();
+
+			//verifica se falhou
+			if (!$response->isSuccessful()) {
+				return array(
+					"success" 					=> false
+				);
+			}
+
+			//retorno ok
 			return array(
 				"success" 	=> true
 			);
@@ -746,5 +721,28 @@ class PagarmeLib implements IOmnipay
 
 			return (false);
 		}
+	}
+
+	private function getCustomer(Payment $payment)
+	{
+		$user = $payment->User;
+
+		$customer = array(
+			"name" 				=> $user->getFullName(),
+			"document_number" 	=> $user->document,
+			"email" 			=> $user->email,
+			"address" 		=> array(
+				"street" 		=> $user->getStreet(),
+				"neighborhood" 	=> $user->getNeighborhood(),
+				"zipcode" 		=> $user->getZipcode(),
+				"street_number" => $user->getStreetNumber()
+			),
+			"phone" 	=> array(
+				"ddd" 		=> $user->getLongDistance(),
+				"number" 	=> $user->getPhoneNumber()
+			)
+		);
+
+		return $customer;
 	}
 }

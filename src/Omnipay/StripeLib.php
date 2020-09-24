@@ -21,7 +21,7 @@ use Omnipay\Omnipay;
 use Omnipay\Pagarme\CreditCard;
 use Settings;
 
-class GatewayLib implements IGateway
+class StripeLib implements IGateway
 {
 	const SPLIT_TYPE_AMOUNT 		= 'amount';
 	const SPLIT_TYPE_PERCENTAGE 	= 'percentage';
@@ -57,9 +57,12 @@ class GatewayLib implements IGateway
 		$this->gateway = $this->gateway->initialize($this->parameters);
 	}
 
+	/*
+	 * Método para criar cartao 
+     * @return array
+     */
 	public function createCard(Payment $payment, $user = null)
 	{
-
 		try {
 
 			//recupera user
@@ -67,6 +70,7 @@ class GatewayLib implements IGateway
 				$user = $payment->User;
 			}
 
+			//dados do cartão
 			$cardNumber 			= $payment->getCardNumber();
 			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
 			$cardExpirationYear 	= $payment->getCardExpirationYear();
@@ -74,7 +78,6 @@ class GatewayLib implements IGateway
 			$cardHolder 			= $payment->getCardHolder();
 
 			$cardExpirationYear = $cardExpirationYear % 100;
-
 			$arrCreditCard = array(
 				'firstName'    => $user->first_name,
 				'lastName'     => $user->last_name,
@@ -91,30 +94,26 @@ class GatewayLib implements IGateway
 			// This card can be used for testing.
 			$card = new CreditCard($arrCreditCard);
 
-			//dd($this->gateway->getParameters());
-
-			$response = $this->gateway->createCard(array(
+			//gera card
+			$response = $this->gateway->createToken(array(
 				'card'              => $card,
 			))->send();
 
-			/* $response = $this->gateway->createToken(array(
-				'card'              => $card,
-			))->send(); */
-
-			//dd($response);
-
+			//retorno
 			if ($response->isSuccessful()) {
 
 				$data = $response->getData();
 
-				return array(
+				$return = array(
 					"success" 					=> true,
 					"token" 					=> $data['id'],
-					"card_token" 				=> $data['id'],
+					"card_token" 				=> $data['card']['id'],
 					"customer_id" 				=> $data['id'],
-					"card_type" 				=> strtolower($data['brand']),
-					"last_four" 				=> $data['last_digits'],
+					"card_type" 				=> strtolower($data['card']['brand']),
+					"last_four" 				=> $data['card']['last4'],
 				);
+
+				return $return;
 			}
 		} catch (PagarMe_Exception  $ex) {
 
@@ -129,7 +128,10 @@ class GatewayLib implements IGateway
 		}
 	}
 
-	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
+	/*
+	 * Método que realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
+     * @return array
+     */
 	public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
 	{
 		try {
@@ -139,21 +141,25 @@ class GatewayLib implements IGateway
 				$user = $payment->User;
 			}
 
-			$token = "tok_visa";
+			$token = $payment->customer_id;
 
-			// Do a purchase transaction on the gateway
-			$transaction = $this->gateway->purchase(array(
+			$dataCharge = array(
 				'amount'           => $amount,
 				'soft_descriptor'  => $description,
 				'payment_method'   => 'credit_card',
-				'currency' => 'brl',
-				'token' => $token,
-				//'cardReference' 	=> 	$payment->card_token
-			));
+				'currency' => Settings::getCurrency(),
+				'token' => $token
+			);
+
+			if ($capture) {
+				//realiza charge já captura
+				$transaction = $this->gateway->purchase($dataCharge);
+			} else {
+				//autoriza pagamento para capturar depois
+				$transaction = $this->gateway->authorize($dataCharge);
+			}
 
 			$response = $transaction->send();
-
-			dd($response);
 
 			if (!$response->isSuccessful()) {
 				return array(
@@ -167,13 +173,15 @@ class GatewayLib implements IGateway
 
 			$data = $response->getData();
 
-			return array(
+			$return = array(
 				'success' => true,
 				'captured' => $capture,
-				'paid' => ($data['status'] == self::PAGARME_PAID),
+				'paid' => $data['paid'],
 				'status' => $data['status'],
 				'transaction_id' => $data['id']
 			);
+
+			return $return;
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
 
@@ -187,7 +195,10 @@ class GatewayLib implements IGateway
 		}
 	}
 
-	//relaliza cobrança no cartão do usuário com repasse ao prestador
+	/*
+	 * Método que realiza no cartão do usuário com repasse ao prestador
+     * @return array
+     */
 	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
 	{
 		try {
@@ -205,10 +216,7 @@ class GatewayLib implements IGateway
 
 			$bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
 
-			//$parameters = $this->gateway->getParameters();
-
-			
-			$token = "tok_visa";
+			$token = $payment->customer_id;
 			$destination =  array(
 				"amount"        => $providerAmount,
 				"account"       => $provider->getBankAccount()->recipient_id,
@@ -242,7 +250,7 @@ class GatewayLib implements IGateway
 				)
 			)); */
 
-		//	dd($transaction);
+			//	dd($transaction);
 			$response = $transaction->send();
 
 			dd($response);
@@ -280,55 +288,46 @@ class GatewayLib implements IGateway
 		}
 	}
 
-	private function getCustomer(Payment $payment)
-	{
-		$user = $payment->User;
-
-		$customer = array(
-			"name" 				=> $user->getFullName(),
-			"document_number" 	=> $user->document,
-			"email" 			=> $user->email,
-			"address" 		=> array(
-				"street" 		=> $user->getStreet(),
-				"neighborhood" 	=> $user->getNeighborhood(),
-				"zipcode" 		=> $user->getZipcode(),
-				"street_number" => $user->getStreetNumber()
-			),
-			"phone" 	=> array(
-				"ddd" 		=> $user->getLongDistance(),
-				"number" 	=> $user->getPhoneNumber()
-			)
-		);
-
-		return $customer;
-	}
 
 
+	/*
+	 * Método que realiza a captura de uma valor pre-autorizado
+     * @return array
+     */
 	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
 		try {
-			$amount *= 100;
 
-			$pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+			//estrutura a captura
+			$capture = $this->gateway->capture(array(
+				'amount'        => $amount,
+				'currency'      => Settings::getCurrency(),
+			));
 
-			if ($pagarMeTransaction == null)
-				throw new PagarMe_Exception("Transaction not found.", 1);
+			//seta a transação
+			$capture->setTransactionReference($transaction->gateway_transaction_id);
 
-			if ($amount > $pagarMeTransaction->amount)
-				$amount = $pagarMeTransaction->amount;
+			//realiza a captura
+			$response = $capture->send();
 
-			\Log::debug("[capture]parameters:" . print_r($pagarMeTransaction, 1));
+			if (!$response->isSuccessful()) {
+				return array(
+					"success" 					=> false,
+					"type" 						=> 'api_charge_error',
+					"code" 						=> 'api_charge_error',
+					"message" 					=> trans("paymentError.refused"),
+					"transaction_id"			=> null //$pagarMeTransaction->id
+				);
+			}
 
-			$pagarMeTransaction->capture(floor($amount));
-
-			\Log::debug("[capture]response:" . print_r($pagarMeTransaction, 1));
-
+			//recupera dados
+			$data = $response->getData();
 			return array(
 				'success' => true,
-				'status' => $pagarMeTransaction->status,
-				'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'transaction_id' => $pagarMeTransaction->id
+				'status' => $data['status'],
+				'captured' => $data['captured'],
+				'paid' => $data['paid'],
+				'transaction_id' => $data['id']
 			);
 		} catch (PagarMe_Exception $ex) {
 			\Log::error($ex->getMessage());
@@ -343,6 +342,10 @@ class GatewayLib implements IGateway
 		}
 	}
 
+	/*
+	 * Método que estorna o valor de uma transação
+     * @return array
+     */
 	public function refund(Transaction $transaction, Payment $payment = null)
 	{
 
@@ -392,6 +395,10 @@ class GatewayLib implements IGateway
 		}
 	}
 
+	/*
+	 * Método que estorna o valor de uma transação com split
+     * @return array
+     */
 	public function refundWithSplit(Transaction $transaction, Payment $payment)
 	{
 		\Log::debug('refund with split');
@@ -399,6 +406,10 @@ class GatewayLib implements IGateway
 		return ($this->refund($transaction, $payment));
 	}
 
+	/*
+	 * Método que captura um valor pre-autorizado com split
+     * @return array
+     */
 	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
 	{
 
@@ -455,13 +466,21 @@ class GatewayLib implements IGateway
 		}
 	}
 
+	/*
+	 * Método que recupera transação
+     * @return array
+     */
 	public function retrieve(Transaction $transaction, Payment $payment = null)
 	{
-		$transactionx = $this->gateway->fetchTransaction();
-		$transactionx->setTransactionReference($transaction->gateway_transaction_id);
-		$response = $transactionx->send();
+		//recupera transação
+		$retrieve = $this->gateway->fetchTransaction();
+		$retrieve->setTransactionReference($transaction->gateway_transaction_id);
+		$response = $retrieve->send();
+
+		//recupera dados
 		$data = $response->getData();
 
+		//retorno
 		return array(
 			'success' => true,
 			'transaction_id' => $data['id'],
@@ -599,45 +618,20 @@ class GatewayLib implements IGateway
 				$user = $payment->User;
 			}
 
-			$cardNumber 			= $payment->getCardNumber();
-			$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-			$cardExpirationYear 	= $payment->getCardExpirationYear();
-			$cardCvv 				= $payment->getCardCvc();
-			$cardHolder 			= $payment->getCardHolder();
-
-			$cardExpirationYear = $cardExpirationYear % 100;
-
-			$arrCreditCard = array(
-				'firstName'    => $user->first_name,
-				'lastName'     => $user->last_name,
-				'holder_name'  => $cardHolder,
-				'number'       => $cardNumber,
-				'expiryMonth'  => str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-				'expiryYear'   => str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-				'cvv'          => $cardCvv,
-				'email'        => $user->email,
-				'holder_document_number' => $user->document // CPF or CNPJ
-			);
-
-			// Create a credit card object
-			// This card can be used for testing.
-			$card = new CreditCard($arrCreditCard);
-
+			//estrutura remoção de cartao
 			$response = $this->gateway->deleteCard(array(
-				'card'              => $card,
-				//'customerReference' => $customer_id,
+				'cardReference' 	=> 	$payment->card_token,
+				'customerReference' => $payment->customer_id
 			))->send();
 
-			dd($response);
+			//verifica se falhou
+			if (!$response->isSuccessful()) {
+				return array(
+					"success" 					=> false
+				);
+			}
 
-			self::setApiKey();
-
-			/*
-			$card = PagarMe_Card::findById($payment->card_token);
-			
-			if($card)
-				$card->delete();
-			*/
+			//retorno ok
 			return array(
 				"success" 	=> true
 			);
@@ -721,5 +715,29 @@ class GatewayLib implements IGateway
 
 			return (false);
 		}
+	}
+
+
+	private function getCustomer(Payment $payment)
+	{
+		$user = $payment->User;
+
+		$customer = array(
+			"name" 				=> $user->getFullName(),
+			"document_number" 	=> $user->document,
+			"email" 			=> $user->email,
+			"address" 		=> array(
+				"street" 		=> $user->getStreet(),
+				"neighborhood" 	=> $user->getNeighborhood(),
+				"zipcode" 		=> $user->getZipcode(),
+				"street_number" => $user->getStreetNumber()
+			),
+			"phone" 	=> array(
+				"ddd" 		=> $user->getLongDistance(),
+				"number" 	=> $user->getPhoneNumber()
+			)
+		);
+
+		return $customer;
 	}
 }
