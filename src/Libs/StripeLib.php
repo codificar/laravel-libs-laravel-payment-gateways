@@ -745,7 +745,7 @@ class StripeLib implements IPayment
 	{
 
 		try {
-			$token = Stripe\Token::create(
+			$token = \Stripe\Token::create(
 				array(
 					"card" =>
 					array(
