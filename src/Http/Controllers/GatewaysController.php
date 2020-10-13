@@ -37,6 +37,27 @@ class GatewaysController extends Controller
             'zoop_publishable_key',
             'zoop_seller_id'
         ],
+        'cielo' => [
+            'cielo_merchant_id',
+            'cielo_merchant_key'
+        ],
+        'braspag' => [
+            'braspag_merchant_id',
+            'braspag_merchant_key',
+            'braspag_token'
+        ],
+        'getnet' => [
+            'getnet_client_id',
+            'getnet_client_secret',
+            'getnet_seller_id'
+        ],
+        'directpay' => [
+            'directpay_encrypt_key',
+            'directpay_encrypt_value',
+            'directpay_requester_id',
+            'directpay_requester_password',
+            'directpay_requester_token'
+        ],
         'bancard' => [
             'bancard_public_key',
             'bancard_private_key'
@@ -52,6 +73,10 @@ class GatewaysController extends Controller
         array('value' => 'pagarme', 'name' => 'setting.pagarme'),
         array('value' => 'stripe', 'name' => 'setting.stripe'),
         array('value' => 'zoop', 'name' => 'setting.zoop'),
+        array('value' => 'cielo', 'name' => 'setting.cielo'),
+        array('value' => 'braspag', 'name' => 'setting.braspag'),
+        array('value' => 'getnet', 'name' => 'setting.getnet'),
+        array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
         array('value' => 'transbank', 'name' => 'setting.transbank')
     );
@@ -133,14 +158,4 @@ class GatewaysController extends Controller
         // Return data
         return new GatewaysResource([]);
     }
-
-    /* public function getAppApiExample()
-    {
-        $teste = "Variavel teste";
-
-        // Return data
-        return new TesteResource([
-            'teste' => $teste
-        ]);
-    } */
 }

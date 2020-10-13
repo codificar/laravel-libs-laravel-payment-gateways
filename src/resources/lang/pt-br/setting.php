@@ -126,6 +126,28 @@ return array(
 	, 'transbank'													=> 'Transbank'
 	, 'pagarme_encryption_key'										=> 'Chave de Criptografia do Pagar.me'
 	, 'Certificates'												=> 'Certificados'
+	
+	, 'cielo'														=> 'Cielo'
+	, 'cielo_merchant_id'											=> 'Cielo Merchant Id'
+	, 'cielo_merchant_key'											=> 'Cielo Merchant Key'
+	
+	, 'braspag'														=> 'Braspag'
+	, 'braspag_merchant_id'											=> 'Braspag Merchant Id'
+	, 'braspag_merchant_key'										=> 'Braspag Merchant Key'
+	, 'braspag_token'												=> 'Braspag Token'
+
+	, 'getnet'														=> 'GetNet'
+	, 'getnet_client_id'											=> 'GetNet Client Id'
+	, 'getnet_client_secret'										=> 'GetNet Client Secret'
+	, 'getnet_seller_id'											=> 'GetNet Seller Id'
+
+	,'directpay'													=> 'Directpay'
+	,'directpay_encrypt_key'										=> 'Directpay Encrypt Key'
+	,'directpay_encrypt_value'										=> 'Directpay Encrypt Value'
+	,'directpay_requester_id'										=> 'Directpay Requester Id'
+	,'directpay_requester_password'									=> 'Directpay Requester Password'
+	,'directpay_requester_token'									=> 'Directpay Requester Token'
+	,'directpay_name'												=> 'Directpay'
 
 	, 'ios'															=> 'iOS'
 	, 'Sandbox'														=> 'Sandbox'

@@ -2,11 +2,7 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: [
-    "PaymentGateways",
-    "Enums",
-    "Settings",
-  ],
+  props: ["PaymentGateways", "Enums", "Settings"],
   data() {
     return {
       payment_gateways: {},
@@ -73,14 +69,14 @@ export default {
       <div class="card-outline-info">
         <!--Payment Gateway-->
         <div class="card-header">
-          <h4 class="m-b-0 text-white">{{ trans('setting.pay_gateway') }}</h4>
+          <h4 class="m-b-0 text-white">{{ trans("setting.pay_gateway") }}</h4>
         </div>
         <div class="card-block">
           <div class="row">
             <div class="col-lg-6">
               <div class="form-group">
                 <label for="usr">
-                  {{trans('setting.default_pay_gate')}}
+                  {{ trans("setting.default_pay_gate") }}
                   <a
                     href="#"
                     class="question-field"
@@ -101,16 +97,23 @@ export default {
                     v-for="method in payment_gateways"
                     v-bind:value="method.value"
                     v-bind:key="method.value"
-                  >{{ trans(method.name) }}</option>
+                  >
+                    {{ trans(method.name) }}
+                  </option>
                 </select>
               </div>
             </div>
           </div>
 
           <!--Configurações do Pagar.Me-->
-          <div class="panel panel-default pagarme" v-if="settings.default_payment == 'pagarme'">
+          <div
+            class="panel panel-default pagarme"
+            v-if="settings.default_payment == 'pagarme'"
+          >
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.pagarme_settings')}}</h3>
+              <h3 class="panel-title">
+                {{ trans("setting.pagarme_settings") }}
+              </h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -118,12 +121,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.pay_encryption_key_me')}}
+                      {{ trans("setting.pay_encryption_key_me") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.pay_encryption_key_me')"
+                        :title="
+                          trans('settingTableSeeder.pay_encryption_key_me')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -140,12 +145,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.pagarme_recipient_id')}}
+                      {{ trans("setting.pagarme_recipient_id") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.pagarme_recipient_id')"
+                        :title="
+                          trans('settingTableSeeder.pagarme_recipient_id')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -164,7 +171,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.pagarme_api_key')}}
+                      {{ trans("setting.pagarme_api_key") }}
                       <a
                         href="#"
                         class="question-field"
@@ -188,10 +195,13 @@ export default {
           </div>
           <!-- / Configurações do Pagar.Me-->
 
-          <!--Configurações do Strip-->
-          <div class="panel panel-default stripe" v-if="settings.default_payment == 'stripe'">
+          <!--Configurações do Braspag-->
+          <div
+            class="panel panel-default braspag"
+            v-if="settings.default_payment == 'braspag'"
+          >
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.stripe_settings')}}</h3>
+              <h3 class="panel-title">{{ trans("setting.braspag") }}</h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -199,7 +209,385 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.stripe_secret')}}
+                      {{ trans("setting.braspag_merchant_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.braspag_merchant_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-braspag"
+                      v-model="settings.braspag.braspag_merchant_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.braspag_merchant_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.braspag_merchant_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-braspag"
+                      v-model="settings.braspag.braspag_merchant_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.braspag_token") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.braspag_token')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-braspag"
+                      v-model="settings.braspag.braspag_token"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Braspag-->
+
+          <!--Configurações do Getnet-->
+          <div
+            class="panel panel-default getnet"
+            v-if="settings.default_payment == 'getnet'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.getnet") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.getnet_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.getnet_client_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-getnet"
+                      v-model="settings.getnet.getnet_client_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.getnet_client_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.getnet_client_secret')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-getnet"
+                      v-model="settings.getnet.getnet_client_secret"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.getnet_seller_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.getnet_seller_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-getnet"
+                      v-model="settings.getnet.getnet_seller_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Getnet-->
+
+          <!--Configurações do Directpay-->
+          <div
+            class="panel panel-default directpay"
+            v-if="settings.default_payment == 'directpay'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.directpay") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_encrypt_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.directpay_encrypt_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_encrypt_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_encrypt_value") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.directpay_encrypt_value')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_encrypt_value"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_requester_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.directpay_requester_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_requester_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_requester_password") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans(
+                            'settingTableSeeder.directpay_requester_password'
+                          )
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_requester_password"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_requester_token") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.directpay_requester_token')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_requester_token"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do directpay-->
+
+          <!--Configurações do Cielo-->
+          <div
+            class="panel panel-default cielo"
+            v-if="settings.default_payment == 'cielo'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.cielo") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.cielo_merchant_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.cielo_merchant_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-cielo"
+                      v-model="settings.cielo.cielo_merchant_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.cielo_merchant_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.cielo_merchant_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-cielo"
+                      v-model="settings.cielo.cielo_merchant_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações da Cielo-->
+
+          <!--Configurações do Strip-->
+          <div
+            class="panel panel-default stripe"
+            v-if="settings.default_payment == 'stripe'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.stripe_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.stripe_secret") }}
                       <a
                         href="#"
                         class="question-field"
@@ -221,7 +609,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.stripe_public')}}
+                      {{ trans("setting.stripe_public") }}
                       <a
                         href="#"
                         class="question-field"
@@ -243,7 +631,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.stripe_connect')}}
+                      {{ trans("setting.stripe_connect") }}
                       <a
                         href="#"
                         class="question-field"
@@ -264,19 +652,23 @@ export default {
                         v-for="method in enums.stripe_connect"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ trans(method.name) }}</option>
+                      >
+                        {{ trans(method.name) }}
+                      </option>
                     </select>
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.stripe_total_split_refund')}}
+                      {{ trans("setting.stripe_total_split_refund") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('setting.stripe_total_split_refund_message')"
+                        :title="
+                          trans('setting.stripe_total_split_refund_message')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -292,7 +684,9 @@ export default {
                         v-for="method in enums.stripe_total_split_refund"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ trans(method.name) }}</option>
+                      >
+                        {{ trans(method.name) }}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -302,9 +696,12 @@ export default {
           <!--/ Configurações do Strip-->
 
           <!--Configurações do Zoop-->
-          <div class="panel panel-default zoop" v-if="settings.default_payment == 'zoop'">
+          <div
+            class="panel panel-default zoop"
+            v-if="settings.default_payment == 'zoop'"
+          >
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.zoop_settings')}}</h3>
+              <h3 class="panel-title">{{ trans("setting.zoop_settings") }}</h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -312,7 +709,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.zoop_marketplace_id')}}
+                      {{ trans("setting.zoop_marketplace_id") }}
                       <a
                         href="#"
                         class="question-field"
@@ -334,12 +731,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.zoop_publishable_key')}}
+                      {{ trans("setting.zoop_publishable_key") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.zoop_publishable_key')"
+                        :title="
+                          trans('settingTableSeeder.zoop_publishable_key')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -358,7 +757,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.zoop_seller_id')}}
+                      {{ trans("setting.zoop_seller_id") }}
                       <a
                         href="#"
                         class="question-field"
@@ -383,9 +782,14 @@ export default {
           <!-- / Configurações do Zoop-->
 
           <!--Configurações do Bancard-->
-          <div class="panel panel-default bancard" v-if="settings.default_payment == 'bancard'">
+          <div
+            class="panel panel-default bancard"
+            v-if="settings.default_payment == 'bancard'"
+          >
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.bancard_settings')}}</h3>
+              <h3 class="panel-title">
+                {{ trans("setting.bancard_settings") }}
+              </h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -393,7 +797,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.bancard_public_key')}}
+                      {{ trans("setting.bancard_public_key") }}
                       <a
                         href="#"
                         class="question-field"
@@ -415,7 +819,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.bancard_private_key')}}
+                      {{ trans("setting.bancard_private_key") }}
                       <a
                         href="#"
                         class="question-field"
@@ -440,9 +844,14 @@ export default {
           <!-- / Configurações do Bancard-->
 
           <!--Configurações do Transbank-->
-          <div class="panel panel-default transbank" v-if="settings.default_payment == 'transbank'">
+          <div
+            class="panel panel-default transbank"
+            v-if="settings.default_payment == 'transbank'"
+          >
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.transbank_settings')}}</h3>
+              <h3 class="panel-title">
+                {{ trans("setting.transbank_settings") }}
+              </h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -450,12 +859,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.transbank_private_key')}}
+                      {{ trans("setting.transbank_private_key") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.transbank_private_key')"
+                        :title="
+                          trans('settingTableSeeder.transbank_private_key')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -472,12 +883,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.transbank_commerce_code')}}
+                      {{ trans("setting.transbank_commerce_code") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.transbank_commerce_code')"
+                        :title="
+                          trans('settingTableSeeder.transbank_commerce_code')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -496,12 +909,14 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.transbank_public_cert')}}
+                      {{ trans("setting.transbank_public_cert") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.transbank_public_cert')"
+                        :title="
+                          trans('settingTableSeeder.transbank_public_cert')
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -523,7 +938,9 @@ export default {
           <!--Configurações Avançadas-->
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title">{{trans('setting.advanced_settings')}}</h3>
+              <h3 class="panel-title">
+                {{ trans("setting.advanced_settings") }}
+              </h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -531,12 +948,16 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.automatic_transfer_payment_provider')}}
+                      {{ trans("setting.automatic_transfer_payment_provider") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.automatic_transfer_payment_provider')"
+                        :title="
+                          trans(
+                            'settingTableSeeder.automatic_transfer_payment_provider'
+                          )
+                        "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -552,24 +973,32 @@ export default {
                         v-for="method in enums.auto_transfer_provider_payment"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ trans(method.name) }}</option>
+                      >
+                        {{ trans(method.name) }}
+                      </option>
                     </select>
                   </div>
                 </div>
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{trans('setting.automatic_transfer_payment_days')}}*
+                      {{ trans("setting.automatic_transfer_payment_days") }}*
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.automatic_transfer_payment_days')"
+                        :title="
+                          trans(
+                            'settingTableSeeder.automatic_transfer_payment_days'
+                          )
+                        "
                       ></a>
                     </label>
 
                     <select
-                      v-model="settings.auto_transfer_schedule_at_after_selected_number_of_days"
+                      v-model="
+                        settings.auto_transfer_schedule_at_after_selected_number_of_days
+                      "
                       name="auto_transfer_schedule_at_after_selected_number_of_days"
                       class="select form-control"
                     >
@@ -577,7 +1006,9 @@ export default {
                         v-for="method in enums.auto_transfer_schedule_at_after_selected_number_of_days"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
-                      >{{ trans(method.name) }}</option>
+                      >
+                        {{ trans(method.name) }}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -589,8 +1020,11 @@ export default {
           <div class="panel panel-default">
             <div class="form-group text-right">
               <button v-on:click="saveSettings()" class="btn btn-success">
-                <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
-                {{trans('setting.save')}}
+                <span
+                  class="glyphicon glyphicon-floppy-disk"
+                  aria-hidden="true"
+                ></span>
+                {{ trans("setting.save") }}
               </button>
             </div>
           </div>

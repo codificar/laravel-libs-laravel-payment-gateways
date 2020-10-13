@@ -48675,7 +48675,13 @@ var render = function() {
                     return _c(
                       "option",
                       { key: method.value, domProps: { value: method.value } },
-                      [_vm._v(_vm._s(_vm.trans(method.name)))]
+                      [
+                        _vm._v(
+                          "\n                  " +
+                            _vm._s(_vm.trans(method.name)) +
+                            "\n                "
+                        )
+                      ]
                     )
                   }),
                   0
@@ -48688,7 +48694,11 @@ var render = function() {
             ? _c("div", { staticClass: "panel panel-default pagarme" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.pagarme_settings")))
+                    _vm._v(
+                      "\n              " +
+                        _vm._s(_vm.trans("setting.pagarme_settings")) +
+                        "\n            "
+                    )
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -48901,11 +48911,954 @@ var render = function() {
               ])
             : _vm._e(),
           _vm._v(" "),
+          _vm.settings.default_payment == "braspag"
+            ? _c("div", { staticClass: "panel panel-default braspag" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.braspag")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.braspag_merchant_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.braspag_merchant_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.braspag.braspag_merchant_id,
+                              expression: "settings.braspag.braspag_merchant_id"
+                            }
+                          ],
+                          staticClass: "form-control input-braspag",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.braspag.braspag_merchant_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.braspag,
+                                "braspag_merchant_id",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.braspag_merchant_key")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.braspag_merchant_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.braspag.braspag_merchant_key,
+                              expression:
+                                "settings.braspag.braspag_merchant_key"
+                            }
+                          ],
+                          staticClass: "form-control input-braspag",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.braspag.braspag_merchant_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.braspag,
+                                "braspag_merchant_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.braspag_token")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.braspag_token"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.braspag.braspag_token,
+                              expression: "settings.braspag.braspag_token"
+                            }
+                          ],
+                          staticClass: "form-control input-braspag",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.braspag.braspag_token
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.braspag,
+                                "braspag_token",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
+          _vm._v(" "),
+          _vm.settings.default_payment == "getnet"
+            ? _c("div", { staticClass: "panel panel-default getnet" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.getnet")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.getnet_client_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.getnet_client_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.getnet.getnet_client_id,
+                              expression: "settings.getnet.getnet_client_id"
+                            }
+                          ],
+                          staticClass: "form-control input-getnet",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.getnet.getnet_client_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.getnet,
+                                "getnet_client_id",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.getnet_client_secret")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.getnet_client_secret"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.getnet.getnet_client_secret,
+                              expression: "settings.getnet.getnet_client_secret"
+                            }
+                          ],
+                          staticClass: "form-control input-getnet",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.getnet.getnet_client_secret
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.getnet,
+                                "getnet_client_secret",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.getnet_seller_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.getnet_seller_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.getnet.getnet_seller_id,
+                              expression: "settings.getnet.getnet_seller_id"
+                            }
+                          ],
+                          staticClass: "form-control input-getnet",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.getnet.getnet_seller_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.getnet,
+                                "getnet_seller_id",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
+          _vm._v(" "),
+          _vm.settings.default_payment == "directpay"
+            ? _c("div", { staticClass: "panel panel-default directpay" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.directpay")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.directpay_encrypt_key")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.directpay_encrypt_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.directpay.directpay_encrypt_key,
+                              expression:
+                                "settings.directpay.directpay_encrypt_key"
+                            }
+                          ],
+                          staticClass: "form-control input-directpay",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.directpay.directpay_encrypt_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.directpay,
+                                "directpay_encrypt_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.directpay_encrypt_value")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.directpay_encrypt_value"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.directpay.directpay_encrypt_value,
+                              expression:
+                                "settings.directpay.directpay_encrypt_value"
+                            }
+                          ],
+                          staticClass: "form-control input-directpay",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value:
+                              _vm.settings.directpay.directpay_encrypt_value
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.directpay,
+                                "directpay_encrypt_value",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.directpay_requester_id")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.directpay_requester_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.directpay.directpay_requester_id,
+                              expression:
+                                "settings.directpay.directpay_requester_id"
+                            }
+                          ],
+                          staticClass: "form-control input-directpay",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.directpay.directpay_requester_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.directpay,
+                                "directpay_requester_id",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans(
+                                  "setting.directpay_requester_password"
+                                )
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.directpay_requester_password"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.directpay
+                                  .directpay_requester_password,
+                              expression:
+                                "settings.directpay.directpay_requester_password"
+                            }
+                          ],
+                          staticClass: "form-control input-directpay",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value:
+                              _vm.settings.directpay
+                                .directpay_requester_password
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.directpay,
+                                "directpay_requester_password",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(
+                                _vm.trans("setting.directpay_requester_token")
+                              ) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.directpay_requester_token"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value:
+                                _vm.settings.directpay
+                                  .directpay_requester_token,
+                              expression:
+                                "settings.directpay.directpay_requester_token"
+                            }
+                          ],
+                          staticClass: "form-control input-directpay",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value:
+                              _vm.settings.directpay.directpay_requester_token
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.directpay,
+                                "directpay_requester_token",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
+          _vm._v(" "),
+          _vm.settings.default_payment == "cielo"
+            ? _c("div", { staticClass: "panel panel-default cielo" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.cielo")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.cielo_merchant_id")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.cielo_merchant_id"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.cielo.cielo_merchant_id,
+                              expression: "settings.cielo.cielo_merchant_id"
+                            }
+                          ],
+                          staticClass: "form-control input-cielo",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.cielo.cielo_merchant_id
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.cielo,
+                                "cielo_merchant_id",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ]),
+                  _vm._v(" "),
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.cielo_merchant_key")) +
+                              "\n                    "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans(
+                                  "settingTableSeeder.cielo_merchant_key"
+                                )
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.settings.cielo.cielo_merchant_key,
+                              expression: "settings.cielo.cielo_merchant_key"
+                            }
+                          ],
+                          staticClass: "form-control input-cielo",
+                          attrs: { type: "text" },
+                          domProps: {
+                            value: _vm.settings.cielo.cielo_merchant_key
+                          },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.settings.cielo,
+                                "cielo_merchant_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            : _vm._e(),
+          _vm._v(" "),
           _vm.settings.default_payment == "stripe"
             ? _c("div", { staticClass: "panel panel-default stripe" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.stripe_settings")))
+                    _vm._v(
+                      "\n              " +
+                        _vm._s(_vm.trans("setting.stripe_settings")) +
+                        "\n            "
+                    )
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -49114,7 +50067,13 @@ var render = function() {
                                 key: method.value,
                                 domProps: { value: method.value }
                               },
-                              [_vm._v(_vm._s(_vm.trans(method.name)))]
+                              [
+                                _vm._v(
+                                  "\n                      " +
+                                    _vm._s(_vm.trans(method.name)) +
+                                    "\n                    "
+                                )
+                              ]
                             )
                           }),
                           0
@@ -49200,7 +50159,13 @@ var render = function() {
                                 key: method.value,
                                 domProps: { value: method.value }
                               },
-                              [_vm._v(_vm._s(_vm.trans(method.name)))]
+                              [
+                                _vm._v(
+                                  "\n                      " +
+                                    _vm._s(_vm.trans(method.name)) +
+                                    "\n                    "
+                                )
+                              ]
                             )
                           }),
                           0
@@ -49426,7 +50391,11 @@ var render = function() {
             ? _c("div", { staticClass: "panel panel-default bancard" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.bancard_settings")))
+                    _vm._v(
+                      "\n              " +
+                        _vm._s(_vm.trans("setting.bancard_settings")) +
+                        "\n            "
+                    )
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -49570,7 +50539,11 @@ var render = function() {
             ? _c("div", { staticClass: "panel panel-default transbank" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.transbank_settings")))
+                    _vm._v(
+                      "\n              " +
+                        _vm._s(_vm.trans("setting.transbank_settings")) +
+                        "\n            "
+                    )
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -49792,7 +50765,11 @@ var render = function() {
           _c("div", { staticClass: "panel panel-default" }, [
             _c("div", { staticClass: "panel-heading" }, [
               _c("h3", { staticClass: "panel-title" }, [
-                _vm._v(_vm._s(_vm.trans("setting.advanced_settings")))
+                _vm._v(
+                  "\n              " +
+                    _vm._s(_vm.trans("setting.advanced_settings")) +
+                    "\n            "
+                )
               ]),
               _vm._v(" "),
               _c("hr")
@@ -49877,7 +50854,13 @@ var render = function() {
                             key: method.value,
                             domProps: { value: method.value }
                           },
-                          [_vm._v(_vm._s(_vm.trans(method.name)))]
+                          [
+                            _vm._v(
+                              "\n                      " +
+                                _vm._s(_vm.trans(method.name)) +
+                                "\n                    "
+                            )
+                          ]
                         )
                       }),
                       0
@@ -49918,7 +50901,7 @@ var render = function() {
                               _vm.settings
                                 .auto_transfer_schedule_at_after_selected_number_of_days,
                             expression:
-                              "settings.auto_transfer_schedule_at_after_selected_number_of_days"
+                              "\n                      settings.auto_transfer_schedule_at_after_selected_number_of_days\n                    "
                           }
                         ],
                         staticClass: "select form-control",
@@ -49956,7 +50939,13 @@ var render = function() {
                               key: method.value,
                               domProps: { value: method.value }
                             },
-                            [_vm._v(_vm._s(_vm.trans(method.name)))]
+                            [
+                              _vm._v(
+                                "\n                      " +
+                                  _vm._s(_vm.trans(method.name)) +
+                                  "\n                    "
+                              )
+                            ]
                           )
                         }
                       ),
