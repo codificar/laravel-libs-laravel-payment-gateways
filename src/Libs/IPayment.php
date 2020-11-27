@@ -37,7 +37,29 @@ interface IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null);
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null);
+
+    /**
+     * Charge with billet
+     *
+     * @param Decimal       $amount
+     * @param Object        $client                 User / Provider instance
+     * @param String        $postbackUrl            Url to receive gateway webhook notifications
+     * @param String        $billetExpirationDate   Billet expiration date
+     * @param String        $billetInstructions     Instructions to print in billet file
+     * 
+     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id', 'billet_url', 'billet_expiration_date']
+     */      
+    public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
+
+    /**
+     * Check the notification from gateway webhook
+     *
+     * @param Object $request Body params received from gateway notification
+     * 
+     * @return Array ['success', 'status', 'transaction_id']
+     */      
+    public function billetVerify ($request);
 
     /**
      * Capture the payment of an existing, uncaptured, charge with split rules
@@ -100,7 +122,7 @@ interface IPayment
      * 
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */
-    public function createCard(Payment $payment, $user = null);
+    public function createCard(Payment $payment, User $user = null);
 
     /**
      *  Delete a existing credit card
@@ -150,4 +172,54 @@ interface IPayment
      * @return bool
      */
     public function checkAutoTransferProvider();
+
+    /**
+     *  Return a date for the next compensation
+     * 
+     * @return Password
+     */ 
+    // public function createDirectPassword($encryptKey, $encryptValue);
+
+    /**
+     *  Return a date for the next compensation
+     * 
+     * @return Token
+     */ 
+    // public function createDirectToken();
+
+    /**
+     * Paid the debit transaction
+     *
+     * @param Object        $payment        Object that represents requester card.
+     * @param Decimal       $amount         Decimal that represents amount paied on debit card.
+     * @param String        $description    String that represents details of transaction.
+     *
+     * @return Array       [
+     *                      'success',
+	 *                      'captured',
+	 *                      'paid',
+	 *                      'status',
+	 *                      'transaction_id'
+     *                     ]
+     */
+    public function debit(Payment $payment, $amount, $description);
+
+    /**
+     * Paid the debit transaction with split rules
+     *
+     * @param Object        $payment        Object that represents requester card.
+     * @param Object        $provider       Object that represents provider of the service.
+     * @param Decimal       $totalAmount    A positive decimal representing how much to debit.
+     * @param Decimal       $providerAmount A positive decimal representing how much provider recives into the transaction.
+     * @param String        $description    String that represents details of transaction.
+     *
+     * @return Array       [
+     *                      'success',
+	 *                      'captured',
+	 *                      'paid',
+	 *                      'status',
+	 *                      'transaction_id'
+     *                     ]
+     */
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description);
 }

@@ -33,6 +33,11 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->publishes([
             __DIR__ . '/../public/js' => public_path('vendor/codificar/laravel-payment-gateways'),
         ], 'public_vuejs_libs');
+        
+        // Publish the tests files 
+        $this->publishes([
+            __DIR__ . '/../tests/' => base_path('tests/libs/gateways'),
+        ], 'publishes_gateway_tests');
     }
 
     /**

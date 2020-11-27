@@ -14,6 +14,15 @@ use Cielo\API30\Ecommerce\Request\CieloRequestException;
 
 use Ramsey\Uuid\Uuid;
 
+//models do sistema
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+use App;
+
 class CieloLib implements IPayment
 {
     /**
@@ -61,6 +70,7 @@ class CieloLib implements IPayment
         if (App::environment() == 'production') {
             $this->environment = Environment::production();
         } else {
+            \Log::debug("sandbox!");
             $this->environment = Environment::sandbox();
         }
     }
@@ -140,7 +150,7 @@ class CieloLib implements IPayment
             return array(
                 'success'		=>	true,
                 'token'         =>	$cardToken,
-                'customer_id'	=>	'',
+                'customer_id'	=>	$cardToken,
                 'last_four'		=>	substr($cardNumber, -4),
                 'card_type'		=>	$cardType,
                 'card_token'	=>	$cardToken,
@@ -181,7 +191,7 @@ class CieloLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function charge(Payment $payment, $amount, $description, $capture, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -372,7 +382,7 @@ class CieloLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment)
+    public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -443,8 +453,10 @@ class CieloLib implements IPayment
             // Recupera a venda
             $sale       =   $this->cieloEcommerce->getSale($transaction->gateway_transaction_id);
 
-            if(!is_object($sale))
+            if(!is_object($sale)){
+                \Log::error(print_r($sale,1));
                 return $this->responseApiError('gateway_cielo.retrieve_fail');
+            }
 
             $paymentId  =   $sale->getPayment()->getPaymentId();
             $amount     =   $sale->getPayment()->getAmount();
@@ -460,11 +472,8 @@ class CieloLib implements IPayment
                 'card_last_digits'  => $payment ? substr($cardNumber, -4) : ''
             );
 
-        } catch (CieloRequestException $e) {
-            $error = $e->getCieloError();
-            if(!$error)
-                $error = $e;
-            \Log::error($error->getMessage());
+        } catch (Exception $e) {
+            \Log::error($e->getMessage().$e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.retrieve_fail');
         }
     }
@@ -699,6 +708,9 @@ class CieloLib implements IPayment
         $cardExpirationYear 	= $payment->getCardExpirationYear();
         $cardCvv 				= $payment->getCardCvc();
         $cardHolder 			= $payment->getCardHolder();
+
+        if($cardExpirationYear / 100 < 1)
+            $cardExpirationYear += 2000;
 
         $cardType = strtolower($payment->card_type) == "mastercard" ? 'master' : $payment->card_type;
 

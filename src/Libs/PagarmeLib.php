@@ -45,7 +45,7 @@ class PagarmeLib implements IPayment
 		PagarMe::setApiKey(Settings::findByKey('pagarme_api_key'));
 	}
 
-	public function createCard(Payment $payment, $user = null)
+	public function createCard(Payment $payment, User $user = null)
 	{
 		try {
 
@@ -74,6 +74,7 @@ class PagarmeLib implements IPayment
 				"customer_id" 				=> $card->id,
 				"card_type" 				=> strtolower($card->brand),
 				"last_four" 				=> $card->last_digits,
+				"gateway"					=> "pagarme"
 			);
 		} catch (PagarMe_Exception  $ex) {
 
@@ -88,10 +89,97 @@ class PagarmeLib implements IPayment
 		}
 	}
 
-	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
-	public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
+	/**
+	 * Função para gerar boletos de pagamentos
+	 * @param int $amount valor do boleto
+	 * @param User/Provider $client instância do usuário ou prestador
+	 * @param string $postbackUrl url para receber notificações do status do pagamento
+	 * @param string $billetExpirationDate data de expiração do boleto
+	 * @param string $billetInstructions descrição no boleto
+	 * @return array
+	 */
+	public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions = "")
 	{
 		try {
+			$pagarMeTransaction = new PagarMe_Transaction(array(
+				"amount" => floor($amount * 100),
+				"payment_method" => "boleto",
+				"postback_url" => $postbackUrl,
+				"async" => false,
+				"capture" => true,
+				"customer" => $this->getBilletCustomer($client),
+				"boleto_expiration_date" => $billetExpirationDate,
+				"boleto_instructions" => $billetInstructions
+			));
+	
+			$pagarMeTransaction->charge();
+			
+			return array (
+				'success' => true,
+				'captured' => true,
+				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
+				'status' => $pagarMeTransaction->status,
+				'transaction_id' => $pagarMeTransaction->id,
+				'billet_url' => $pagarMeTransaction->boleto_url,
+				'billet_expiration_date' => $pagarMeTransaction->boleto_expiration_date
+			);
+			
+		} catch(PagarMe_Exception $ex) {
+			\Log::error($ex->getMessage());
+
+			return array(
+				"success" 				=> false ,
+				"type" 					=> 'api_charge_error' ,
+				"code" 					=> $ex->getReturnCode() ,
+				"message" 				=> trans("paymentError.".$ex->getReturnCode()) ,
+				"transaction_id"		=> ''
+			);
+		}
+	}
+
+	/**
+	 * Trata o postback retornado pelo gateway
+	 * @param object $request
+	 * @return array
+	 */
+	public function billetVerify ($request)
+	{
+		$postbackTransaction = $request->transaction;
+        
+		if (!$postbackTransaction)
+			return [
+				'success' => false,
+				'status' => '',
+				'transaction_id' => ''
+			];
+
+		return [
+			'success' => true,
+			'status' => $postbackTransaction['status'],
+			'transaction_id' => $postbackTransaction['id']
+		];
+	}
+
+	/**
+	 * Teste de pagamento do boleto
+	 */
+	public function testBilletPaid($transaction_id) {
+		$transaction = PagarMe_Transaction::findById($transaction_id);
+
+		if ($transaction) {
+			$transaction->setStatus('paid');
+			$transaction->save();
+			return true;
+		}
+
+		return false;
+	}
+
+	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
+	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null){
+
+		try
+		{
 			// valor inteiro do pagamento transferido para o admin
 			$card = PagarMe_Card::findById($payment->card_token);
 
@@ -100,18 +188,23 @@ class PagarmeLib implements IPayment
 
 			$pagarMeTransaction = new PagarMe_Transaction(array(
 				"amount" 	=> 	floor($amount * 100),
+				"async"		=>  false,
 				"card_id" 	=> 	$payment->card_token,
 				"capture" 	=> 	boolval($capture),
 				"customer" 	=> 	$this->getCustomer($payment),
-				"billing"	=> 	$this->getBilling($payment->User),
+				"billing"	=> 	$this->getBilling($payment->id),
 				"items"		=>  $this->getItems(1, $description, floor($amount * 100))
 			));
 
-			\Log::debug("[charge]parameters:" . print_r($pagarMeTransaction, 1));
 
-			$pagarMeTransaction->charge();
+			$pagarJson = json_decode($pagarMeTransaction);
+			$json = json_encode($pagarJson);
 
-			\Log::debug("[charge]response:" . print_r($pagarMeTransaction, 1));
+			\Log::debug('JsonPagarme: '. print_r($pagarJson, 1));
+
+			$pagarMeTransaction->charge();	
+
+			\Log::debug("[charge]response:". print_r($pagarMeTransaction,1));
 
 			if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
 				return array(
@@ -123,68 +216,72 @@ class PagarmeLib implements IPayment
 				);
 			}
 
-			return array(
+			return array (
 				'success' => true,
 				'captured' => $capture,
 				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
 				'status' => $pagarMeTransaction->status,
 				'transaction_id' => $pagarMeTransaction->id
 			);
-		} catch (PagarMe_Exception $ex) {
-			\Log::error($ex->getMessage());
+		}
+		catch(PagarMe_Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
 
 			return array(
-				"success" 					=> false,
-				"type" 						=> 'api_charge_error',
-				"code" 						=> $ex->getReturnCode(),
-				"message" 					=> $ex->getMessage(),
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
 				"transaction_id"			=> ''
-			);
+			);		
 		}
 	}
-
+	
 	//relaliza cobrança no cartão do usuário com repasse ao prestador
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
-	{
-		try {
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+		
+		try
+		{
 
 			$admin_value 	= $totalAmount - $providerAmount;
 			$admin_value 	= round($admin_value * 100);
 			$providerAmount = round($providerAmount * 100);
 
-			if ($admin_value + $providerAmount == (round($totalAmount * 100)))
-				$totalAmount =  round($totalAmount * 100);
-			else if ($admin_value + $providerAmount == (ceil($totalAmount * 100)))
-				$totalAmount =  ceil($totalAmount * 100);
-			else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
-				$totalAmount =  floor($totalAmount * 100);
+			if($admin_value + $providerAmount == (round($totalAmount*100)))
+				$totalAmount =  round($totalAmount*100);
+			else if ($admin_value + $providerAmount == (ceil($totalAmount*100)))
+				$totalAmount =  ceil($totalAmount*100);
+			else if ($admin_value + $providerAmount == (floor($totalAmount*100)))
+				$totalAmount =  floor($totalAmount*100);
 
-			if (PagarMe_Recipient::findById(Settings::findByKey('pagarme_recipient_id')) == null)
+			if(PagarMe_Recipient::findById(Settings::findByKey('pagarme_recipient_id')) == null)
 				throw new PagarMe_Exception("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
 
 			$bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
-
-			if ($bank_account == null)
+			
+			if($bank_account == null)
 				throw new PagarMe_Exception("Conta do prestador nao encontrada.", 1);
 
 			$recipient = PagarMe_Recipient::findById($bank_account->recipient_id);
 
-			if ($recipient == null)
+			if($recipient == null)
 				throw new PagarMe_Exception("Recebedor não foi encontrado", 1);
 
 			$card = PagarMe_Card::findById($payment->card_token);
-
-			if ($card == null)
+					
+			if($card == null)
 				throw new PagarMe_Exception("Cartão não encontrado", 1);
 
 			//split de pagamento com o prestador
 			$pagarmeTransaction = new PagarMe_Transaction(array(
 				"amount" 		=> 	$totalAmount,
+				"async"			=>  false,
 				"card_id" 		=> 	$payment->card_token,
 				"capture" 		=> 	boolval($capture),
 				"customer" 		=> 	$this->getCustomer($payment),
-				"billing"		=> 	$this->getBilling($payment->User),
-				"items"			=>  $this->getItems(1, $description, $totalAmount),
+				"billing"		=> 	$this->getBilling($payment->id),
+				"items"			=>  $this->getItems(1, $description, $totalAmount),				
 				"split_rules" 	=> 	array(
 					//prestador
 					array(
@@ -203,218 +300,332 @@ class PagarmeLib implements IPayment
 				)
 			));
 
-			\Log::debug("[charge]parameters:" . print_r($pagarmeTransaction, 1));
+			\Log::debug("[charge]parameters:". print_r($pagarmeTransaction,1));			
 
 			$pagarmeTransaction->charge();
 
-			\Log::debug("[charge]response:" . print_r($pagarmeTransaction, 1));
+			\Log::debug("[charge]response:". print_r($pagarmeTransaction,1));	
 
-			if ($pagarmeTransaction->status == self::PAGARME_REFUSED) {
+			if($pagarmeTransaction->status == self::PAGARME_REFUSED)
+			{
 				return array(
-					"success" 					=> false,
-					"type" 						=> 'api_charge_error',
-					"code" 						=> 'api_charge_error',
-					"message" 					=> trans("paymentError.refused"),
+					"success" 					=> false ,
+					"type" 						=> 'api_charge_error' ,
+					"code" 						=> 'api_charge_error' ,
+					"message" 					=> trans("paymentError.refused") ,
 					"transaction_id"			=> $pagarmeTransaction->id
 				);
-			}
+			}			
 
-			return array(
+			return array (
 				'success' => true,
 				'captured' => $capture,
 				'paid' => ($pagarmeTransaction->status == self::PAGARME_PAID),
 				'status' => $pagarmeTransaction->status,
 				'transaction_id' => $pagarmeTransaction->id
 			);
-		} catch (PagarMe_Exception $ex) {
-			\Log::error($ex->getMessage());
+		}
+		catch(PagarMe_Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
 
 			return array(
-				"success" 					=> false,
-				"type" 						=> 'api_charge_error',
-				"code" 						=> $ex->getReturnCode(),
-				"message" 					=> trans("paymentError." . $ex->getReturnCode()),
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
 				"transaction_id"			=> ''
-			);
-		}
+			);		
+		}		
 	}
+	
+	// private function getCustomer(Payment $payment){
+	// 	$user = $payment->User ;
 
-	private function getCustomer(Payment $payment)
-	{
-		$user = $payment->User;
+	// 	$docLenght = strlen(trim($this->cleanWord($user->document)));
+	
+	// 	if ($docLenght <= 11) {
+	// 		$type = "individual";
+	// 		$docType = "cpf";
+	// 	} else {
+	// 		$type = "corporation";
+	// 		$docType = "cnpj";
+	// 	}
+
+	// 	$customer = array(
+	// 		"name" 				=> $user->getFullName(),
+	// 		"documents" 		=> array(
+	// 			array(
+	// 				'type'			=> $docType,
+	// 				'number' 		=> $user->document
+	// 			),
+				
+	// 		),
+	// 		"email" 			=> $user->email,
+	// 		"external_id"		=> (string) $user->id,
+	// 		"type"				=> $type,
+	// 		"country"			=> "br",
+	// 		"phone_numbers" 	=> array(
+				
+	// 				"+55".(string) $user->getLongDistance().(string) $user->getPhoneNumber()
+	// 		)
+	// 	);
+
+	// 		return $customer ;
+	// }
+
+	private function getCustomer(Payment $payment){
+		$user = $payment->user_id ? $payment->User : $payment->Provider ;
+
+		$docLenght = strlen(trim($this->cleanWord($user->document)));
+	
+		if ($docLenght <= 11) {
+			$type = "individual";
+			$docType = "cpf";
+		} else {
+			$type = "corporation";
+			$docType = "cnpj";
+		}
+
+		$zipcode = $user->getZipcode();
+		$zipcode = $this->cleanWord($zipcode);
 
 		$customer = array(
 			"name" 				=> $user->getFullName(),
-			"document_number" 	=> $user->document,
+			"document_number"	=> $user->document,		
 			"email" 			=> $user->email,
-			"address" 		=> array(
-				"street" 		=> $user->getStreet(),
-				"neighborhood" 	=> $user->getNeighborhood(),
-				"zipcode" 		=> $user->getZipcode(),
-				"street_number" => $user->getStreetNumber()
+			"address" => array (
+				"street" => $user->getStreet(),
+				"street_number" => $user->getStreetNumber(),
+				"neighborhood" => $user->getNeighborhood(),
+				"zipcode" => $zipcode
 			),
+			"documents" => [
+							[
+								'type'			=> $docType,
+								'number' 		=> $user->document
+							],
+						],
+			"external_id"		=> (string) $user->id,
+			"type"				=> $type,
+			"country"			=> "br",
 			"phone" 	=> array(
-				"ddd" 		=> $user->getLongDistance(),
-				"number" 	=> $user->getPhoneNumber()
+				"ddi"	=>	"55",
+				"ddd"	=>	$user->getLongDistance(),
+				"number"	=>	$user->getPhoneNumber()				
 			)
 		);
 
-		return $customer;
+			return $customer ;
 	}
+	
+	/**
+	 * Formata informações do customer para gerar o boleto
+	 */
+	private function getBilletCustomer($user)
+	{
+		$zipcode = $user->getZipcode();
+		$zipcode = $this->cleanWord($zipcode);
 
+		$customer = array(
+			"name" 				=> $user->getFullName(),
+			"document_number"	=> $user->document,		
+			"email" 			=> $user->email,
+			"address" => array (
+				"street" => $user->getStreet(),
+				"street_number" => $user->getStreetNumber(),
+				"neighborhood" => $user->getNeighborhood(),
+				"zipcode" => $zipcode
+			),
+			"external_id"		=> (string) $user->id,
+			"phone" 	=> array(
+				"ddi"	=>	"55",
+				"ddd"	=>	$user->getLongDistance(),
+				"number"	=>	$user->getPhoneNumber()				
+			)
+		);
 
+		return $customer ;
+	}
 	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
-		try {
+		try
+		{
 			$amount *= 100;
 
 			$pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
 
-			if ($pagarMeTransaction == null)
+			if($pagarMeTransaction == null)
 				throw new PagarMe_Exception("Transaction not found.", 1);
 
-			if ($amount > $pagarMeTransaction->amount)
+			if($amount > $pagarMeTransaction->amount)
 				$amount = $pagarMeTransaction->amount;
 
-			\Log::debug("[capture]parameters:" . print_r($pagarMeTransaction, 1));
+			\Log::debug("[capture]parameters:". print_r($pagarMeTransaction,1));					
 
 			$pagarMeTransaction->capture(floor($amount));
 
-			\Log::debug("[capture]response:" . print_r($pagarMeTransaction, 1));
+			\Log::debug("[capture]response:". print_r($pagarMeTransaction,1));								
 
-			return array(
+			return array (
 				'success' => true,
 				'status' => $pagarMeTransaction->status,
 				'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
 				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
 				'transaction_id' => $pagarMeTransaction->id
 			);
-		} catch (PagarMe_Exception $ex) {
-			\Log::error($ex->getMessage());
+		}
+		catch(PagarMe_Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
 
 			return array(
-				"success" 					=> false,
-				"type" 						=> 'api_capture_error',
-				"code" 						=> $ex->getReturnCode(),
-				"message" 					=> trans("paymentError." . $ex->getReturnCode()),
+				"success" 					=> false ,
+				"type" 						=> 'api_capture_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
 				"transaction_id"			=> $transaction->gateway_transaction_id
-			);
-		}
+			);		
+		}	
+			
 	}
 
-	public function refund(Transaction $transaction, Payment $payment)
-	{
+	public function refund(Transaction $transaction, Payment $payment){
 
-		if ($transaction && $transaction->status != Transaction::REFUNDED) {
+		if($transaction && $transaction->status != Transaction::REFUNDED){
 
 			try {
 
 				$refund = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
 
-				\Log::debug("[refund]parameters:" . print_r($refund, 1));
-
+				\Log::debug("[refund]parameters:". print_r($refund,1));
+				
 
 				$refund->refund();
 
-				\Log::debug("[refund]response:" . print_r($refund, 1));
+				\Log::debug("[refund]response:". print_r($refund,1));
 
 				return array(
-					"success" 			=> true,
-					"status" 			=> $refund->status,
-					"transaction_id" 	=> $refund->id,
+					"success" 			=> true ,
+					"status" 			=> $refund->status ,
+					"transaction_id" 	=> $refund->id ,
 				);
+				
 			} catch (Exception $ex) {
-
-				\Log::error($ex->__toString());
+      
+				\Log::error($ex->__toString().$ex->getTraceAsString());
 
 				return array(
-					"success" 			=> false,
-					"type" 				=> 'api_refund_error',
+					"success" 			=> false ,
+					"type" 				=> 'api_refund_error' ,
 					"code" 				=> $ex->getCode(),
 					"message" 			=> $ex->getMessage(),
-					"transaction_id" 	=> $refund->id,
+					"transaction_id" 	=> $refund->id ,
 				);
-			}
-		} else {
+		
+		   }
+		}
+		else {
 			$error = array(
-				"success" 			=> false,
-				"type" 				=> 'api_refund_error',
-				"code" 				=> 1,
+				"success" 			=> false ,
+				"type" 				=> 'api_refund_error' ,
+				"code" 				=> 1 ,
 				"message" 			=> trans("paymentError.noTrasactionRefundFound"),
-				"transaction_id" 	=> null,
+				"transaction_id" 	=> null ,
 			);
-
-			\Log::error(print_r($error, 1));
+			
+			\Log::error(print_r($error,1));
 
 			return $error;
 		}
+
 	}
 
-	public function refundWithSplit(Transaction $transaction, Payment $payment)
-	{
+	public function refundWithSplit(Transaction $transaction, Payment $payment){
 		\Log::debug('refund with split');
 
-		return ($this->refund($transaction, $payment));
+		return($this->refund($transaction, $payment));
 	}
 
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
-	{
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null){
 
-		try {
+		try
+		{
 			\Log::debug('capture with split');
+			$requestId = $transaction->request_id;
+			if(RequestMeta::where('request_id',$requestId)->count() == 1)
+			{
+				$adminAmount = $totalAmount - $providerAmount;
 
-			$adminAmount = $totalAmount - $providerAmount;
+				$pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
 
-			$pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+				if($pagarMeTransaction == null)
+					throw new PagarMe_Exception("Transaction not found.", 1);
 
-			if ($pagarMeTransaction == null)
-				throw new PagarMe_Exception("Transaction not found.", 1);
-
-			//criar regra de split e capturar valores
-			$param = array(
-				"amount" 		=> floor($totalAmount * 100),
-				"split_rules" 	=> array(
-					//prestador
-					array(
-						"recipient_id" 						=> $provider->getBankAccount()->recipient_id,
-						"amount" 							=> $providerAmount * 100,
-						"charge_processing_fee" 			=> $this->getReversedProcessingFeeCharge() ? true : false,
-						"liable" 							=> true  //assume risco de transação (possíveis estornos)
-					),
-					//admin
-					array(
-						"recipient_id" 						=> self::getRecipientId(),
-						"amount" 							=> $adminAmount * 100,
-						"charge_processing_fee" 			=> $this->getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
-						"liable" 							=> true  //assume risco da transação (possíveis estornos)
+				//criar regra de split e capturar valores
+				$param = array(
+					"amount" 		=> floor($totalAmount * 100),
+					"split_rules" 	=> array(
+						//prestador
+						array(
+							"recipient_id" 						=> $provider->getBankAccount()->recipient_id,
+							"amount" 							=> floor($providerAmount * 100),
+							"charge_processing_fee" 			=> $this->getReversedProcessingFeeCharge() ? true : false,
+							"liable" 							=> true  //assume risco de transação (possíveis estornos)
+						),
+						//admin
+						array(
+							"recipient_id" 						=> self::getRecipientId(),
+							"amount" 							=> ceil($adminAmount * 100),
+							"charge_processing_fee" 			=> $this->getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
+							"liable" 							=> true  //assume risco da transação (possíveis estornos)
+						)
 					)
-				)
-			);
+				);
 
-			$pagarMeTransaction->capture($param);
+				\Log::debug("[capture_split]parameters:". print_r($param,1));
+				$pagarMeTransaction->capture($param);
 
-			return array(
-				'success' => true,
-				'status' => $pagarMeTransaction->status,
-				'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'transaction_id' => $pagarMeTransaction->id
-			);
-		} catch (PagarMe_Exception $ex) {
-			\Log::error($ex->getMessage());
+				return array (
+					'success' => true,
+					'status' => $pagarMeTransaction->status,
+					'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
+					'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
+					'transaction_id' => $pagarMeTransaction->id
+				);
+			}else{
+				$request		= Requests::find($requestId);
+				$user			= User::find($request->id);
+				$refund			= $this->refund($transaction, $payment);
 
-			return array(
-				"success" 					=> false,
-				"type" 						=> 'api_capture_error',
-				"code" 						=> $ex->getReturnCode(),
-				"message" 					=> trans("paymentError." . $ex->getReturnCode()),
-				"transaction_id"			=> $transaction->gateway_transaction_id
-			);
+				\Log::debug("[refund_capture]response:". print_r($refund,1));
+
+				$chargeCapture	= $this->chargeWithSplit($payment, $provider, $totalAmount, $providerAmount, sprintf(trans('payment.ride_payment'), $requestId), true, $user);
+
+				\Log::debug("[charge_capture]response:". print_r($chargeCapture,1));
+
+				return $chargeCapture;
+			}
+
+			
+
 		}
+		catch(PagarMe_Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_capture_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+				"transaction_id"			=> $transaction->gateway_transaction_id
+			);		
+		}		
 	}
 
-	public function retrieve(Transaction $transaction, Payment $payment = null)
-	{
+	public function retrieve(Transaction $transaction, Payment $payment = null){
+
 		$pagarmeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
 
 		return array(
@@ -425,24 +636,20 @@ class PagarmeLib implements IPayment
 			'status' => $pagarmeTransaction->status,
 			'card_last_digits' => $pagarmeTransaction->card_last_digits,
 		);
-	}
+	}	
 
-	public function getNextCompensationDate()
-	{
+	public function getNextCompensationDate(){
 		$carbon = Carbon::now();
 		$carbon->addDays(31);
-		return $carbon;
+		return $carbon ;
 	}
 
 	//retorna os recebíveis de uma transação
-	private static function get_transaction_payables($transaction_id)
-	{
-		try {
-			$url = sprintf(
-				'https://api.pagar.me/1/transactions/%s/payables?api_key=%s',
+	private static function get_transaction_payables($transaction_id){
+		try{
+			$url = sprintf('https://api.pagar.me/1/transactions/%s/payables?api_key=%s',
 				$transaction_id,
-				Settings::findByKey('pagarme_api_key')
-			);
+				Settings::findByKey('pagarme_api_key'));
 
 			$ch = curl_init($url);
 			curl_setopt($ch, CURLOPT_TIMEOUT, 5);
@@ -452,20 +659,21 @@ class PagarmeLib implements IPayment
 			$data = curl_exec($ch);
 			curl_close($ch);
 			return json_decode($data);
-		} catch (Exception $ex) {
-			throw $ex;
 		}
-	}
-
-
-	public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
-	{
-
+		catch(Exception $ex){
+			throw $ex;
+			
+		}
+	}	
+		
+	
+	public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount){
+		
 		$return = [];
 		$recipient = null;
-
-		$bank = Bank::where('id', $ledgerBankAccount->bank_id)->first();
-
+		
+		$bank 	 = Bank::where('id', $ledgerBankAccount->bank_id)->first();
+		
 		$settingTransferInterval 	= Settings::findByKey('provider_transfer_interval');
 		$settingTransferDay 		= Settings::findByKey('provider_transfer_day');
 
@@ -473,13 +681,19 @@ class PagarmeLib implements IPayment
 		 * Se recipient_id não iniciar com re_ (padrão do Pagar.me) não manda recupear as informações
 		 * do recipient_id e cria uma nova conta bancária.
 		 */
-		if (($ledgerBankAccount->recipient_id) && strpos($ledgerBankAccount->recipient_id, "re_") === 0) {
-			$recipient = PagarMe_Recipient::findById($ledgerBankAccount->recipient_id);
-		} else {
+		if(($ledgerBankAccount->recipient_id) && strpos($ledgerBankAccount->recipient_id, "re_") === 0){
+			try{
+				$recipient = PagarMe_Recipient::findById($ledgerBankAccount->recipient_id);
+			}
+			catch(PagarMe_Exception $ex){
+				\Log::error($ex->__toString().$ex->getTraceAsString());
+			} 
+		}
+		else{
 			$ledgerBankAccount->recipient_id = null;
 		}
 
-		try {
+		try{
 			$bankAccount = array(
 				"bank_code" 		=> $bank->code,
 				"agencia" 			=> $ledgerBankAccount->agency,
@@ -491,66 +705,76 @@ class PagarmeLib implements IPayment
 				"legal_name" 		=> $ledgerBankAccount->holder
 			);
 
+			$transferDay = $settingTransferDay ? $settingTransferDay : "5";
+
+			if(!$settingTransferInterval || $settingTransferInterval == "daily")
+				$transferDay = 0;
+
 			$recipientData = array(
-				"transfer_interval" => $settingTransferInterval ? $settingTransferInterval : "daily",
-				"transfer_day" 		=> $settingTransferDay ? $settingTransferDay : "5",
+				"transfer_interval" => $settingTransferInterval? $settingTransferInterval : "daily",
+				"transfer_day" 		=> $transferDay,
 				"transfer_enabled" 	=> true, //recebe pagamento automaticamente
-				"id"				=> $ledgerBankAccount->recipient_id,
 				"bank_account" 		=> $bankAccount
 			);
 
-			\Log::info("[PagarMe_Recipient] Entrada: " . print_r($recipientData, 1));
+			if($ledgerBankAccount->recipient_id)
+				$recipientData["id"] = $ledgerBankAccount->recipient_id ;
+			
+			//\Log::info("[PagarMe_Recipient] Entrada: ". print_r($recipientData, 1));
 
-			if (!$recipient) {
+			if(!$recipient){
 				$recipient = new PagarMe_Recipient($recipientData);
 				$recipient->create();
-			} else if ($recipient && $recipient->id) {
-
+			}
+			else if($recipient && $recipient->id) {
+				
 				/**
 				 * Para atualizar conta bancária é utilizado as funções SET presentes em PagarMe_Recipient.
 				 */
-
-				$recipient->setTransferIntervel($settingTransferInterval ? $settingTransferInterval : "daily");
-				$recipient->setTransferDay($settingTransferDay ? $settingTransferDay : "5");
+				
+				$recipient->setTransferIntervel($settingTransferInterval? $settingTransferInterval : "daily");
+				$recipient->setTransferDay($transferDay);
 				$recipient->setBankAccount($bankAccount);
 				$recipient->save();
 			}
 
-			\Log::info("[PagarMe_Recipient] Saida: " . print_r($recipientData, 1));
+			//\Log::info("[PagarMe_Recipient] Saida: ". print_r($recipientData, 1));
 
-
-			if ($recipient->id == null) {
+			
+			if($recipient->id == null){
 				$return['recipient_id'] = $recipient[0]->id;
 			} else {
 				$return['recipient_id'] = $recipient->id;
 			}
 
 			return array(
-				"success" 					=> true,
-				"recipient_id" 				=> $return['recipient_id']
+				"success" 					=> true ,
+				"recipient_id" 				=> $return['recipient_id']	
 			);
-		} catch (PagarMe_Exception  $ex) {
+		}
+		catch(PagarMe_Exception  $ex){
 
-			\Log::error($ex->__toString());
+			\Log::error($ex->__toString().$ex->getTraceAsString());
 
 			$return = array(
-				"success" 					=> false,
+				"success" 					=> false ,
 				"recipient_id"				=> 'empty',
-				"type" 						=> 'api_bankaccount_error',
-				"code" 						=> $ex->getReturnCode(),
-				"message" 					=> trans("empty." . $ex->getMessage())
+				"type" 						=> 'api_bankaccount_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("empty.".$ex->getMessage())
 			);
 
 			return $return;
 		}
+		
 	}
 
-	public function deleteCard(Payment $payment, User $user = null)
-	{
-		try {
+	public function deleteCard(Payment $payment, User $user = null){
+
+		try{
 
 			self::setApiKey();
-
+			
 			/*
 			$card = PagarMe_Card::findById($payment->card_token);
 			
@@ -560,28 +784,28 @@ class PagarmeLib implements IPayment
 			return array(
 				"success" 	=> true
 			);
-		} catch (PagarMe_Exception $ex) {
+		} 
+		catch (Stripe\Error\Base $ex){
 			$body = $ex->getJsonBody();
-			$error = $body['error'];
-
-			if (array_key_exists('code', $body)) $code = $body["code"];
-			else $code = null;
-
+			$error = $body['error'] ;
+			
+			if(array_key_exists('code', $body)) $code = $body["code"];
+			else $code = null ;
+	
 			return array(
-				"success" 	=> false,
+				"success" 	=> false ,
 				'data' => null,
 				'error' => array(
 					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.' . $error["code"]))
+					"messages" 	=> array(trans('creditCard.'.$error["code"]))
 				)
 			);
 		}
 	}
 
-	public static function getRecipientId()
-	{
+	public static function getRecipientId(){
 		return Settings::findByKey('pagarme_recipient_id');
-	}
+	}	
 
 	public function getGatewayTax()
 	{
@@ -590,25 +814,35 @@ class PagarmeLib implements IPayment
 
 	public function getGatewayFee()
 	{
-		return 0.5;
-	}
+		return 0.5 ;
+	}	
 
-	private static function getReversedProcessingFeeCharge()
-	{
+	private static function getReversedProcessingFeeCharge(){
 		return true;
 	}
 
-	private function getBilling($user)
+	private function getBilling($paymentId)
 	{
-		return  array(
-			"address" => array(
+		$payment = Payment::find($paymentId);
+		
+		if (!$payment) {
+			return false;
+		}
+		
+		$user = $payment->user_id ? $payment->User : $payment->Provider;
+
+		$zipcode = $user->getZipcode();
+		$zipcode = $this->cleanWord($zipcode);
+		
+		return  array (
+			"address" => array (
 				"street" => $user->getStreet(),
 				"street_number" => $user->getStreetNumber(),
 				"neighborhood" => $user->getNeighborhood(),
 				"city" => $user->address_city,
 				"state" => $user->state,
-				"zipcode" => $user->getZipcode(),
-				"country" => $user->country
+				"zipcode" => $zipcode,
+				"country" => "br"
 			),
 			"name" => $user->getFullName()
 		);
@@ -617,7 +851,7 @@ class PagarmeLib implements IPayment
 	private function getItems($id, $description, $amount)
 	{
 		$item = array(
-			"id" => $id,
+			"id" => (string) $id,
 			"title" => $description,
 			"unit_price" => $amount,
 			"quantity" => 1,
@@ -628,17 +862,69 @@ class PagarmeLib implements IPayment
 
 		return $items;
 	}
-	public function checkAutoTransferProvider()
-	{
-		try {
-			if (Settings::findByKey(self::AUTO_TRANSFER_PROVIDER) == "1")
-				return (true);
-			else
-				return (false);
-		} catch (Exception $ex) {
-			\Log::error($ex);
+    public function checkAutoTransferProvider()
+    {
+        try
+        {
+            if(Settings::findByKey(self::AUTO_TRANSFER_PROVIDER) == "1")
+                return(true);
+            else
+                return(false);
+        }
+        catch(Exception$ex)
+        {
+            \Log::error($ex);
 
-			return (false);
-		}
+            return(false);
+        }
 	}
+	
+	public static function checkCountry($country){
+		$count = strlen($country);
+		if ($count > 2) {
+			$response = substr($country, 0, 2);
+		} else {
+			$response = $country;
+		}
+
+		return $response;
+	}
+
+	public function cleanWord($word)
+	{
+		$word = str_replace(".", "", $word);
+		$word = str_replace("-", "", $word);
+		$word = str_replace("/", "", $word);
+		$word = str_replace("/n", "", $word);
+
+		return $word;
+	}
+
+	//finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
+    }
 }
