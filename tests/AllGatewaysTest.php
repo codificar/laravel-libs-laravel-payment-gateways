@@ -12,52 +12,55 @@ use Tests\libs\gateways\GatewaysInterfaceTest;
 class AllGatewaysTest extends TestCase
 {
 	public function testPagarme() {
+		$gateway = 'pagarme';
 		//Update the gateway selected
-		Settings::where('key', 'default_payment')->update(['value' => 'pagarme']);
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
 		Settings::where('key', 'pagarme_encryption_key')->update(['value' => 'ek_test_pHEXVtJxrD2z7BR2k3vABIcQhg9Lob']);
 		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 're_ckfcykeja0c5psw6eq7ohg6wx']);
 		Settings::where('key', 'pagarme_api_key')->update(['value' => 'ak_test_PlTjytFjSz5RLwcUK9TFssfmKMac8y']);
 
-		$this->runInterfaceGateways();
+		$this->runInterfaceGateways($gateway);
 	}
 
 	public function testCielo() {
+		$gateway = 'cielo';
 		//Update the gateway selected
-		Settings::where('key', 'default_payment')->update(['value' => 'cielo']);
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
 		Settings::where('key', 'cielo_merchant_key')->update(['value' => 'BKUWHFVDBQSOTKINJCNPMCTEFZROQRFBXSHRYIPJ']);
 		Settings::where('key', 'cielo_merchant_id')->update(['value' => '851c6271-df49-4ee6-b212-79ea22ae839f']);
 
-		$this->runInterfaceGateways();
+		$this->runInterfaceGateways($gateway);
 	}
 
-    private function runInterfaceGateways(){
+    private function runInterfaceGateways($gateway){
 		$interface = new GatewaysInterfaceTest();
 		
 		//Cria o cartao
 		$createCard = $interface->testCreateCard();
-		$this->assertTrue($createCard);
-		echo "\nPagarme - Criar cartao: ok";
+		$this->assertTrue($createCard['success']);
+		echo "\n".$gateway." - Criar cartao: ok";
 
+		$cardId = $createCard['payment']['id'];
 		//Realiza uma cobranca direta e sem split
-		$charge = $interface->testCharge();
+		$charge = $interface->testCharge($cardId);
 		$this->assertTrue($charge['success']);
 		$this->assertEquals($charge['status'], 'paid');
-		echo "\nPagarme - charge sem split: ok";
+		echo "\n".$gateway." - charge sem split: ok";
 
 		//Realiza uma pre-autorizacao (chargeNoCapture) sem split
-		$chargeNoCapture = $interface->testChargeNoCapture();
+		$chargeNoCapture = $interface->testChargeNoCapture($cardId);
 		$this->assertTrue($chargeNoCapture['success']);
 		$this->assertEquals($chargeNoCapture['status'], 'authorized');
-		echo "\nPagarme - chargeNoCapture sem split: ok";
+		echo "\n".$gateway." - chargeNoCapture sem split: ok";
 
 		//Faz o capture da pre-autorizacao anterior. Passa como parametro a transaction_id da pre-autorizacao.
-		$capture = $interface->testCapture($chargeNoCapture['transaction_id']);
+		$capture = $interface->testCapture($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($capture['success']);
 		$this->assertEquals($capture['status'], 'paid');
-		echo "\nPagarme - capture sem split: ok";
+		echo "\n".$gateway." - capture sem split: ok";
     }
 }

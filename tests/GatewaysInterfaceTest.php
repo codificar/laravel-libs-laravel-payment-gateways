@@ -8,7 +8,7 @@ use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transact
 class GatewaysInterfaceTest {
 
     public function testCreateCard(){
-		$cardNumber = "5422423637995468";
+		$cardNumber = "5420222734962070";
 		$cardExpirationMonth = 8;
 		$cardExpirationYear = 2026 ;
 		$cardCvv = "314";
@@ -17,15 +17,15 @@ class GatewaysInterfaceTest {
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv);
 		
-		return($response['success']);
+		return($response);
     }
 
-    public function testCharge()
+    public function testCharge($cardId)
     {
 		$value = 8.92;
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
-		$payment = Payment::getFirstOrDefaultPayment($user->id);
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$response = $gateway->charge($payment, $value, 'payment test', true);
 
 		if($response['success'] && $response['status'] == 'paid') {
@@ -43,12 +43,12 @@ class GatewaysInterfaceTest {
 		return $response;
 	}
 	
-    public function testChargeNoCapture()
+    public function testChargeNoCapture($cardId)
     {
 		$value = 12.34;
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
-		$payment = Payment::getFirstOrDefaultPayment($user->id);
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$response = $gateway->charge($payment, $value, 'payment test', false);
 
 		if($response['success'] && $response['status'] == 'authorized') {
@@ -66,15 +66,13 @@ class GatewaysInterfaceTest {
 		return $response;
 	}
 	
-    public function testCapture($transactionId)
+    public function testCapture($transactionId, $cardId)
     {
 		$value = 12.34;
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
-		$payment = Payment::getFirstOrDefaultPayment($user->id);
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$transaction = Transaction::where('gateway_transaction_id', $transactionId)->first();
-		\Log::debug("prox 2");
-		\Log::debug(print_r($transaction, true));
 		$response = $gateway->capture($transaction, $value, $payment);
 		
 		return $response;
