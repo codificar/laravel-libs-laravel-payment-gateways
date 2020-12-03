@@ -15,6 +15,8 @@ use Getnet\API\Request;
 
 use Ramsey\Uuid\Uuid;
 
+use DateTime, DateInterval;
+
 //models do sistema
 use Payment;
 use Provider;
@@ -188,7 +190,7 @@ class GetNetLib implements IPayment
 
             // Dados do pedido - Transação
             $transaction->setSellerId($this->sellerId);
-            $transaction->setCurrency(Settings::findByKey('generic_keywords_currency'));
+            $transaction->setCurrency($this->getCurrency());
             $transaction->setAmount($amount);
 
             // Detalhes do Pedido
@@ -227,7 +229,7 @@ class GetNetLib implements IPayment
             ->setDocumentNumber(preg_replace('/(\D)/', '', $client->document))
             ->billingAddress($client->zipcode)
                 ->setCity($client->address_city)
-                ->setComplement($client->address_complements)
+                ->setComplement($client->address_complements ? $client->address_complements : "Sem complemento") //complemento eh obrigatorio. Caso nao tenha, coloca "sem complemento" para burlar o getnet
                 ->setCountry($client->country)
                 ->setDistrict($client->address_neighbour)
                 ->setNumber((String)$client->address_number)
@@ -424,7 +426,14 @@ class GetNetLib implements IPayment
         $amount = floor($amount * 100);
 
         try {
-
+            //A data de vencimento nao pode ser hoje. Precisa ser de pelo menos 1 dia.
+            if($billetExpirationDate == date("Y-m-d")) {
+                $billetDateAux = new DateTime($billetExpirationDate);
+                $billetExpirationDate = $billetDateAux->add(new DateInterval('P1D'))->format('d/m/Y'); //adiciona 1 dia do vencimento
+            } else {
+                $billetDateAux = new DateTime($billetExpirationDate);
+                $billetExpirationDate = $billetDateAux->format('d/m/Y');
+            }
             $transactionId = Uuid::uuid4()->toString();
 
             list($microSeconds, $seconds) = explode(" ", microtime());
@@ -435,7 +444,7 @@ class GetNetLib implements IPayment
             //Cria a transação
             $transaction = new GetNetTransaction();
             $transaction->setSellerId($this->sellerId);
-            $transaction->setCurrency(Settings::findByKey('generic_keywords_currency'));
+            $transaction->setCurrency($this->getCurrency());
             $transaction->setAmount($amount);
 
             //Adicionar dados do Pedido
@@ -452,7 +461,6 @@ class GetNetLib implements IPayment
             //Adicionar dados do cliente
             $transaction->customer($custumerId)
                 ->setDocumentType("CPF")
-                ->setEmail($client->email)
                 ->setFirstName($client->first_name)
                 ->setLastName($client->last_name)
                 ->setName($client->first_name . " " . $client->last_name)
@@ -460,7 +468,7 @@ class GetNetLib implements IPayment
                 ->setDocumentNumber(preg_replace('/(\D)/', '', $client->document))
                 ->billingAddress($client->zipcode)
                     ->setCity($client->address_city)
-                    ->setComplement($client->address_complements)
+                    ->setComplement($client->address_complements ? $client->address_complements : "Sem complemento") //complemento eh obrigatorio. Caso nao tenha, coloca "sem complemento" para burlar o getnet
                     ->setCountry($client->country)
                     ->setDistrict($client->address_neighbour)
                     ->setNumber((String)$client->address_number)
@@ -696,5 +704,18 @@ class GetNetLib implements IPayment
             "message" 			=> 'split_not_implementd',
             "transaction_id" 	=> ''
         );
+    }
+
+    /**
+     * Check if currency is 3 char length. If not, get the 'BRL' as default
+     * Verifica se o currency tem 3 caracteres. Se nao tiver, entao utiliza o BRL como default.
+     */
+    private function getCurrency() {
+        $keywords_currency = Settings::findByKey('generic_keywords_currency');
+        
+        if(strlen($keywords_currency) != 3) 
+            return 'BRL';
+        else 
+            return $keywords_currency;
     }
 }

@@ -54,9 +54,9 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
-		Settings::where('key', 'getnet_seller_id')->update(['value' => '123']);
-		Settings::where('key', 'getnet_client_secret')->update(['value' => '456']);
-		Settings::where('key', 'getnet_client_id')->update(['value' => '789']);
+		Settings::where('key', 'getnet_seller_id')->update(['value' => '7f7ff5c9-55cb-4615-aab0-172912cb1a5e']);
+		Settings::where('key', 'getnet_client_secret')->update(['value' => 'a031a735-c9c5-47f6-9213-5ae9fde11f14']);
+		Settings::where('key', 'getnet_client_id')->update(['value' => 'f515ac12-4fcc-4fef-99cd-ed4071f9df3d']);
 
 		$this->runInterfaceGateways($gateway);
 	}
