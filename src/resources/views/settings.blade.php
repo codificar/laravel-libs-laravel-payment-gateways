@@ -30,6 +30,6 @@
 @stop
 
 @section('javascripts')
-<script src="/libs/generic/lang.trans/setting"> </script> 
-<script src="{{ elixir('vendor/codificar/laravel-payment-gateways/generic.vue.js') }}"> </script> 
+<script src="/libs/gateways/lang.trans/setting"> </script> 
+<script src="{{ elixir('vendor/codificar/laravel-payment-gateways/gateways.vue.js') }}"> </script> 
 @stop

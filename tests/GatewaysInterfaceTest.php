@@ -7,8 +7,7 @@ use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transact
 
 class GatewaysInterfaceTest {
 
-    public function testCreateCard(){
-		$cardNumber = "5420222734962070";
+    public function testCreateCard($cardNumber){
 		$cardExpirationMonth = 8;
 		$cardExpirationYear = 2026 ;
 		$cardCvv = "314";

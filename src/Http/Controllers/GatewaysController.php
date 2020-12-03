@@ -7,9 +7,6 @@ use Codificar\PaymentGateways\Http\Requests\GatewaysFormRequest;
 use Codificar\PaymentGateways\Http\Resources\GatewaysResource;
 use Illuminate\Http\Request;
 
-// Importar models
-use Codificar\PaymentGateways\Models\Generic;
-
 // Importar Resource
 use Codificar\PaymentGateways\Http\Resources\TesteResource;
 use Config;
@@ -27,7 +24,7 @@ class GatewaysController extends Controller
             'pagarme_api_key'
         ],
         'stripe' => [
-            'stripe_secret',
+            'stripe_secret_key',
             'stripe_publishable_key',
             'stripe_connect',
             'stripe_total_split_refund'

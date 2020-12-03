@@ -4,8 +4,6 @@ require('lodash');
 
 import Vue from 'vue';
 
-
-// Generic settings
 import SettingsGateways from './pages/settings_gateways.vue';
 
 import VueSweetalert2 from 'vue-sweetalert2';

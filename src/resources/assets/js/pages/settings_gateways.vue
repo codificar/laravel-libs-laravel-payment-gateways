@@ -601,7 +601,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-strip"
-                      v-model="settings.stripe.stripe_secret"
+                      v-model="settings.stripe.stripe_secret_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>

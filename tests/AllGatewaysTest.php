@@ -61,11 +61,25 @@ class AllGatewaysTest extends TestCase
 		$this->runInterfaceGateways($gateway);
 	}
 
-    private function runInterfaceGateways($gateway){
+	public function testStripe() {
+		$gateway = 'stripe';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'stripe_publishable_key')->update(['value' => 'pk_test_2qw9BEvjm0jM9aedKNONjMXD']);
+		Settings::where('key', 'stripe_secret_key')->update(['value' => 'sk_test_9ubwHUZJ6bnzNC6HWTkjyF3A']);
+		Settings::where('key', 'stripe_total_split_refund')->update(['value' => 'true']);
+		Settings::where('key', 'stripe_connect')->update(['value' => 'standard_accounts']);
+
+		$this->runInterfaceGateways($gateway, '4242424242424242');
+	}
+
+    private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070'){
 		$interface = new GatewaysInterfaceTest();
 		
 		//Cria o cartao
-		$createCard = $interface->testCreateCard();
+		$createCard = $interface->testCreateCard($cardNumber);
 		$this->assertTrue($createCard['success']);
 		echo "\n".$gateway." - Criar cartao: ok";
 
@@ -102,9 +116,13 @@ class AllGatewaysTest extends TestCase
 
 
 		//billetCharge (boleto bancario)
-		$billet = $interface->testBilletCharge();
-		$this->assertTrue($billet['success']);
-		$this->assertInternalType('string', $billet['billet_url']);
-		echo "\n".$gateway." - billet: ok - url: " . $billet['billet_url'];
+		if($gateway != 'stripe') { //stripe nao possui boleto, entao nao eh verificado no teste
+			$billet = $interface->testBilletCharge();
+			$this->assertTrue($billet['success']);
+			$this->assertInternalType('string', $billet['billet_url']);
+			echo "\n".$gateway." - billet: ok - url: " . $billet['billet_url'];
+		} else {
+			echo "\n".$gateway." - billet: nao possui boleto";
+		}
     }
 }

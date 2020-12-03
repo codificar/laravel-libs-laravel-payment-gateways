@@ -182,7 +182,7 @@ class StripeLib implements IPayment
 			$charge = \Stripe\Charge::create(
 				array(
 					"amount" 		=> $totalAmount,
-					"currency" 		=> Settings::getCurrency(),
+					"currency" 		=> $this->getCurrency(),
 					"customer" 		=> $payment->customer_id,
 					"description" 	=> $description,
 					"capture"       => $capture,
@@ -238,7 +238,7 @@ class StripeLib implements IPayment
 			$charge = \Stripe\Charge::create(
 				array(
 					"amount" 		=> $amount,
-					"currency" 		=> Settings::getCurrency(),
+					"currency" 		=> $this->getCurrency(),
 					"customer" 		=> $payment->customer_id,
 					"description" 	=> $description,
 					"capture"       => $capture
@@ -260,8 +260,7 @@ class StripeLib implements IPayment
 				"paid" 				=> $charge->paid ,
 				"status" 			=> $this->getStatus($charge) ,
 				"captured" 			=> $charge->captured ,
-				"transaction_id" 	=> $charge->id ,
-				"status" 			=> $charge->status ,
+				"transaction_id" 	=> $charge->id
 			);
 	
 		}
@@ -575,7 +574,7 @@ class StripeLib implements IPayment
 
 	public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount){
 
-		$currency = Settings::getCurrency();
+		$currency = $this->getCurrency();
 
 		switch ($currency) {
 			case 'USD':
@@ -782,7 +781,7 @@ class StripeLib implements IPayment
 	private function createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder){
 
 		try {
-			$token = Stripe\Token::create(
+			$token = \Stripe\Token::create(
 				array(
 					"card" =>
 					array(
@@ -958,11 +957,44 @@ class StripeLib implements IPayment
 	
 	public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
 	{
-		
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
 	}
 
 	public function billetVerify($request)
 	{
-		
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
 	}
+
+	/**
+     * Check if currency is 3 char length. If not, get the 'BRL' as default
+     * Verifica se o currency tem 3 caracteres. Se nao tiver, entao utiliza o BRL como default.
+     */
+    private function getCurrency() {
+        $keywords_currency = Settings::findByKey('generic_keywords_currency');
+        
+        if(strlen($keywords_currency) != 3) 
+            return 'BRL';
+        else 
+            return $keywords_currency;
+    }
 }

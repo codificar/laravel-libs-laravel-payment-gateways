@@ -21,7 +21,7 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
 /**
  * Rota para permitir utilizar arquivos de traducao do laravel (dessa lib) no vue js
  */
-Route::get('/libs/generic/lang.trans/{file}', function () {
+Route::get('/libs/gateways/lang.trans/{file}', function () {
     $fileNames = explode(',', Request::segment(4));
     $lang = config('app.locale');
     $files = array();
