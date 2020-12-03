@@ -70,7 +70,6 @@ class CieloLib implements IPayment
         if (App::environment() == 'production') {
             $this->environment = Environment::production();
         } else {
-            \Log::debug("sandbox!");
             $this->environment = Environment::sandbox();
         }
     }
@@ -291,7 +290,7 @@ class CieloLib implements IPayment
         ->setIdentity($client->getDocument())
         ->address()->setZipCode($client->zipcode)
                 ->setCountry('BRA')
-                ->setState(convertStateString($client->state))
+                ->setState($this->convertStateString($client->state))
                 ->setCity($client->address_city)
                 ->setDistrict($client->address_neighbour)
                 ->setStreet($client->address)
@@ -774,4 +773,100 @@ class CieloLib implements IPayment
             "paid"              => false
         );
     }
+
+    /**
+    * Converte string do estado para sigla
+    * @param string $state
+    * @return string
+    */
+    private function convertStateString($state)
+    {
+       switch (strtoupper($state)) {
+           case "ACRE":
+               $state = "AC";
+               break;
+           case "ALAGOAS":
+               $state = "AL";
+               break;
+           case "AMAZONAS":
+               $state = "AM";
+               break;
+           case "AMAPÁ":
+               $state = "AP";
+               break;
+           case "BAHIA":
+               $state = "BA";
+               break;
+           case "CEARÁ":
+               $state = "CE";
+               break;
+           case "DISTRITO FEDERAL":
+               $state = "DF";
+               break;
+           case "ESPÍRITO SANTO":
+               $state = "ES";
+               break;
+           case "GOIÁS":
+               $state = "GO";
+               break;
+           case "MARANHÃO":
+               $state = "MA";
+               break;
+           case "MINAS GERAIS":
+               $state = "MG";
+               break;
+           case "MATO GROSSO DO SUL":
+               $state = "MS";
+               break;
+           case "MATO GROSSO":
+               $state = "MT";
+               break;
+           case "PARÁ":
+               $state = "PA";
+               break;
+           case "PARAÍBA":
+               $state = "PB";
+               break;
+           case "PERNAMBUCO":
+               $state = "PE";
+               break;
+           case "PIAUÍ":
+               $state = "PI";
+               break;
+           case "PARANÁ":
+               $state = "PR";
+               break;
+           case "RIO DE JANEIRO":
+               $state = "RJ";
+               break;
+           case "RIO GRANDE DO NORTE":
+               $state = "RN";
+               break;
+           case "RONDÔNIA":
+               $state = "RO";
+               break;
+           case "RORAIMA":
+               $state = "RR";
+               break;
+           case "RIO GRANDE DO SUL":
+               $state = "RS";
+               break;
+           case "SANTA CATARINA":
+               $state = "SC";
+               break;
+           case "SERGIPE":
+               $state = "SE";
+               break;
+           case "SÃO PAULO":
+               $state = "SP";
+               break;
+           case "TOCANTÍNS":
+               $state = "TO";
+               break;
+           default:
+               break;
+       }
+   
+       return $state;
+   }
 }

@@ -36,6 +36,31 @@ class AllGatewaysTest extends TestCase
 		$this->runInterfaceGateways($gateway);
 	}
 
+	public function testBraspag() {
+		$gateway = 'braspag';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'braspag_merchant_id')->update(['value' => 'b330b05f-b27f-4497-a682-943b392a2b96']);
+		Settings::where('key', 'braspag_merchant_key')->update(['value' => 'ULMLYDYEXNPHUZZPHUHIFXAWZTWTJUIMUZHZVUAT']);
+
+		$this->runInterfaceGateways($gateway);
+	}
+
+	public function testGetnet() {
+		$gateway = 'getnet';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'getnet_seller_id')->update(['value' => '123']);
+		Settings::where('key', 'getnet_client_secret')->update(['value' => '456']);
+		Settings::where('key', 'getnet_client_id')->update(['value' => '789']);
+
+		$this->runInterfaceGateways($gateway);
+	}
+
     private function runInterfaceGateways($gateway){
 		$interface = new GatewaysInterfaceTest();
 		
@@ -45,6 +70,7 @@ class AllGatewaysTest extends TestCase
 		echo "\n".$gateway." - Criar cartao: ok";
 
 		$cardId = $createCard['payment']['id'];
+		
 		//Realiza uma cobranca direta e sem split
 		$charge = $interface->testCharge($cardId);
 		$this->assertTrue($charge['success']);
@@ -62,5 +88,23 @@ class AllGatewaysTest extends TestCase
 		$this->assertTrue($capture['success']);
 		$this->assertEquals($capture['status'], 'paid');
 		echo "\n".$gateway." - capture sem split: ok";
+
+		//Faz o cancelamento da transacao
+		$refund = $interface->testRefund($chargeNoCapture['transaction_id'], $cardId);
+		$this->assertTrue($refund['success']);
+		$this->assertEquals($refund['status'], 'refunded');
+		echo "\n".$gateway." - refunded: ok";
+
+		//retrieve (recuperar os dados) a transaction
+		$retrieve = $interface->testRetrieve($chargeNoCapture['transaction_id'], $cardId);
+		$this->assertTrue($retrieve['success']);
+		echo "\n".$gateway." - retrieve: ok";
+
+
+		//billetCharge (boleto bancario)
+		$billet = $interface->testBilletCharge();
+		$this->assertTrue($billet['success']);
+		$this->assertInternalType('string', $billet['billet_url']);
+		echo "\n".$gateway." - billet: ok - url: " . $billet['billet_url'];
     }
 }

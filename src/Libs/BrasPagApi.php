@@ -1,22 +1,33 @@
 <?php
 
+namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
+
+//models do sistema
+use Log, Exception;
+use App;
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
 
 class BrasPagApi
 {
     
-    const URL_PROD = "https://api.braspag.com.br/v2/";
-    const GET_URL_PROD   = "https://apiquery.braspag.com.br/v2/";
-    const CIELO_URL_PROD = "https://api.cieloecommerce.cielo.com.br/1/";
-    const CIELO_GET_URL_PROD   = "https://apiquery.cieloecommerce.cielo.com.br/1/";
+    const URL_PROD = "https://api.braspag.com.br/v2";
+    const GET_URL_PROD   = "https://apiquery.braspag.com.br/v2";
+    const CIELO_URL_PROD = "https://api.cieloecommerce.cielo.com.br/1";
+    const CIELO_GET_URL_PROD   = "https://apiquery.cieloecommerce.cielo.com.br/1";
     
     const SUBORD_URL_PROD = "https://splitonboarding.braspag.com.br";
     const TOKEN_URL_PROD = "https://auth.braspag.com.br/oauth2/token";
 
-    const URL_DEV = "https://apisandbox.braspag.com.br/v2/";
-    const CIELO_URL_DEV = "https://apisandbox.cieloecommerce.cielo.com.br/1/" ;
-    const GET_URL_DEV   = "https://apiquerysandbox.braspag.com.br/v2/";
-    const CIELO_GET_URL_DEV   = "https://apiquerysandbox.cieloecommerce.cielo.com.br/1/";
+    const URL_DEV = "https://apisandbox.braspag.com.br/v2";
+    const CIELO_URL_DEV = "https://apisandbox.cieloecommerce.cielo.com.br/1" ;
+    const GET_URL_DEV   = "https://apiquerysandbox.braspag.com.br/v2";
+    const CIELO_GET_URL_DEV   = "https://apiquerysandbox.cieloecommerce.cielo.com.br/1";
 
     const SUBORD_URL_DEV = "https://splitonboardingsandbox.braspag.com.br";
     const TOKEN_URL_DEV = "https://authsandbox.braspag.com.br/oauth2/token";
@@ -98,10 +109,11 @@ class BrasPagApi
 
     private static function isCieloEcommerce(){
         $model = Settings::findObjectByKey('braspag_cielo_ecommerce');
-
-        if($model) return $model->value ;
-
-        return true ;
+        if(isset($model) && $model && isset($model->value) && $model->value) {
+            return $model->value;
+        } else {
+            return false;
+        }
     }
 
 
@@ -134,7 +146,6 @@ class BrasPagApi
                 "Phone"         =>  $phone,
             ),
             'Payment'           =>  (object)array(
-                // 'Provider'      =>  'Simulado',
                 'Type'          =>  'CreditCard',
                 'Amount'        =>  $totalAmount,
                 'Installments'  =>  1,
@@ -182,7 +193,7 @@ class BrasPagApi
         return $apiRequest;
     }
 
-    public static function chargeWithSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
+    public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
     {
         $time = Carbon::now()->toDateTimeString();
 
@@ -301,8 +312,7 @@ class BrasPagApi
                 "Phone"         =>  $phone,
             ),
             'Payment'           =>  (object)array(
-                // 'Provider'      =>  'Simulado',
-                'Type'          =>  'splittedcreditcard',
+                'Type'          =>  $type,
                 'Amount'        =>  $totalAmount,
                 'Installments'  =>  1,
                 'Capture'       =>  $capture,
@@ -336,6 +346,10 @@ class BrasPagApi
                 )
             ),            
         );
+
+        if (App::environment() != 'production') {
+            $fields['Payment']->Provider = 'Simulado';
+        }
 
         if ($capture && $provider) {
             $split = self::getSplitInfo($provider, $totalAmount);
@@ -686,7 +700,7 @@ class BrasPagApi
             $header = array (
                 'Content-Type: application/json; charset=UTF-8',
                 'Accept: application/json',
-                'Authorization: Bearer '.$brasPagToken->value 
+                'Authorization: Bearer '.isset($brasPagToken) && isset($brasPagToken->token)  ? $brasPagToken->value : ""
             );
         }
         else {
@@ -757,7 +771,6 @@ class BrasPagApi
 
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
 
-        \Log::info("Token Request:". print_r($apiRequest,1));
 
         try {
             $token = Settings::findObjectByKey('braspag_token');
@@ -777,8 +790,6 @@ class BrasPagApi
         {
             $session = curl_init();
 
-            Log::debug('url:'.$url);
-
             curl_setopt($session, CURLOPT_URL, $url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
@@ -791,15 +802,11 @@ class BrasPagApi
                 // curl_setopt($session, CURLOPT_POSTFIELDS, json_encode(array()));
             }
             \
-            Log::debug('fields:'.print_r($fields,1));
-            Log::debug("header:".print_r($header,1));
             
             curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
             curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
 
             $msg_chk = curl_exec($session);  
-
-            Log::debug('msg_chk'.$msg_chk);
             
             $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);  
 
@@ -826,7 +833,7 @@ class BrasPagApi
                 "message" 					=> $ex->getMessage()
             );
             
-            \Log::error(($return->message));
+            \Log::error(($ex));
 
             return $return;
         }
@@ -862,14 +869,15 @@ class BrasPagApi
                 ]
             ],
             "Payment" => [
-                "Provider" => Settings::getBilletProvider(),
                 "Type" => "Boleto",
                 "Amount" => self::amountRound($amount),
                 "ExpirationDate" => date('Y-m-d', strtotime($boletoExpirationDate)),
                 "Instructions" => $boletoInstructions
             ]
         ];
-
+        if (App::environment() != 'production') {
+            $fields['Payment']['Provider'] = 'Simulado';
+        }
         $body = json_encode($fields);
 
         $merchantId         = Settings::findObjectByKey('braspag_merchant_id');

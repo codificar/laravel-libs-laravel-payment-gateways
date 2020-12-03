@@ -3,6 +3,17 @@
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
+use Codificar\PaymentGateways\Libs\BrasPagApi;
+
+use ApiErrors;
+//models do sistema
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+
 Class BrasPagLib implements IPayment
 {
     const CHARGE_SUCCESS = 1;
@@ -24,10 +35,9 @@ Class BrasPagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture, User $user = null)
-    {
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
         try {
-            $response = BrasPagApi::chargeWithSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
+            $response = BrasPagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
             
             $responseChargeStatus = self::getChargeStatus(true, $capture);
 
@@ -75,26 +85,30 @@ Class BrasPagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */      
-    public function charge(Payment $payment, $amount, $description, $capture, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
 
         $paymentId = null ;
 
         try {
-            $response = BrasPagApi::chargeWithSplit($payment, null, $amount, null, $description, $capture, false);
+            $response = BrasPagApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
             
             $responseChargeStatus = self::getChargeStatus(false, $capture);
 
-            $paymentId  = ($response && $response->data && $response->data->Payment ? $response->data->Payment->PaymentId : -1);
+            if($response && isset($response->data) && $response->data && isset($response->data->Payment) && $response->data->Payment) {
+                $paymentId = $response->data->Payment->PaymentId;
+            } else {
+                $paymentId = -1;
+            }
 
 			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
 				$result = array (
-					'success' 		    => true,
-					'status' 		    => $capture,
-					'captured' 			=> $capture,
-					'paid' 		        => $capture ? 'paid' : 'authorized',
-					'transaction_id'    => $paymentId
-				);
+                    'success' => true,
+                    'captured' => $capture,
+                    'paid' => $capture,
+                    'status' => $capture ? 'paid' : 'authorized',
+                    'transaction_id' => $paymentId
+                );
 				return $result;
 			} else {
                 return array(
@@ -203,7 +217,7 @@ Class BrasPagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */         
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
         // $user = User::find($payment->user_id);
         
@@ -250,9 +264,8 @@ Class BrasPagLib implements IPayment
      * @param Payment       $payment     
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */       
-    public function capture(Transaction $transaction, $amount, Payment $payment)
-    {
+     */    
+    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
         try {
 			$response = BrasPagApi::capture($transaction, $amount);
 
@@ -375,8 +388,7 @@ Class BrasPagLib implements IPayment
         $transactionId = $transaction->gateway_transaction_id;
 
 		
-		$response = BrasPagApi::retrieve($transaction);
-
+        $response = BrasPagApi::retrieve($transaction);
 		if(!$response->success)
 		{
 			\Log::error($response->message);
@@ -407,7 +419,7 @@ Class BrasPagLib implements IPayment
      * 
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */      
-    public function createCard(Payment $payment, User $user)
+    public function createCard(Payment $payment, User $user = null)
     {
         $cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
@@ -438,8 +450,7 @@ Class BrasPagLib implements IPayment
      * 
      * @return Array ['success']
      */      
-    public function deleteCard(Payment $payment, User $user)
-    {
+    public function deleteCard(Payment $payment, User $user = null){
         $result = array (
 			'success'	=>	true
 		);
@@ -554,12 +565,33 @@ Class BrasPagLib implements IPayment
         }
     }
 
-    /**
-     *  Return a date for the next compensation
-     * 
-     * @return Password
-     */ 
-    // public function createDirectPassword($encryptKey, $encryptValue);
+    //finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
+    }
 
     /**
      *  Return a date for the next compensation

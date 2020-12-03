@@ -15,6 +15,14 @@ use Getnet\API\Request;
 
 use Ramsey\Uuid\Uuid;
 
+//models do sistema
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+
 class GetNetLib implements IPayment
 {
     /**
@@ -149,7 +157,7 @@ class GetNetLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function charge(Payment $payment, $amount, $description, $capture, User $user)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -170,6 +178,8 @@ class GetNetLib implements IPayment
         $cardExpirationYear = $cardExpirationYear % 100;
 
         try {
+            // Paliativo pois precisa alterar todas as charges do sistema para ledger
+            $client = $payment->user_id ? \User::find($payment->user_id) : \Provider::find($payment->provide_id);
 
             $transactionId = Uuid::uuid4()->toString();
 
@@ -209,21 +219,21 @@ class GetNetLib implements IPayment
             // Dados pessoais do comprador
             $transaction->customer($customerId)
             ->setDocumentType("CPF")
-            ->setEmail($user->email)
-            ->setFirstName($user->first_name)
-            ->setLastName($user->last_name)
-            ->setName($user->first_name . " " . $user->last_name)
-            ->setPhoneNumber(preg_replace('/(\D)/', '', $user->phone))
-            ->setDocumentNumber(preg_replace('/(\D)/', '', $user->document))
-            ->billingAddress($user->zipcode)
-                ->setCity($user->address_city)
-                ->setComplement($user->address_complements)
-                ->setCountry($user->country)
-                ->setDistrict($user->address_neighbour)
-                ->setNumber((String)$user->address_number)
-                ->setPostalCode(trim(str_replace("-","",$user->zipcode)))
-                ->setState($user->state)
-                ->setStreet($user->address);
+            ->setEmail($client->email)
+            ->setFirstName($client->first_name)
+            ->setLastName($client->last_name)
+            ->setName($client->first_name . " " . $client->last_name)
+            ->setPhoneNumber(preg_replace('/(\D)/', '', $client->phone))
+            ->setDocumentNumber(preg_replace('/(\D)/', '', $client->document))
+            ->billingAddress($client->zipcode)
+                ->setCity($client->address_city)
+                ->setComplement($client->address_complements)
+                ->setCountry($client->country)
+                ->setDistrict($client->address_neighbour)
+                ->setNumber((String)$client->address_number)
+                ->setPostalCode(trim(str_replace("-","",$client->zipcode)))
+                ->setState($client->state)
+                ->setStreet($client->address);
 
             $charge       = $this->getnet->authorize($transaction);
             $chargeStatus = $charge->getStatus();
@@ -268,7 +278,7 @@ class GetNetLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment)
+    public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -318,7 +328,7 @@ class GetNetLib implements IPayment
      *                      'card_last_digits'
      *                     ]
      */
-    public function retrieve(Transaction $transaction, Payment $payment)
+    public function retrieve(Transaction $transaction, Payment $payment = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -658,5 +668,33 @@ class GetNetLib implements IPayment
             default:
                 return 'not_geted';
         }
+    }
+
+    //finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
     }
 }

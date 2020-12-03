@@ -76,10 +76,40 @@ class GatewaysInterfaceTest {
 		$response = $gateway->capture($transaction, $value, $payment);
 		
 		return $response;
-    }
+	}
 
 
+	public function testRefund($transactionId, $cardId)
+	{
+		$gateway = PaymentFactory::createGateway();
+		$user = $this->userRandomForTest();
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
+		$transaction = Transaction::where('gateway_transaction_id', $transactionId)->first();
+		$response = $gateway->refund($transaction, $payment);
+		
+		return $response;
+	}
 
+	public function testRetrieve($transactionId, $cardId)
+	{
+		$gateway = PaymentFactory::createGateway();
+		$user = $this->userRandomForTest();
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
+		$transaction = Transaction::where('gateway_transaction_id', $transactionId)->first();
+		$response = $gateway->retrieve($transaction, $payment);
+		
+		return $response;
+	}
+
+	public function testBilletCharge()
+	{
+		$value = 14.20;
+		$gateway = PaymentFactory::createGateway();
+		$user = $this->userRandomForTest();
+		$response = $gateway->billetCharge($value, $user, 'rota/de/postback/teste', date("Y-m-d"), 'boleto de teste');
+		
+		return $response;
+	}
     
     /**
 	 * get random user for tests
