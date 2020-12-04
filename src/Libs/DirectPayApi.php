@@ -1,5 +1,17 @@
 <?php
 
+namespace Codificar\PaymentGateways\Libs;
+
+//models do sistema
+use Log, Exception;
+use App;
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+
 class DirectPayApi  
 {
     const URL = "https://hml-gateway.directpay.com.br/api";
@@ -361,7 +373,7 @@ class DirectPayApi
     private static function getHeader($gateway, $transactionId = null)
     {
         $requesterId      = Settings::findObjectByKey('directpay_requester_id');
-        $requesterToken   = Settings::findObjectByKey('directpay_requester_token');
+        $requesterToken   = "Znm2YRUct8rEYgghCAq75u/NZlxbnPkCjl6eVkTUj48crOrMyoYTChb9EvdZsOoXz6h6Y46VaBRrAIs5wICTNTiliqezP/boxGVHz7mhh802uZA8sAkusfN/HsNd8kAOVoq2SWObPHI8JPxxOPVbzZMTD7+UsYqoCW70w6JafALsylfvn+mqeHnaFfF8bDQkpskAhP4KCg24zU3OxapJe1klaFkcd5VzpZu4m4bOPGHoo4NncXpJI4Fa2w73gjqtf2PSEW+s/gKMNHw49zROyvqAL9uQu4OAlg3rqYNOLYwtbioxWMHtf78ZONhb2OKfFR";
         $uniqueTrxId      = Settings::findObjectByKey('directpay_unique_trx_id');
         $gatewayId        = Settings::findObjectByKey('directpay_gateway_id');
         
@@ -369,7 +381,7 @@ class DirectPayApi
             'Content-Type: application/json; charset=UTF-8',
             'Accept: application/json',
             'requester-id:'.$requesterId->value, 
-            'requester-token:'.$requesterToken->value,
+            'requester-token:'.$requesterToken,
             'unique-trx-id:'.$uniqueTrxId->value         
         );
 

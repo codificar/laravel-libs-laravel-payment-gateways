@@ -50,6 +50,9 @@ return array(
 	, 'show_user_register' 											=> 'Exibir Tela de Cadastro de Usuário'
 	, 'phone_code'													=> 'Código de Telefone'
 	, 'country'														=> 'País'
+	, 'gerencianet_sandbox'											=> 'Modo de operação'
+	, 'sandbox_mode_false'											=> 'Modo produção'
+	, 'sandbox_mode_true'											=> 'Modo teste'
 
 	, 'day'															=>	'Dias'
 	, 'yes'															=>	'Sim'
@@ -147,6 +150,7 @@ return array(
 	,'directpay_requester_id'										=> 'Directpay Requester Id'
 	,'directpay_requester_password'									=> 'Directpay Requester Password'
 	,'directpay_requester_token'									=> 'Directpay Requester Token'
+	,'directpay_unique_trx_id'										=> 'Directpay trx id unico'
 	,'directpay_name'												=> 'Directpay'
 
 	, 'ios'															=> 'iOS'
@@ -264,6 +268,7 @@ return array(
 	, 'zoop'			=> 'Zoop'
 	, 'bancard'			=> 'Bancard'
 	, 'mercadopago'		=> 'Mercado Pago'
+	, 'gerencianet'		=> 'Gerencianet'
 
 	/**
 	 * Stripe

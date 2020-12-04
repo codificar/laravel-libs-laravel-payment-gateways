@@ -67,7 +67,7 @@ class GerenciaNetLib implements IPayment
 		return $this->api;
 	}
 
-	public function createCard(Payment $payment, $user = null)
+	public function createCard(Payment $payment, User $user = null)
 	{
 	}
 
@@ -140,7 +140,7 @@ class GerenciaNetLib implements IPayment
 	 * @param $user User - usuário da transação
 	 * @return array
 	 */
-	public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
 	{
 		return $this->createAndPayCharge([
 			'items'		=> $this->formatItems($description, $amount),
@@ -274,12 +274,11 @@ class GerenciaNetLib implements IPayment
 		];
 	}
 
-	public function capture(Transaction $transaction, $amount, Payment $payment)
+	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
 		//
 	}
-
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
 	{
 		//
 	}
@@ -294,7 +293,7 @@ class GerenciaNetLib implements IPayment
 		//
 	}
 
-	public function retrieve(Transaction $transaction, Payment $payment)
+	public function retrieve(Transaction $transaction, Payment $payment = null)
 	{
 		try {
 			$charge = $this->getApi()->detailCharge(["id" => $transaction->gateway_transaction_id], []);
@@ -421,4 +420,60 @@ class GerenciaNetLib implements IPayment
 			];
 		}
 	}
+
+
+	public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
+	public function billetVerify($request)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+	public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
+    }
 }

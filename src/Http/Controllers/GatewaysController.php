@@ -53,7 +53,8 @@ class GatewaysController extends Controller
             'directpay_encrypt_value',
             'directpay_requester_id',
             'directpay_requester_password',
-            'directpay_requester_token'
+            'directpay_requester_token',
+            'directpay_unique_trx_id'
         ],
         'bancard' => [
             'bancard_public_key',
@@ -63,7 +64,13 @@ class GatewaysController extends Controller
             'transbank_private_key',
             'transbank_commerce_code',
             'transbank_public_cert'
-        ]
+        ],
+        'gerencianet' => [
+            'gerencianet_sandbox',
+            'gerencianet_client_id',
+            'gerencianet_client_secret',
+
+        ],
     ];
 
     public $payment_gateways =  array(
@@ -75,7 +82,8 @@ class GatewaysController extends Controller
         array('value' => 'getnet', 'name' => 'setting.getnet'),
         array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
-        array('value' => 'transbank', 'name' => 'setting.transbank')
+        array('value' => 'transbank', 'name' => 'setting.transbank'),
+        array('value' => 'gerencianet', 'name' => 'setting.gerencianet'),
     );
 
     /**

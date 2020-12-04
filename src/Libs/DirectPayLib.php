@@ -3,13 +3,22 @@
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
+use Codificar\PaymentGateways\Libs\DirectPayApi;
+
+//models do sistema
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+
 class DirectPayLib  implements IPayment
 {
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
 
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture, User $user)
-	{
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
 		$response = $this->charge($payment, $totalAmount, $description, $capture, $user);
         
         return $response;
@@ -44,7 +53,7 @@ class DirectPayLib  implements IPayment
 		}
 	}
 
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
 	{
 		\Log::error('split_not_implemented');
 
@@ -57,7 +66,7 @@ class DirectPayLib  implements IPayment
 		);
 	}
 
-	public function capture(Transaction $transaction, $amount, Payment $payment)
+	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
 		try {
 			$response = DirectPayApi::capture($amount, $transaction);
@@ -137,7 +146,7 @@ class DirectPayLib  implements IPayment
 		}
 	}
 
-	public function retrieve(Transaction $transaction, Payment $payment)
+	public function retrieve(Transaction $transaction, Payment $payment = null)
 	{
 		$transactionId = $transaction->gateway_transaction_id;
 
@@ -167,7 +176,7 @@ class DirectPayLib  implements IPayment
 		
 	}
 
-	public function createCard(Payment $payment, User $user)
+	public function createCard(Payment $payment, User $user = null)
 	{
 		$cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
@@ -194,8 +203,7 @@ class DirectPayLib  implements IPayment
 
 		
 	}
-
-	public function deleteCard(Payment $payment, User $user)
+	public function deleteCard(Payment $payment, User $user = null)
 	{
 		// $result = array (
 		// 	'success'	=>	true
@@ -289,5 +297,64 @@ class DirectPayLib  implements IPayment
 		$cpf = str_replace("/", "", $cpf);
 		return $cpf;
 	}
+
+	//finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
+	}
 	
+
+	public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
+	public function billetVerify($request)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
 }

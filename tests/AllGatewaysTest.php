@@ -75,6 +75,79 @@ class AllGatewaysTest extends TestCase
 		$this->runInterfaceGateways($gateway, '4242424242424242');
 	}
 
+	public function testZoop() {
+		$gateway = 'zoop';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'zoop_seller_id')->update(['value' => '193666ba1509419485fcafc253aff514']);
+		Settings::where('key', 'zoop_publishable_key')->update(['value' => 'zpk_test_jP4JOy1OHvgJ3dyW6MHLrvgL']);
+		Settings::where('key', 'zoop_marketplace_id')->update(['value' => 'c7bbd8b1b7574077804948faa27ff903']);
+
+		echo "\n".$gateway." - Precisa terminar a implementação";
+		// $this->runInterfaceGateways($gateway);
+	}
+
+	public function testGerencianet() {
+		$gateway = 'gerencianet';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'gerencianet_client_secret')->update(['value' => 'Client_Secret_a657286e5962569d206f245a16d75108f8a89ea1']);
+		Settings::where('key', 'gerencianet_client_id')->update(['value' => 'Client_Id_43f0ec07a5d2ff067527ce82c97505018c7bd040']);
+		Settings::where('key', 'gerencianet_sandbox')->update(['value' => 'true']);
+
+		echo "\n".$gateway." - Precisa terminar a implementação";
+		// $this->runInterfaceGateways($gateway);
+	}
+
+
+	public function testDirectpay() {
+		$gateway = 'directpay';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'directpay_requester_token')->update(['value' => 'Znm2YRUct8rEYgghCAq75u/NZlxbnPkCjl6eVkTUj48crOrMyoYTChb9EvdZsOoXz6h6Y46VaBRrAIs5wICTNTiliqezP/boxGVHz7mhh802uZA8sAkusfN/HsNd8kAOVoq2SWObPHI8JPxxOPVbzZMTD7+UsYqoCW70w6JafALsylfvn+mqeHnaFfF8bDQkpskAhP4KCg24zU3OxapJe1klaFkcd5VzpZu4m4bOPGHoo4NncXpJI4Fa2w73gjqtf2PSEW+s/gKMNHw49zROyvqAL9uQu4OAlg3rqYNOLYwtbioxWMHtf78ZONhb2OKfFR']);
+		Settings::where('key', 'directpay_requester_password')->update(['value' => 'password']);
+		Settings::where('key', 'directpay_requester_id')->update(['value' => 'op_go_homl']);
+		Settings::where('key', 'directpay_encrypt_value')->update(['value' => '251381']);
+		Settings::where('key', 'directpay_encrypt_key')->update(['value' => '58DFC6D0C524FB9F3B331C73DB21E356']);
+
+		echo "\n".$gateway." - Precisa terminar a implementação";
+		// $this->runInterfaceGateways($gateway);
+	}
+
+	public function testBancard() {
+		$gateway = 'bancard';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'bancard_private_key')->update(['value' => 'jMkXA.zxQ4ibV9XcV+ENN1awDb3mWUrt3KAkBoWf']);
+		Settings::where('key', 'bancard_public_key')->update(['value' => 'BQzqR40EGL7jcA5si2AG7QUW6H4G65ip']);
+		
+		echo "\n".$gateway." - Precisa terminar a implementação";
+		// $this->runInterfaceGateways($gateway);
+	}
+
+	public function testTransbank() {
+		$gateway = 'transbank';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'transbank_public_cert')->update(['value' => '123']);
+		Settings::where('key', 'transbank_commerce_code')->update(['value' => '456']);
+		Settings::where('key', 'transbank_private_key')->update(['value' => '789']);
+
+		echo "\n".$gateway." - Precisa terminar a implementação";
+		// $this->runInterfaceGateways($gateway);
+	}
+
+
     private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070'){
 		$interface = new GatewaysInterfaceTest();
 		

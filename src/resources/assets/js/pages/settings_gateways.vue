@@ -504,6 +504,30 @@ export default {
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.directpay_unique_trx_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.directpay_unique_trx_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-directpay"
+                      v-model="settings.directpay.directpay_unique_trx_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -780,6 +804,99 @@ export default {
             </div>
           </div>
           <!-- / Configurações do Zoop-->
+
+
+
+           <!--Configurações do Gerencianet-->
+          <div
+            class="panel panel-default gerencianet"
+            v-if="settings.default_payment == 'gerencianet'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.gerencianet_settings") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gerencianet_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.gerencianet_client_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-gerencianet"
+                      v-model="settings.gerencianet.gerencianet_client_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gerencianet_client_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.gerencianet_client_secret')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-gerencianet"
+                      v-model="settings.gerencianet.gerencianet_client_secret"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gerencianet_sandbox") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.gerencianet_sandbox')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+
+                    <select
+                      v-model="settings.gerencianet.gerencianet_sandbox"
+                      name="gerencianet_sandbox"
+                      class="select form-control"
+                    >
+                      <option value="true">{{ trans("setting.sandbox_mode_true") }}</option>
+                      <option value="false"> {{ trans("setting.sandbox_mode_false") }}</option>
+                    </select>
+                
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Gerencianet-->
 
           <!--Configurações do Bancard-->
           <div

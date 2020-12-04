@@ -50,20 +50,19 @@ class BancardLib implements IPayment
     /* Método para solicitar a criação de um cartão na Bancard
      * @param $payment Payment - instância do pagamento com dados do cartão
      * @param $user User - para add cartão
-     * @param $provider Provider - para add cartão
      * @return array
      */
 
-    public function createCard(Payment $payment, $user = null, $provider = null)
+    public function createCard(Payment $payment, User $user = null)
     {
 
         try {
             //recupera user do payment caso não existe
-            if (!$user && !$provider)
+            if (!$user)
                 $user = $payment->User;
 
             //solicita criação de cartão e retorna um iframe para usuário preencher os dados
-            $response = BancardApi::createCard($this->public_key, $this->private_key, $user, $provider);
+            $response = BancardApi::createCard($this->public_key, $this->private_key, $user);
 
             //retorna iframe
             return $response;
@@ -87,9 +86,8 @@ class BancardLib implements IPayment
      * @return array
      */
 
-    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
-
         try {
 
             //não capturar não é permitido na bancard neste momento
@@ -430,5 +428,63 @@ class BancardLib implements IPayment
 
             return (false);
         }
+    }
+
+    public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
+	public function billetVerify($request)
+	{
+		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
+	}
+
+    //finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
     }
 }

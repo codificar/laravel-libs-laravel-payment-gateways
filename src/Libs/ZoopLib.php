@@ -45,6 +45,11 @@ class ZoopLib implements IPayment
     const ZOOP_DISPUTE = 'dispute';
     //O status indica que a cobrança foi contestada pelo comprador e o vendedor perdeu a disputa, sendo o valor total da venda debitado da conta do vendedor.
     const ZOOP_CHARGE_BACK = 'charged_back';
+    // Transação esperando pagamento
+    const ZOOP_WAITING_PAYMENT = 'waiting_payment';
+
+    const ZOOP_BILLET_CHARGE = 'billet_charge';
+    
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
     public function __construct()
@@ -57,7 +62,7 @@ class ZoopLib implements IPayment
      * @return array
      */
 
-    public function createCard(Payment $payment, $user = null)
+    public function createCard(Payment $payment, User $user = null)
     {
 
         try {
@@ -104,6 +109,7 @@ class ZoopLib implements IPayment
                 "customer_id" => $associate->customer,
                 "card_type" => strtolower($token->card->card_brand),
                 "last_four" => $last4,
+                "gateway"   => "zoop"
             );
         } catch (Zoop\Exceptions\ZoopException $ex) {
 
@@ -126,7 +132,7 @@ class ZoopLib implements IPayment
      * @return array
      */
 
-    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
 
         try {
@@ -184,6 +190,104 @@ class ZoopLib implements IPayment
             );
         }
     }
+
+    /**
+	 * Função para gerar boletos de pagamentos
+	 * @param int $amount valor do boleto
+	 * @param User/Provider $client instância do usuário ou prestador
+	 * @param string $postbackUrl url para receber notificações do status do pagamento
+	 * @param string $billetExpirationDate data de expiração do boleto
+	 * @param string $billetInstructions descrição no boleto
+	 * @return array
+	 */
+    public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions = "")
+    {
+        try {
+            
+            //recupera comprador na zoop
+            $customer = $this->findCustomerAll($client);
+
+            //cria comprador na zoop caso não exista
+            if ($customer == null)
+                $customer_id = $this->createCustomer($client);
+            else
+                $customer_id = $customer->id;
+
+            //cria transação na ZOOP
+            $zoopTransaction = ZoopChargesCNP::create([
+                        'amount' => floor($amount * 100),
+                        'currency' => 'BRL',
+                        'description' => self::ZOOP_BILLET_CHARGE,
+                        'payment_type' => 'boleto',
+                        'capture' => true,
+                        'on_behalf_of' => Settings::findByKey('zoop_seller_id'),
+                        'customer' => $customer_id,
+                        'payment_method' => array(
+                            'expiration_date' => $billetExpirationDate,
+                            'top_instructions' => array($billetInstructions)
+                        ),
+                        'source' => array('currency' => 'BRL',
+                            'amount' => floor($amount * 100),
+                            'description' => self::ZOOP_BILLET_CHARGE,
+                            'usage' => 'single_use',
+                            'type' => 'customer'
+                        ),
+            ]);
+
+            \Log::debug("[charge]parameters:" . print_r($zoopTransaction, 1));
+
+            if ($zoopTransaction->status == self::ZOOP_FAILED) {
+                return array(
+                    "success" => false,
+                    "type" => 'api_charge_error',
+                    "code" => 'api_charge_error',
+                    "message" => trans("paymentError.refused"),
+                    "transaction_id" => $zoopTransaction->id
+                );
+            }
+
+            return array(
+                'success' => true,
+                'captured' => true,
+                'paid' => ($zoopTransaction->status == self::ZOOP_SUCCEEDED),
+                'status' => self::ZOOP_WAITING_PAYMENT,
+                'transaction_id' => $zoopTransaction->id,
+                'billet_url' => $zoopTransaction->payment_method->url,
+                'billet_expiration_date' => $zoopTransaction->payment_method->expiration_date
+            );
+        } catch (Zoop\Exceptions\ZoopException $ex) {
+            \Log::error($ex->getMessage());
+
+            return array(
+                "success" => false,
+                "type" => 'api_charge_error',
+                "code" => $ex->getReturnCode(),
+                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "transaction_id" => ''
+            );
+        }
+    }
+
+    /**
+	 * Trata o postback retornado pelo gateway
+	 */
+	public function billetVerify ($request)
+	{
+		$postbackTransaction = $request->payload;
+        
+		if (!$postbackTransaction)
+			return [
+				'success' => false,
+				'status' => '',
+				'transaction_id' => ''
+			];
+
+		return [
+			'success' => true,
+			'status' => $postbackTransaction->status == self::ZOOP_SUCCEEDED ? "paid" : $postbackTransaction->status,
+			'transaction_id' => $postbackTransaction->id
+		];
+	}
 
     /* Método para realizar cobrança no cartão do comprador com repasse ao prestador
      * @param $payment Payment - instância do pagamento com dados do cartão
@@ -261,8 +365,8 @@ class ZoopLib implements IPayment
                 "liable" => true, //assume risco de transação (possíveis estornos)
             ]);
 
-            \Log::debug("[charge]response:" . print_r($zoopTransaction, 1));
-            \Log::debug("[charge]response:" . print_r($zoopSplit, 1));
+            \Log::debug("[charge]response: zoopTransaction" . print_r($zoopTransaction, 1));
+            \Log::debug("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
 
             if ($zoopTransaction->status == self::ZOOP_FAILED) {
                 return array(
@@ -287,8 +391,8 @@ class ZoopLib implements IPayment
             return array(
                 "success" => false,
                 "type" => 'api_charge_error',
-                "code" => $ex->getMessage(),
-                "message" => trans("paymentError." . $ex->getMessage()),
+                "code" => $ex->getReturnCode(),
+                "message" => trans("paymentError." . $ex->getReturnCode()),
                 "transaction_id" => ''
             );
         }
@@ -299,9 +403,10 @@ class ZoopLib implements IPayment
      * @return array
      */
 
-    private function getCustomer(Payment $payment)
+    private function getCustomer(Payment $payment = null, $user = null)
     {
 
+    if ($payment)
         $user = $payment->User;
 
         $customer = array(
@@ -317,8 +422,9 @@ class ZoopLib implements IPayment
                 'neighborhood' => $user->address_neighbour,
                 'city' => $user->address_city,
                 'state' => $user->state,
-                'postal_code' => $user->zipcode
-            ),
+                'postal_code' => $user->zipcode,
+                'country_code' => 'BR'
+            )
         );
 
         return $customer;
@@ -681,7 +787,8 @@ class ZoopLib implements IPayment
                 'neighborhood' => $user->address_neighbour,
                 'city' => $user->address_city,
                 'state' => $user->state,
-                'postal_code' => $user->zipcode
+                'postal_code' => $user->zipcode,
+                'country_code' => 'BR'
             ),
         ]);
 
@@ -789,5 +896,53 @@ class ZoopLib implements IPayment
 
             return (false);
         }
+    }
+
+    public static function getSellerStatusBySellerId($id){
+        if ($id) {
+            try {
+                $seller_adm = ZoopSellers::get($id);
+            } catch (\Throwable $th) {
+                $seller_adm =   null;
+            }
+            
+        } else {
+            $seller_adm = null;
+        }
+        
+        if ($seller_adm) {
+            return $seller_adm->status;
+        } else {
+            return null;
+        }
+        
+    }
+
+    //finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
     }
 }
