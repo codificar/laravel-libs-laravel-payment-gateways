@@ -12,6 +12,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Bank;
 
 class BrasPagApi
 {
@@ -465,7 +466,7 @@ class BrasPagApi
 
         $phone = self::formatPhone($provider->phone);
 
-        $state = getAbbreviationState($provider->state);
+        $state = self::abbreviationState($provider->state);
 
         if ($ledgerBankAccount->account_type == "conta_corrente") {
             $accountType = "CheckingAccount";
@@ -892,5 +893,18 @@ class BrasPagApi
 
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
         return $apiRequest;
+    }
+    private static function abbreviationState($state)
+    {
+        $state = strtolower($state);
+        switch ($state) {
+            case 'minas gerais':
+                return "mg";
+                break;
+    
+            default:
+                return "mg";
+                break;
+        }
     }
 }

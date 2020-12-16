@@ -18,6 +18,8 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use RequestMeta;
+use Requests;
 
 class PagarmeLib implements IPayment
 {
@@ -221,7 +223,7 @@ class PagarmeLib implements IPayment
 				'captured' => $capture,
 				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
 				'status' => $pagarMeTransaction->status,
-				'transaction_id' => $pagarMeTransaction->id
+				'transaction_id' => strval($pagarMeTransaction->id)
 			);
 		}
 		catch(PagarMe_Exception $ex)
@@ -472,7 +474,7 @@ class PagarmeLib implements IPayment
 				'status' => $pagarMeTransaction->status,
 				'captured' => ($pagarMeTransaction->status == self::PAGARME_PAID),
 				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'transaction_id' => $pagarMeTransaction->id
+				'transaction_id' => strval($pagarMeTransaction->id)
 			);
 		}
 		catch(PagarMe_Exception $ex)

@@ -503,7 +503,7 @@ Class BrasPagLib implements IPayment
 				"success" 					=> false ,
 				"recipient_id"				=> 'empty',
 				"type" 						=> 'api_bankaccount_error' ,
-				"code" 						=> $ex->getReturnCode() ,
+				"code" 						=> 500 ,
 				"message" 					=> trans("empty.".$ex->getMessage())
 			);
 

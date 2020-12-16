@@ -1,107 +1,143 @@
-# laravel-generic-lib
-laravel-generic-lib é uma bilioteca genérica para o laravel. É um exemplo de uma Lib que possui rotas próprias, controllers, models, migrations, FormRequests, resources, arquivos de tradução, views (integração do blade do laravel com vue.js)
+# laravel-payment-gateways
+laravel-payment-gateways é uma bilioteca de pagamento, que possui diversos gateways.
 
-# Observações
-- É importante sempre especificar qual middleware a biblioteca que você for desenvolver utiliza. Tais middleware deverão ser pré requisitos para os projetos que for instalar a sua lib. Exemplo: middleware para verificar se o admin fez login `'middleware' => 'auth.admin_api'`
-- Utilizar preferencialmente os models criados na bibliotecas. Se utilizar models de um projeto especifíco, outro projeto pode não conter os mesmos models.
-- Arquivos de traduções também devem ser feitos na biblioteca (evitar utilizar traduções de um projeto)
-- Utilizar os seguintes prefixos nas rotas:
--- Rotas de api para apps: `localhost:8000/libs/nomedarota`
--- Rotas do painel : `localhost:8000/admin/libs/nomedarota`, e `localhost:8000/corp/libs/nomedarota` ...
-- Preferencialmente, ao criar migrations, verificar se uma coluna, tabela ou row, já existe. Somente se não existir deverá ser criado.
-- Deverá ser instalado o vue.js dentro da biblioteca
--  Gerar os arquivos minificados do vue dentro da própria biblioteca do laravel, e utilizar o `publishes` do laravel para colocar esses arquivos dentro da pasta public do projeto que for instalar essa lib. Depois é só adicionar o script no composer.json para quando rodar o comando `composer dump-autoload -o`, ele roda o publishes e copia esses arquivos minificados do vue da bilioteca e jogo dentro do projeto. É importante ficar atento ao tamanho do arquivo, evite utilizar modulos desnecessários no `package.json` e no fim, quando for da commit nas suas mudanças, rode `npm run prod` para gerar os arquivos minificados.
-- Repare no arquivo GenericServiceProvider.php: 
-```
-$this->publishes([
-    __DIR__.'/../public/js' => public_path('vendor/codificar/generic'),
-], 'public_vuejs_libs'); 
-```
-- Aqui está sendo copiado os arquivos da pasta public/js da biblioteca e jogado para a pasta public/vendor/codificar/generic do projeto
-- Abaixo, na parte de instalação, será mostrado como colocar o script no composer.json do projeto para fazer as mudanças sempre que rodar composer dump-autoload -o
+***
+# createCard
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Payment` | Object | Instância da classe do model `Payment` |
+| `User` | Object | Instância da classe do model `User` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se o cartão foi criado e `false` se foi recusado |
+| `token` | String| Token do cartão, retornado pelo gateway. |
+| `card_token` | String | Token do cartão, retornado pelo gateway. |
+| `customer_id` | String | Alguns gateways possuem customer_id e outros não. Os que nao possui, será o card_token |
+| `card_type` | String | Bandeira do cartão. Visa, mastercard etc. |
+| `last_four` | String | Ultimos 4 digitos do cartão |
+| `gateway` | String | Gateway que foi utilizado |
 
-# Rotas
-| Tipo  | Retorno | Rota  | Description |
-| :------------ |:---------------: |:---------------:| :-----|
-| `get` | View/html | /admin/libs/example_vuejs | Api retorna um exemplo de uma página feita em vue.js |
-| `get` | Api/json | /libs/generic/example | Api que os Apps poderão consumir | 
-| `get` | Api/json | /libs/generic/lang.trans/{file} | Api retornará os arquivos de tradução do Laravel para serem usados dentro do vue.js |
+***
+# charge
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Payment` | Object | Instância da classe do model `Payment` |
+| `amount` | Float | Valor a ser cobrado |
+| `description` | String | Descrição do pagamento |
+| `capture` | Boolean | `true` se é para capturar o valor agora ou `false` para fazer uma pré-autorização |
+| `User` | Object | Instância da classe do model `User` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se transação foi feita ou `false` se foi recusada |
+| `captured` | Boolean| `true` se o valor foi capturado ou `false` se foi pre-autorizado |
+| `paid` | Boolean | `true` se foi pago ou `false` se foi apenas autorizado (ou recusado) |
+| `status` | String | `paid` se foi pago ou `authorized` se foi pre-autorizado |
+| `transaction_id` | String | Id da transação retorno pelo gateway. |
+
+***
+
+# capture
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Transaction` | Object | Instância da classe do model `Transaction` |
+| `amount` | Float | Valor que de fato será cobrado. Dependendo do gateway, esse valor pode ser igual ou menor que o pre-autorizado |
+| `Payment` | Object | Instância da classe do model `Payment` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se a captura foi feita ou `false` se foi recusada |
+| `status` | String | `paid` se foi pago outros valores caso não foi pago |
+| `captured` | Boolean| `true` se o valor foi capturado ou false caso deu algum problema |
+| `paid` | Boolean | `true` se foi pago ou `false` se houve um erro |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+
+***
+
+# refund
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Transaction` | Object | Instância da classe do model `Transaction` |
+| `Payment` | Object | Instância da classe do model `Payment` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se foi cancelado `false` se houve um erro ao cancelar |
+| `status` | String | `refunded` se foi cancelado corretamente, ou outro valor se não conseguiu cancelar |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+
+***
+
+# retrieve
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Transaction` | Object | Instância da classe do model `Transaction` |
+| `Payment` | Object | Instância da classe do model `Payment` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se conseguiu pegar os dados `false` se houve um erro |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+| `amount` | Float | Valor cobrado |
+| `destination` | String | Valor vazio |
+| `status` | String | status da transação |
+| `card_last_digits` | String | Últimos 4 digitos do cartão |
 
 
-# Estrutura
- ![alt text](https://i.imgur.com/PsahJHb.jpg)
+***
 
+# billetCharge
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `amount` | Float | Valor do boleto |
+| `client` | Object | Instância do usuário ou do prestador `User` ou `Provider` |
+| `postbackUrl` | String | Rota do nosso servidor que o gateway envia para avisar que o boleto foi pago |
+| `billetExpirationDate` | String | Data de vencimento do boleto. Possui o formato YYYY-MM-DD (Y-m-d) |
+| `billetInstructions` | String | Instruções do boleto. |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se conseguiu gerar o boleto `false` se houve um erro |
+| `captured` | Boolean| valor fixado como `true` |
+| `paid` | Boolean | `true` se foi pago ou `false` se não foi pago ainda. Como o boleto acabou de ser gerado, então provavelmente será `false` |
+| `status` | String | status da transação. Como o boleto acabou de ser gerado, então provavelmente será `waiting_payment` |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+| `billet_url` | String | Url do boleto retornado pelo gateway |
+| `billet_expiration_date` | String | Data de expiração do boleto |
 
-# Instalação
+***
 
-- Adiciona o projeto no composer.json (direto do gitlab)
+# createOrUpdateAccount
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `LedgerBankAccount` | Object | Instância do model `LedgerBankAccount` |
 
-```
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se conseguiu gerar o boleto `false` se houve um erro |
+| `recipient_id` | String | Id do recebedor (id da conta bancária) |
 
-"repositories": [
-    {
-        "type":"package",
-        "package": {
-            "name": "codificar/contactform",
-            "version":"master",
-            "source": {
-                "url": "https://libs:ofImhksJ@git.codificar.com.br/laravel-libs/laravel-generic-lib.git",
-                "type": "git",
-                "reference":"master"
-            }
-        }
-    }
-],
+***
 
-// ...
+# chargeWithSplit
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Payment` | Object | Instância da classe do model `Payment` |
+| `Provider` | Object | Instância da classe do model `Provider` |
+| `totalAmount` | Float | Valor a ser cobrado do usuário |
+| `providerAmount` | Float | Valor que o prestador vai receber |
+| `description` | String | Descrição do pagamento |
+| `capture` | Boolean | `true` se é para capturar o valor agora ou `false` para fazer uma pré-autorização |
+| `User` | Object | Instância da classe do model `User` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se transação foi feita ou `false` se foi recusada |
+| `captured` | Boolean| `true` se o valor foi capturado ou `false` se foi pre-autorizado |
+| `paid` | Boolean | `true` se foi pago ou `false` se foi apenas autorizado (ou recusado) |
+| `status` | String | `paid` se foi pago ou `authorized` se foi pre-autorizado |
+| `transaction_id` | String | Id da transação retorno pelo gateway. |
 
-"require": {
-    // ADD this
-    "codificar/generic": "dev-master",
-},
-
-```
-
-- Procure o psr-4 do autoload e adione a pasta src da sua biblioteca
-```
-"psr-4": {
-    // Adicionar aqui
-    "Codificar\\Generic\\": "vendor/codificar/generic/src",
-}
-```
-
-- Agora, precisamos adicionar o novo Service Provider no arquivo `config/app.php` dentro do array `providers`:
-
-```
-'providers' => [
-         ...,
-            // The new package class
-            Codificar\Generic\GenericServiceProvider::class,
-        ],
-```
-- Precisamos copiar os arquivos da pasta public da biblioteca para a pasta public do projeto. Para isso adicione dentro do composer.json, no objeto `"scripts": {`. Repare que especificamos a tag. Nesse caso é public_vuejs_libs. Essa tag é a mesma que fica no arquivo GenericServiceProvider.php da biblioteca. Não tem problema várias bibliotecas utilizarem a mesma tag. Inclusive é bom que todos os componentes utilizem a mesma tag, para não ter que ficar adicionando isso a cada novo projeto que precisar da sua lib.
-```
-"post-autoload-dump": [
-	"@php artisan vendor:publish --tag=public_vuejs_libs --force"
-]
-```
-
-- Dump o composer autoloader
-
-```
-composer dump-autoload -o
-```
-
-- Rode as migrations
-
-```
-php artisan migrate
-```
-
-Por fim, teste se tudo está ok e acesse as rotas de exemplo:
-
-```
-php artisan serve
-```
-View: http://localhost:8000/admin/libs/example_vuejs
-Api: http://localhost:8000/libs/generic/example
+***

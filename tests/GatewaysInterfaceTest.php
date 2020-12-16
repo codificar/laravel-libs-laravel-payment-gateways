@@ -3,7 +3,8 @@
 namespace Tests\libs\gateways;
 
 use Hash, Crypt;
-use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction;
+use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
+use Grimzy\LaravelMysqlSpatial\Types\Point;
 
 class GatewaysInterfaceTest {
 
@@ -109,6 +110,46 @@ class GatewaysInterfaceTest {
 		
 		return $response;
 	}
+
+	public function testCreateOrUpdateAccount($cardId)
+    {
+		$gateway = PaymentFactory::createGateway();
+		$provider = $this->providerRandomForTest();
+		$ledgerBankAccount = LedgerBankAccount::where('provider_id', $provider->id)->first();
+		$response = $gateway->createOrUpdateAccount($ledgerBankAccount);
+
+		if(isset($response['recipient_id']) && $response['recipient_id']) {
+			$ledgerBankAccount->recipient_id = $response['recipient_id'];
+			$ledgerBankAccount->save();
+		}
+
+		return $response;
+	}
+
+	public function testChargeWithSplit($cardId, $capture)
+    {
+		$value = 8.92;
+		$provider_value = 5;
+		$gateway = PaymentFactory::createGateway();
+		$user = $this->userRandomForTest();
+		$provider = $this->providerRandomForTest();
+		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
+		$response = $gateway->chargeWithSplit($payment, $provider, $value, $provider_value, 'payment test', $capture);
+
+		if($response['success'] && $response['status'] == 'authorized') {
+			//Salva a transaction no banco
+			$transaction 					= new Transaction();
+			$transaction->type 				= 'request_price';
+			$transaction->status 			= 'paid';
+			$transaction->gross_value 	 	= $value;
+			$transaction->provider_value 	= 0;
+			$transaction->gateway_tax_value = 0;
+			$transaction->net_value 		= 0;
+			$transaction->gateway_transaction_id = $response["transaction_id"];
+			$transaction->save();
+		}
+		return $response;
+	}
     
     /**
 	 * get random user for tests
@@ -162,22 +203,25 @@ class GatewaysInterfaceTest {
      * @return  Provider
      * */
     private static function providerRandomForTest(){
-		$provider = Provider::Where('email' , 'provider.healthcheck@codificar.com.br')->first();
+		$provider = Provider::Where('email' , 'provider.tests@codificar.com.br')->first();
 
 		if ( isset($provider) ) {
+			\Log::debug("ecnontrou!!!1");
 			return $provider;
 		} else {
+			\Log::debug("ano encontrou!!!");
 			$status = ProviderStatus::where('name', 'APROVADO')->first();
 
 			$newProvider				= new Provider;
 			$newProvider->first_name 	= 'Provider';
 			$newProvider->last_name  	= 'Health Check';
-			$newProvider->email 	 	= 'provider.healthcheck@codificar.com.br';
+			$newProvider->email 	 	= 'provider.tests@codificar.com.br';
 			$newProvider->address 	 	= 'Rua dos Goitacazes';
 			$newProvider->state	 		= 'Minas Gerais';
 			$newProvider->country 	 	= 'Brasil';
 			$newProvider->zipcode	 	= '30190050';
 			$newProvider->password 	 	= Hash::make('qweqwe');
+			$newProvider->document 	 	= '81649728000';
 			$newProvider->token 	 	= generate_token();
 			$newProvider->token_expiry	= generate_expiry();
 			$newProvider->device_token	= generate_token();
@@ -186,7 +230,7 @@ class GatewaysInterfaceTest {
 			$newProvider->device_token	= generate_token();
 			$newProvider->timezone		= 'UTC';
 			$newProvider->status_id		= $status->id;
-			$newProvider->location_id	= 0;
+			$newProvider->location_id	= null;
 			$newProvider->address_number= 375;
 			$newProvider->address_neighbour = 'Centro';
 			$newProvider->address_city  = 'Belo Horizonte';
@@ -211,6 +255,26 @@ class GatewaysInterfaceTest {
 						   $type->base_price_provider, $type->base_price_user, $type->distance_unit,
 						   $type->time_unit, $genre = ProviderType::NONE, 1);
 			}
+
+			//Create a bank cont for test
+			$provider = Provider::find($newProvider->id);
+			$ledger = ($provider ? $provider->createLedger() : new Ledger);
+
+
+			$ledgerBankAccount = new LedgerBankAccount();
+			$ledgerBankAccount->ledger_id = $ledger->id;
+			$ledgerBankAccount->holder =  $provider->first_name;
+			$ledgerBankAccount->document = $provider->document;
+			$ledgerBankAccount->bank_id = '1';
+			$ledgerBankAccount->agency = '1234';
+			$ledgerBankAccount->agency_digit = 5;
+			$ledgerBankAccount->account = '12345';
+			$ledgerBankAccount->account_type = 'conta_corrente';
+			$ledgerBankAccount->account_digit = 6;
+			$ledgerBankAccount->recipient_id = 'empty';
+            $ledgerBankAccount->person_type = 'person_type';
+           	$ledgerBankAccount->provider_id = $provider->id;
+            $ledgerBankAccount->save();
 
 			return $newProvider;
 		}

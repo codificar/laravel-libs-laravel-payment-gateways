@@ -22,6 +22,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'pagarme_api_key')->update(['value' => 'ak_test_PlTjytFjSz5RLwcUK9TFssfmKMac8y']);
 
 		$this->runInterfaceGateways($gateway);
+		$this->runSPlitGateways($gateway);
 	}
 
 	public function testCielo() {
@@ -46,6 +47,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'braspag_merchant_key')->update(['value' => 'ULMLYDYEXNPHUZZPHUHIFXAWZTWTJUIMUZHZVUAT']);
 
 		$this->runInterfaceGateways($gateway);
+		// $this->runSPlitGateways($gateway);
 	}
 
 	public function testGetnet() {
@@ -73,6 +75,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'stripe_connect')->update(['value' => 'standard_accounts']);
 
 		$this->runInterfaceGateways($gateway, '4242424242424242');
+		// $this->runSPlitGateways($gateway, '4242424242424242');
 	}
 
 	public function testZoop() {
@@ -85,6 +88,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'zoop_publishable_key')->update(['value' => 'zpk_test_jP4JOy1OHvgJ3dyW6MHLrvgL']);
 		Settings::where('key', 'zoop_marketplace_id')->update(['value' => 'c7bbd8b1b7574077804948faa27ff903']);
 
+		$this->assertTrue(true);
 		echo "\n".$gateway." - Precisa terminar a implementação";
 		// $this->runInterfaceGateways($gateway);
 	}
@@ -99,6 +103,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'gerencianet_client_id')->update(['value' => 'Client_Id_43f0ec07a5d2ff067527ce82c97505018c7bd040']);
 		Settings::where('key', 'gerencianet_sandbox')->update(['value' => 'true']);
 
+		$this->assertTrue(true);
 		echo "\n".$gateway." - Precisa terminar a implementação";
 		// $this->runInterfaceGateways($gateway);
 	}
@@ -116,6 +121,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'directpay_encrypt_value')->update(['value' => '251381']);
 		Settings::where('key', 'directpay_encrypt_key')->update(['value' => '58DFC6D0C524FB9F3B331C73DB21E356']);
 
+		$this->assertTrue(true);
 		echo "\n".$gateway." - Precisa terminar a implementação";
 		// $this->runInterfaceGateways($gateway);
 	}
@@ -129,6 +135,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'bancard_private_key')->update(['value' => 'jMkXA.zxQ4ibV9XcV+ENN1awDb3mWUrt3KAkBoWf']);
 		Settings::where('key', 'bancard_public_key')->update(['value' => 'BQzqR40EGL7jcA5si2AG7QUW6H4G65ip']);
 		
+		$this->assertTrue(true);
 		echo "\n".$gateway." - Precisa terminar a implementação";
 		// $this->runInterfaceGateways($gateway);
 	}
@@ -142,7 +149,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'transbank_public_cert')->update(['value' => '123']);
 		Settings::where('key', 'transbank_commerce_code')->update(['value' => '456']);
 		Settings::where('key', 'transbank_private_key')->update(['value' => '789']);
-
+		
+		$this->assertTrue(true);
 		echo "\n".$gateway." - Precisa terminar a implementação";
 		// $this->runInterfaceGateways($gateway);
 	}
@@ -151,9 +159,21 @@ class AllGatewaysTest extends TestCase
     private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070'){
 		$interface = new GatewaysInterfaceTest();
 		
-		//Cria o cartao
+		//Cria o cartao e verifica se todos os parametros estao ok
 		$createCard = $interface->testCreateCard($cardNumber);
 		$this->assertTrue($createCard['success']);
+		$this->assertInternalType('string', $createCard['token']);
+		$this->assertNotEmpty($createCard['token']);
+		$this->assertInternalType('string', $createCard['card_token']);
+		$this->assertNotEmpty($createCard['card_token']);
+		$this->assertInternalType('string', $createCard['customer_id']);
+		$this->assertNotEmpty($createCard['customer_id']);
+		$this->assertInternalType('string', $createCard['card_type']);
+		$this->assertNotEmpty($createCard['card_type']);
+		$this->assertInternalType('string', $createCard['last_four']);
+		$this->assertNotEmpty($createCard['last_four']);
+		$this->assertInternalType('string', $createCard['gateway']);
+		$this->assertNotEmpty($createCard['gateway']);
 		echo "\n".$gateway." - Criar cartao: ok";
 
 		$cardId = $createCard['payment']['id'];
@@ -161,30 +181,52 @@ class AllGatewaysTest extends TestCase
 		//Realiza uma cobranca direta e sem split
 		$charge = $interface->testCharge($cardId);
 		$this->assertTrue($charge['success']);
+		$this->assertTrue($charge['captured']);
+		$this->assertTrue($charge['paid']);
 		$this->assertEquals($charge['status'], 'paid');
+		$this->assertInternalType('string', $charge['transaction_id']);
+		$this->assertNotEmpty($charge['transaction_id']);
 		echo "\n".$gateway." - charge sem split: ok";
 
 		//Realiza uma pre-autorizacao (chargeNoCapture) sem split
 		$chargeNoCapture = $interface->testChargeNoCapture($cardId);
 		$this->assertTrue($chargeNoCapture['success']);
+		$this->assertFalse($chargeNoCapture['captured']);
+		$this->assertFalse($chargeNoCapture['paid']);
 		$this->assertEquals($chargeNoCapture['status'], 'authorized');
+		$this->assertInternalType('string', $chargeNoCapture['transaction_id']);
+		$this->assertNotEmpty($chargeNoCapture['transaction_id']);
 		echo "\n".$gateway." - chargeNoCapture sem split: ok";
 
 		//Faz o capture da pre-autorizacao anterior. Passa como parametro a transaction_id da pre-autorizacao.
 		$capture = $interface->testCapture($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($capture['success']);
 		$this->assertEquals($capture['status'], 'paid');
+		$this->assertTrue($capture['captured']);
+		$this->assertTrue($capture['paid']);
+		$this->assertInternalType('string', $capture['transaction_id']);
+		$this->assertNotEmpty($capture['transaction_id']);
 		echo "\n".$gateway." - capture sem split: ok";
 
 		//Faz o cancelamento da transacao
 		$refund = $interface->testRefund($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($refund['success']);
 		$this->assertEquals($refund['status'], 'refunded');
+		$this->assertInternalType('string', $refund['transaction_id']);
+		$this->assertNotEmpty($refund['transaction_id']);
 		echo "\n".$gateway." - refunded: ok";
 
 		//retrieve (recuperar os dados) a transaction
 		$retrieve = $interface->testRetrieve($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($retrieve['success']);
+		$this->assertInternalType('string', $retrieve['transaction_id']);
+		$this->assertNotEmpty($retrieve['transaction_id']);
+		$this->assertTrue(is_numeric($retrieve['amount']));
+		$this->assertInternalType('string', $retrieve['destination']);
+		$this->assertInternalType('string', $retrieve['status']);
+		$this->assertNotEmpty($retrieve['status']);
+		$this->assertInternalType('string', $retrieve['card_last_digits']);
+		$this->assertNotEmpty($retrieve['card_last_digits']);
 		echo "\n".$gateway." - retrieve: ok";
 
 
@@ -197,5 +239,34 @@ class AllGatewaysTest extends TestCase
 		} else {
 			echo "\n".$gateway." - billet: nao possui boleto";
 		}
+	}
+
+	private function runSPlitGateways($gateway, $cardNumber = '5420222734962070'){
+		$interface = new GatewaysInterfaceTest();
+		
+		//Cria o cartao
+		$createCard = $interface->testCreateCard($cardNumber);
+		$this->assertTrue($createCard['success']);
+		$cardId = $createCard['payment']['id']; 
+		
+		//cria conta bancaria
+		$charge = $interface->testCreateOrUpdateAccount($cardId);
+		$this->assertTrue($charge['success']);
+		$this->assertInternalType('string', $charge['recipient_id']);
+		$this->assertNotEmpty($charge['recipient_id']);
+		echo "\n".$gateway." - criar conta do prestador (Recipient): ok";
+
+		//Realiza uma cobranca direta com split
+		$charge = $interface->testChargeWithSplit($cardId, true);
+		$this->assertTrue($charge['success']);
+		$this->assertEquals($charge['status'], 'paid');
+		echo "\n".$gateway." - charge com split: ok";
+
+		//Realiza um charge no capture com split
+		$chargeNoCaptureWithSplit = $interface->testChargeWithSplit($cardId, false);
+		$this->assertTrue($chargeNoCaptureWithSplit['success']);
+		$this->assertEquals($chargeNoCaptureWithSplit['status'], 'authorized');
+		echo "\n".$gateway." - charge no capture com split: ok";
+
     }
 }
