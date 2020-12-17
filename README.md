@@ -1,5 +1,5 @@
 # laravel-payment-gateways
-laravel-payment-gateways é uma bilioteca de pagamento, que possui diversos gateways.
+laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gateways.
 
 ***
 # createCard
@@ -108,6 +108,19 @@ laravel-payment-gateways é uma bilioteca de pagamento, que possui diversos gate
 
 ***
 
+# billetVerify
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `request` | Object | Instância do model `request` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se conseguiu verificar o boleto ou `false` se houve um erro |
+| `status` | String | status do boleto |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+
+***
+
 # createOrUpdateAccount
 | Parâmetros | Tipo | Descrição |
 |---|---|---|
@@ -139,5 +152,50 @@ laravel-payment-gateways é uma bilioteca de pagamento, que possui diversos gate
 | `paid` | Boolean | `true` se foi pago ou `false` se foi apenas autorizado (ou recusado) |
 | `status` | String | `paid` se foi pago ou `authorized` se foi pre-autorizado |
 | `transaction_id` | String | Id da transação retorno pelo gateway. |
+
+***
+
+# captureWithSplit
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Transaction` | Object | Instância da classe do model `Transaction` |
+| `Provider` | Object | Instância da classe do model `Provider` |
+| `totalAmount` | Float | Valor a ser cobrado do usuário |
+| `providerAmount` | Float | Valor que o prestador vai receber |
+| `Payment` | Object | Instância da classe do model `Payment` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se transação foi feita ou `false` se foi recusada |
+| `status` | String | `paid` se foi pago ou `authorized` se foi pre-autorizado |
+| `captured` | Boolean| `true` se o valor foi capturado ou `false` se foi pre-autorizado |
+| `paid` | Boolean | `true` se foi pago ou `false` se foi apenas autorizado (ou recusado) |
+| `transaction_id` | String | Id da transação retorno pelo gateway. |
+
+***
+
+# refundWithSplit
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Transaction` | Object | Instância da classe do model `Transaction` |
+| `Payment` | Object | Instância da classe do model `Payment` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se foi cancelado `false` se houve um erro ao cancelar |
+| `status` | String | `refunded` se foi cancelado corretamente, ou outro valor se não conseguiu cancelar |
+| `transaction_id` | String | Id da transação retornado pelo gateway |
+
+***
+
+# deleteCard
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Payment` | Object | Instância da classe do model `Payment` |
+| `User` | Object | Instância da classe do model `User` |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se foi delatado e `false` se houve um erro ao deletar |
 
 ***

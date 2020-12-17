@@ -241,23 +241,24 @@ class GetNetLib implements IPayment
             $chargeStatus = $charge->getStatus();
             $paymentId    = $charge->getPaymentId();
 
+            //Se foi authorizado, mas na verdade ja era pra ser capturado, entao realiza a captura de uma vez.
             if($chargeStatus == self::GATEWAY_AUTHORIZED && $capture == true){
-                $capture        =   $this->getnet->authorizeConfirm($paymentId);
-                $captureStatus  =   $capture->getStatus();
+                $charge = $this->getnet->authorizeConfirm($paymentId);
             }
 
-            if($chargeStatus != self::GATEWAY_AUTHORIZED || (isset($captureStatus) && $captureStatus != self::GATEWAY_CONFIRMED && $capture == true))
-			{
+            //Se o status nao foi capturado e nem autorizado, entao houve um erro 
+            if($charge->getStatus() != self::GATEWAY_CONFIRMED && $charge->getStatus() != self::GATEWAY_AUTHORIZED) {
                 return $this->responseApiError('paymentError.refused');
-			}
-
-			return array (
-				'success'        => true,
-				'captured'       => $capture,
-				'paid'           => $capture,
-				'status'         => $capture ? self::PAYMENT_CONFIRMED : self::PAYMENT_AUTHORIZED,
-				'transaction_id' => $paymentId
-            );
+            }             
+            else {
+                return array (
+                    'success'        => true,
+                    'captured'       => $charge->getStatus() == self::GATEWAY_CONFIRMED ? true : false,
+                    'paid'           => $charge->getStatus() == self::GATEWAY_CONFIRMED ? true : false,
+                    'status'      => $charge->getStatus() == self::GATEWAY_CONFIRMED ? 'paid' : 'authorized',
+                    'transaction_id' => $paymentId
+                );
+            }
 
         } catch (\Exception $e) {
             \Log::error($e->getMessage());

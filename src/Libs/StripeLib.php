@@ -126,6 +126,7 @@ class StripeLib implements IPayment
 			return array(
 				"success" 		=> true ,
 				"customer_id" 	=> $stripeCustomer->id ,
+				"token"			=> $createdCard->id,
 				"card_token" 	=> $createdCard->id ,
 				"last_four" 	=> $createdCard->last4 ,
 				"card_type"		=> strtolower($createdCard->brand),
@@ -257,7 +258,7 @@ class StripeLib implements IPayment
 
 			return array(
 				"success" 			=> true ,
-				"paid" 				=> $charge->paid ,
+				"paid" 				=> ($charge->paid && $charge->captured) ? true : false,
 				"status" 			=> $this->getStatus($charge) ,
 				"captured" 			=> $charge->captured ,
 				"transaction_id" 	=> $charge->id
@@ -508,7 +509,7 @@ class StripeLib implements IPayment
 			'success' => true,
 			'transaction_id' => $stripeTransaction->id,
 			'amount' => $stripeTransaction->amount,
-			'destination' => $stripeTransaction->destination,
+			'destination' => $stripeTransaction->destination ? $stripeTransaction->destination : '',
 			'status' => $this->getStatus($stripeTransaction),
 			'card_last_digits' => $stripeTransaction->source->last4,
 		);		

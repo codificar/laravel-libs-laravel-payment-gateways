@@ -406,7 +406,7 @@ Class BrasPagLib implements IPayment
 			'transaction_id' 	=> $response->data->Payment->PaymentId,
 			'amount' 			=> $response->data->Payment->Amount,
 			'destination' 		=> '',	
-			'status' 			=> $response->data->Payment->Status == 2 ? 'paid' : $response->data->Payment->Status,
+			'status' 			=> $response->data->Payment->Status == 2 ? 'paid' : strval($response->data->Payment->Status),
 			'card_last_digits' 	=> $payment ? $payment->last_four : '',
 		);
     }
@@ -436,7 +436,9 @@ Class BrasPagLib implements IPayment
 			'customer_id'	=>	'',
 			'last_four'		=>	substr($cardNumber, -4),
 			'card_type'		=>	detectCardType($cardNumber),
-			'card_token'	=>	''
+            'card_token'	=>	'',
+            'token'	        =>	'',
+            'gateway'       => 'braspag'
 		);
 
 		return $result;

@@ -163,11 +163,8 @@ class AllGatewaysTest extends TestCase
 		$createCard = $interface->testCreateCard($cardNumber);
 		$this->assertTrue($createCard['success']);
 		$this->assertInternalType('string', $createCard['token']);
-		$this->assertNotEmpty($createCard['token']);
 		$this->assertInternalType('string', $createCard['card_token']);
-		$this->assertNotEmpty($createCard['card_token']);
 		$this->assertInternalType('string', $createCard['customer_id']);
-		$this->assertNotEmpty($createCard['customer_id']);
 		$this->assertInternalType('string', $createCard['card_type']);
 		$this->assertNotEmpty($createCard['card_type']);
 		$this->assertInternalType('string', $createCard['last_four']);

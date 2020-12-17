@@ -510,7 +510,7 @@ class PagarmeLib implements IPayment
 				return array(
 					"success" 			=> true ,
 					"status" 			=> $refund->status ,
-					"transaction_id" 	=> $refund->id ,
+					"transaction_id" 	=> strval($refund->id),
 				);
 				
 			} catch (Exception $ex) {
@@ -632,7 +632,7 @@ class PagarmeLib implements IPayment
 
 		return array(
 			'success' => true,
-			'transaction_id' => $pagarmeTransaction->id,
+			'transaction_id' => strval($pagarmeTransaction->id),
 			'amount' => $pagarmeTransaction->amount,
 			'destination' => '',
 			'status' => $pagarmeTransaction->status,
