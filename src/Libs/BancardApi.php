@@ -4,7 +4,7 @@ namespace Codificar\PaymentGateways\Libs;
 
 use Exception;
 use Illuminate\Support\Facades\App;
-use Ledger;
+use Ledger, Input;
 use Payment;
 
 /**
@@ -117,7 +117,7 @@ class BancardApi
                     "user_id" => $customer_id,
                     "user_cell_phone" => $user ? $user->phone : ($provider ? $provider->phone : null),
                     "user_mail" => $user ? $user->email : ($provider ? $provider->email : null),
-                    "return_url" => \Config::get('app.url') . "/bancard/return/" . ($user ? $user->id : 0) . "/" . ($provider ? $provider->id : 0)
+                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/return/" . ($user ? $user->id : 0) . "/" . ($provider ? $provider->id : 0)
                 )
             );
 
@@ -136,7 +136,7 @@ class BancardApi
 
             //em caso de sucesso, chama o iframe para cadastro das informações
             if ($result->status == self::STATUS_SUCCESS) {
-                return \Config::get('app.url') . "/bancard/iframe_card/" . $result->process_id;
+                return \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $result->process_id;
             } else {
                 return array(
                     'success' => false,

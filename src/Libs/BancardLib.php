@@ -2,6 +2,9 @@
 
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
+
+use Codificar\PaymentGateways\Libs\BancardApi;
+
 use Exception;
 //models do sistema
 use Payment;
@@ -432,7 +435,7 @@ class BancardLib implements IPayment
 
     public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
 	{
-		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
+		\Log::error('billet_charge_not_implemented_in_Bancard_gateway');
 
 		return array (
 			'success' => false,
