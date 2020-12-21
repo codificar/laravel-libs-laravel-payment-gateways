@@ -55,7 +55,7 @@ class PaymentFactory
     {
         switch (Settings::findByKey('default_payment_boleto')) {
             case self::PAYMENT_GATEWAY_GERENCIANET:
-                return (new \GerenciaNetLib());
+                return (new GerenciaNetLib());
         }
     }
 }
