@@ -43,6 +43,8 @@ class PaymentFactory
 
             case self::PAYMENT_GATEWAY_BANCARD:
                 return (new BancardLib());
+            case self::PAYMENT_GATEWAY_TRANSBANK:
+                return (new TransbankLib());
 
             case self::PAYMENT_GATEWAY_GERENCIANET:
                 return (new GerenciaNetLib());

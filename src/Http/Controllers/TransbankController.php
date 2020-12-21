@@ -10,8 +10,6 @@ use Codificar\PaymentGateways\Http\Requests\AddCardTransbankUserFormRequest;
 //Resources
 use Codificar\PaymentGateways\Http\Resources\AddCardTransbankUserResource;
 
-use Codificar\PaymentGateways\Libs\BancardApi;
-
 use View, User, Input;
 use Payment;
 
@@ -48,7 +46,7 @@ class TransbankController extends Controller
         $url_webpay = $gateway->urlConvert($url_webpay, true);
 
         //envia post para webpay para gerar form
-        return View::make('transbank.card')->with(
+        return View::make('gateways::transbank.card')->with(
             [
                 'action' => $url_webpay,
                 'token' => $tbk_token

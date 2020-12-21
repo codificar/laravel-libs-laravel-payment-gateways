@@ -80,7 +80,7 @@ class GerenciaNetLib implements IPayment
 	 * @param $message - mensagem opcional a ser apresentada no boleto
 	 * @return array
 	 */
-	public function chargeWithBillet(Payment $payment = null, $items, User $user = null, $expire, $message = '', $invoice_id)
+	public function invoiceBilletCharge(Payment $payment = null, $items, User $user = null, $expire, $message = '', $invoice_id)
 	{
 		// $discount = [ // configuração de descontos
 		// 	'type' => 'currency', // tipo de desconto a ser aplicado
