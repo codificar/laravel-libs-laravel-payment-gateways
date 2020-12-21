@@ -5,8 +5,8 @@ laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gat
 # Status dos gateways
 | Gateway | Implementado | Homologado |
 |---|---|---|
-| `Pagarme` | - [x] | - [ ] |
-| `Cielo` | - [x] | - [ ] |
+| `Pagarme` | - [x] ok | - [ ] |
+| `Cielo` | - [x] ok | - [ ] |
 
 ***
 # createCard
