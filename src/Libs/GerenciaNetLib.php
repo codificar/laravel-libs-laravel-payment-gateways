@@ -240,11 +240,18 @@ class GerenciaNetLib implements IPayment
 	{
 		$phone = (string) preg_replace('/[^0-9]/', '', $user->getPhone());
 
+		if(strlen($phone) < self::MIN_PHONE ) {
+			$phone = str_pad($phone, self::MIN_PHONE, '9', STR_PAD_LEFT);
+		}
+		//Se for maior que 11, remove o codigo do pais (primeiros 2 caracteres, no brasil e 55)
+		else if (strlen($phone) > 11) {
+			$phone = substr($phone, 2);
+		}
 		if ($fisical_person) {
 			return [
 				'name' => $user->getFullName(),
 				'cpf' => $user->document,
-				'phone_number' => strlen($phone) < self::MIN_PHONE ? str_pad($phone, self::MIN_PHONE, '9', STR_PAD_LEFT) : $phone,
+				'phone_number' => $phone,
 				//'phone_number' => substr($user->getPhone(), 3),
 				// 'email' => $user->getEmail(),
 				// 'birth' => $user->birthdate //Não obrigatório
@@ -255,7 +262,7 @@ class GerenciaNetLib implements IPayment
 					'corporate_name' => $user->first_name,
 					'cnpj' => $user->document,
 				],
-				'phone_number' => strlen($phone) < self::MIN_PHONE ? str_pad($phone, self::MIN_PHONE, '9', STR_PAD_LEFT) : $phone,
+				'phone_number' => $phone,
 				//'phone_number' => substr($user->getPhone(), 3),
 			];
 		}
