@@ -52,10 +52,12 @@ class GerenciaNetLib implements IPayment
 	 */
 	private function setApiKey()
 	{
+		$isSandbox = Settings::findByKey(self::GERENCIANET_SANDBOX);
+		$isSandbox = ($isSandbox == "false" || $isSandbox == false) ? false : true;
 		$this->options = [
 			'client_id' => Settings::findByKey(self::GERENCIANET_CLIENT_ID),
 			'client_secret' => Settings::findByKey(self::GERENCIANET_CLIENT_SECRET),
-			'sandbox' => (bool) Settings::findByKey(self::GERENCIANET_SANDBOX)
+			'sandbox' => $isSandbox
 		];
 	}
 
