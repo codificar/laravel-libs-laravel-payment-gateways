@@ -12,7 +12,7 @@ use Codificar\PaymentGateways\Http\Resources\TesteResource;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
-use Provider, Settings, Ledger, Finance, Bank, LedgerBankAccount;
+use Provider, Settings, Ledger, Finance, Bank, LedgerBankAccount, Payment;
 use stdClass;
 
 class GatewaysController extends Controller
@@ -82,8 +82,7 @@ class GatewaysController extends Controller
         array('value' => 'getnet', 'name' => 'setting.getnet'),
         array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
-        array('value' => 'transbank', 'name' => 'setting.transbank'),
-        array('value' => 'gerencianet', 'name' => 'setting.gerencianet'),
+        array('value' => 'transbank', 'name' => 'setting.transbank')
     );
 
     /**
@@ -118,10 +117,22 @@ class GatewaysController extends Controller
             }
         }
 
+        $hasInvoiceBillet = $this->hasInvoiceBillet();
+
+        $invoice_billet = array();
+        if($hasInvoiceBillet) {
+            $invoice_billet['default_payment_boleto'] = Settings::findByKey('default_payment_boleto');
+            $invoice_billet['gerencianet_sandbox'] = Settings::findByKey('gerencianet_sandbox');
+            $invoice_billet['gerencianet_client_secret'] = Settings::findByKey('gerencianet_client_secret');
+            $invoice_billet['gerencianet_client_id'] = Settings::findByKey('gerencianet_client_id');
+        }
+        
         //retorna view
         return View::make('gateways::settings')
             ->with([
                 'payment_gateways' => $this->payment_gateways,
+                'has_invoice_billet' => $hasInvoiceBillet,
+                'invoice_billet' => $invoice_billet,
                 'settings' => $settings,
                 'enums' => $enums
             ]);
@@ -162,5 +173,36 @@ class GatewaysController extends Controller
 
         // Return data
         return new GatewaysResource([]);
+    }
+
+
+    /**
+     * @api{post}/libs/settings/save/billet_invoice
+     * Save payment default and confs
+     * @return Json
+     */
+    public function saveBilletInvoiceSettings(GatewaysFormRequest $request)
+    {
+        //recupera e salva payment default
+        \Log::debug($request->invoice_billet);
+        foreach ($request->invoice_billet as $key => $value) {
+            $setting = Settings::where('key', '=', $key)->first();
+            if ($setting && ($value || $value == '')) {
+                $setting->value = $value;
+                $setting->save();
+            }
+        }
+
+        // Return data
+        return new GatewaysResource([]);
+    }
+
+    private function hasInvoiceBillet() {
+        try {
+            $hasInvoiceBillet = Payment::HAS_INVOICE_BILLET_GATEWAY;
+        } catch (\Throwable $th) {
+            $hasInvoiceBillet = false;
+        }
+        return $hasInvoiceBillet ? true : false;
     }
 }

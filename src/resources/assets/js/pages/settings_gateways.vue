@@ -2,10 +2,17 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentGateways", "Enums", "Settings"],
+  props: [
+    "PaymentGateways", 
+    "HasInvoiceBillet",
+    "InvoiceBillet", 
+    "Enums", 
+    "Settings"
+  ],
   data() {
     return {
       payment_gateways: {},
+      invoice_billet: {},
       enums: {},
       settings: {},
     };
@@ -52,11 +59,55 @@ export default {
         }
       });
     },
+
+    saveSettingsBillet() {
+      this.$swal({
+        title: this.trans("setting.edit_confirm"),
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonText: this.trans("setting.yes"),
+        cancelButtonText: this.trans("setting.no"),
+      }).then((result) => {
+        if (result.value) {
+          //Submit form if its valid and email doesnt exists
+          console.log("inv:", this.invoice_billet);
+          new Promise((resolve, reject) => {
+            axios
+              .post("/libs/settings/save/billet_invoice", {
+                invoice_billet: this.invoice_billet,
+              })
+              .then((response) => {
+                if (response.data.success) {
+                  this.$swal({
+                    title: this.trans("setting.success_set_gateway"),
+                    type: "success",
+                  }).then((result) => {});
+                } else {
+                  this.$swal({
+                    title: this.trans("setting.failed_set_gateway"),
+                    html:
+                      '<label class="alert alert-danger alert-dismissable text-left">' +
+                      response.data.errors +
+                      "</label>",
+                    type: "error",
+                  }).then((result) => {});
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+                reject(error);
+                return false;
+              });
+          });
+        }
+      });
+    },
+
+
   },
   created() {
-    this.PaymentGateways
-      ? (this.payment_gateways = JSON.parse(this.PaymentGateways))
-      : null;
+    this.PaymentGateways ? (this.payment_gateways = JSON.parse(this.PaymentGateways)) : null;
+    this.InvoiceBillet ? (this.invoice_billet = JSON.parse(this.InvoiceBillet)) : null;
     this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
     this.Enums ? (this.enums = JSON.parse(this.Enums)) : null;
   },
@@ -806,98 +857,6 @@ export default {
           <!-- / Configurações do Zoop-->
 
 
-
-           <!--Configurações do Gerencianet-->
-          <div
-            class="panel panel-default gerencianet"
-            v-if="settings.default_payment == 'gerencianet'"
-          >
-            <div class="panel-heading">
-              <h3 class="panel-title">{{ trans("setting.gerencianet_settings") }}</h3>
-              <hr />
-            </div>
-            <div class="panel-body">
-              <div class="row">
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.gerencianet_client_id") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.gerencianet_client_id')"
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control input-gerencianet"
-                      v-model="settings.gerencianet.gerencianet_client_id"
-                    />
-                    <div class="help-block with-errors"></div>
-                  </div>
-                </div>
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.gerencianet_client_secret") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('settingTableSeeder.gerencianet_client_secret')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control input-gerencianet"
-                      v-model="settings.gerencianet.gerencianet_client_secret"
-                    />
-                    <div class="help-block with-errors"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.gerencianet_sandbox") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.gerencianet_sandbox')"
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-
-                    <select
-                      v-model="settings.gerencianet.gerencianet_sandbox"
-                      name="gerencianet_sandbox"
-                      class="select form-control"
-                    >
-                      <option value="true">{{ trans("setting.sandbox_mode_true") }}</option>
-                      <option value="false"> {{ trans("setting.sandbox_mode_false") }}</option>
-                    </select>
-                
-                    <div class="help-block with-errors"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- / Configurações do Gerencianet-->
-
           <!--Configurações do Bancard-->
           <div
             class="panel panel-default bancard"
@@ -1052,87 +1011,6 @@ export default {
           </div>
           <!-- / Configurações do Transbank-->
 
-          <!--Configurações Avançadas-->
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <h3 class="panel-title">
-                {{ trans("setting.advanced_settings") }}
-              </h3>
-              <hr />
-            </div>
-            <div class="panel-body">
-              <div class="row">
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.automatic_transfer_payment_provider") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans(
-                            'settingTableSeeder.automatic_transfer_payment_provider'
-                          )
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field"></span>
-                    </label>
-
-                    <select
-                      v-model="settings.auto_transfer_provider_payment"
-                      name="auto_transfer_provider_payment"
-                      class="select form-control"
-                    >
-                      <option
-                        v-for="method in enums.auto_transfer_provider_payment"
-                        v-bind:value="method.value"
-                        v-bind:key="method.value"
-                      >
-                        {{ trans(method.name) }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.automatic_transfer_payment_days") }}*
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans(
-                            'settingTableSeeder.automatic_transfer_payment_days'
-                          )
-                        "
-                      ></a>
-                    </label>
-
-                    <select
-                      v-model="
-                        settings.auto_transfer_schedule_at_after_selected_number_of_days
-                      "
-                      name="auto_transfer_schedule_at_after_selected_number_of_days"
-                      class="select form-control"
-                    >
-                      <option
-                        v-for="method in enums.auto_transfer_schedule_at_after_selected_number_of_days"
-                        v-bind:value="method.value"
-                        v-bind:key="method.value"
-                      >
-                        {{ trans(method.name) }}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!--Save-->
           <div class="panel panel-default">
             <div class="form-group text-right">
@@ -1147,6 +1025,85 @@ export default {
           </div>
         </div>
       </div>
+
+
+      <div v-if="HasInvoiceBillet" class="card-outline-info"><!-- Boleto -->
+        <div class="card-header">
+            <h4 class="m-b-0 text-white">{{ trans('setting.boleto_gateway') }}</h4>
+        </div>
+        <div class="card-block">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label for="usr">
+                            {{trans('setting.default_pay_gate_boleto')}}
+                            <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.boleto_gateway')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                        </label>
+                        <select v-model="invoice_billet.default_payment_boleto" class="select form-control">
+														<option value="gerencianet">Gerencianet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label for="usr">
+                            {{trans('setting.operation_mode')}}
+                            <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_sandbox')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                        </label>
+                        <select v-model="invoice_billet.gerencianet_sandbox" class="form-control" required>
+                            <option value="true"> {{trans('setting.Sandbox')}} </option>
+                            <option value="false"> {{trans('setting.production')}} </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!--Configurações de boleto do gerencianet-->
+            <div class="panel panel-default gerencianet">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{trans('setting.gerencianet_settings')}}</h3>
+                    <hr>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="usr">
+                                    {{trans('setting.gerencianet_client_id')}}
+                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_id')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                                </label>
+                                <input v-model="invoice_billet.gerencianet_client_id" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
+                                <div class="help-block with-errors"></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="usr">
+                                    {{trans('setting.gerencianet_client_secret')}} 
+                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_secret')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                                </label>
+                                <input v-model="invoice_billet.gerencianet_client_secret" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
+                                <div class="help-block with-errors"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- / Configurações de boleto do Gerencianet-->
+
+             <!--Save-->
+            <div class="panel panel-default">
+              <div class="form-group text-right">
+                <button v-on:click="saveSettingsBillet()" class="btn btn-success">
+                  <span
+                    class="glyphicon glyphicon-floppy-disk"
+                    aria-hidden="true"
+                  ></span>
+                  {{ trans("setting.save") }}
+                </button>
+              </div>
+            </div>
+        </div>
+      </div> <!-- / Boleto -->
+
     </div>
   </div>
 </template>

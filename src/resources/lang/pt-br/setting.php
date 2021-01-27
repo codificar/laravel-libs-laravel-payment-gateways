@@ -513,10 +513,11 @@ return array(
 	, 'stripe_total_split_refund'							=> 'Estornar todo o valor da corrida (Empresa não fica no prejuízo pagando o valor enviado ao prestador)'
 	, 'You_cannot_change_`legal_entity[verification][document]`_via_API_if_an_account_is_verified._Please_contact_support@stripe.com_if_you_need_to_change_the_legal_entity_information_associated_with_this_account.' => 'Você não pode alterar o arquivo do seu documento se sua conta já foi verificada. Por favor entre em contato com o nosso suporte se você precisa alterar alguma informação legal associada a sua conta.'
 	, 'payment_methods_debt'									=> 'Métodos de Pagamento para Dívida'
-	, 'boleto_gateway'										=> 'Gateway de Boleto'
+	, 'boleto_gateway'										=> 'Gateway de Boleto da Fatura'
 	, 'gerencianet_settings'									=> 'Gerencianet Configurações'
 	, 'gerencianet_client_id'								=> 'Gerencianet Client ID'
 	, 'gerencianet_client_secret'							=> 'Gerencianet Client Secret'
+	, 'operation_mode'										=> 'Modo de operação'
 
 	/*
 	|--------------------------------------------------------------------------

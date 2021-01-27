@@ -13,7 +13,7 @@ use Cielo\API30\Ecommerce\CreditCard;
 use Cielo\API30\Ecommerce\Request\CieloRequestException;
 
 use Ramsey\Uuid\Uuid;
-
+use Exception;
 //models do sistema
 use Payment;
 use Provider;
@@ -156,11 +156,17 @@ class CieloLib implements IPayment
                 "gateway"       =>  "cielo"
             );
 
-        } catch (CieloRequestException $e) {
+        } 
+        //Capture erros on cielo. If is a internal general error, capture after
+        catch (CieloRequestException $e) {
             $error = $e->getCieloError();
-            if(!$error)
-                $error = $e;
-            \Log::error($error->getMessage());
+            if(!$error) { $error = $e; }
+            \Log::error($error->getMessage()); //log cielo error
+            return $this->responseApiError('gateway_cielo.new_card_fail');
+        } 
+        //Capture general error
+        catch(Exception $e){
+            $error = $e->getMessage();
             return $this->responseApiError('gateway_cielo.new_card_fail');
         }
     }

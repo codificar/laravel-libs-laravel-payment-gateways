@@ -21,6 +21,8 @@
 		
 		<settingsgateways 
 			payment-gateways="{{ json_encode($payment_gateways)}}"
+			has-invoice-billet="{{ $has_invoice_billet}}"
+			invoice-billet="{{ json_encode($invoice_billet)}}"
 			settings="{{ json_encode($settings)}}"
 			enums="{{ json_encode($enums)}}"
 		>

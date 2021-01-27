@@ -513,10 +513,11 @@ return array(
 	, 'stripe_total_split_refund'							=> 'Revertir el monto total de la carrera (la empresa no pierde al pagar el monto enviado al proveedor)'
 	, 'You_cannot_change_`legal_entity[verification][document]`_via_API_if_an_account_is_verified._Please_contact_support@stripe.com_if_you_need_to_change_the_legal_entity_information_associated_with_this_account.' => 'No puede cambiar su archivo de documentos si su cuenta ya ha sido verificada. Comuníquese con nuestro soporte si necesita cambiar cualquier información legal asociada con su cuenta. '
 	, 'payment_methods_debt'									=> 'Métodos de pago de la deuda'
-	, 'boleto_gateway'										=> 'Puerta de Boleto'
+	, 'boleto_gateway'										=> 'Puerta de Boleto de factura'
 	, 'gerencianet_settings'									=> 'Configuración de Gestãonet'
 	, 'gerencianet_client_id'								=> 'ID de cliente Gestãonet'
 	, 'gerencianet_client_secret'							=> 'Secreto del cliente Gestãonet'
+	, 'operation_mode'										=> 'Modo de operación'
 
 	/*
 	|--------------------------------------------------------------------------
