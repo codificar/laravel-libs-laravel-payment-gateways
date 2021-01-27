@@ -16,6 +16,14 @@ laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gat
 | `Zoop` | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; |  &#10060; | &#10060; |
 | `BrainTree` | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; |  &#10060; | &#10060; |
 ***
+
+# Teste unitário
+Todos os gateways podem ser testados ao mesmo tempo. Após a instalação dessa biblioteca, basta rodar o comando dentro do projeto em que foi instalado.
+```
+./vendor/bin/phpunit tests/libs/gateways/AllGatewaysTest.php 
+```
+
+***
 # createCard
 | Parâmetros | Tipo | Descrição |
 |---|---|---|
