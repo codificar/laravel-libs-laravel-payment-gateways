@@ -213,3 +213,20 @@ laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gat
 | `success` | Boolean | `true` se foi delatado e `false` se houve um erro ao deletar |
 
 ***
+
+# debit
+| Parâmetros | Tipo | Descrição |
+|---|---|---|
+| `Payment` | Object | Instância da classe do model `Payment` |
+| `amount` | Float | Valor que de fato será cobrado. Dependendo do gateway, esse valor pode ser igual ou menor que o pre-autorizado |
+| `description` | String | Descrição do pagamento |
+***
+| Retorno | Tipo | Descrição |
+|---|---|---|
+| `success` | Boolean | `true` se transação foi feita ou `false` se foi recusada |
+| `captured` | Boolean| `false` por default |
+| `paid` | Boolean | `true` se foi pago ou `false` se foirecusado |
+| `status` | String | `paid` se foi pago ou outro valor caso não tenha pago |
+| `transaction_id` | String | Id da transação retorno pelo gateway. |
+
+***
