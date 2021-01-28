@@ -138,6 +138,10 @@ return array(
 	, 'braspag_merchant_id'											=>  'Identificación de comerciante de Braspag'
 	, 'braspag_merchant_key'										=>  'Llave de comerciante de Braspag'
 	, 'braspag_token'												=>  'Token Braspag'
+	, 'braspag_cielo_ecommerce'										=>  'Braspag Cielo Ecommerce'
+	, 'braspag_client_id'											=>  'ID do cliente'
+	, 'braspag_client_secret'										=>  'Senha do cliente'
+
 
 	, 'getnet'														=>  'GetNet'
 	, 'getnet_client_id'											=>  'Identificación de cliente GetNet'

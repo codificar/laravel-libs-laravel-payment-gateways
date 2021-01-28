@@ -10,12 +10,9 @@ class RunMenuAdminSettingsGatewaysSeeder extends Migration
 	 * @return void
 	 */
 	public function up()
-	{
-		//Artisan::call('db:seed', ['--class' => 'GatewaysPermissionSeeder', '--force' => true]);
-		
-		$admin = Permission::updateOrCreate(array('id' => 6109), array('name' => 'admin_settings_gateways', 'parent_id' => 2319, 'order' => 908, 'is_menu' => 1, 'url' => '/admin/settings/gateways', 'icon' => 'mdi mdi-credit-card'));
-		$profile = Profile::find(1);
-		$profile ? $profile->permissions()->attach($admin->id) : null;
+	{		
+		$addMenu = Permission::updateOrCreate(array('name' => 'admin_settings_gateways', 'parent_id' => 2319, 'order' => 908, 'is_menu' => 1, 'url' => '/admin/settings/gateways'));
+		DB::statement("UPDATE `permission` SET `icon`='mdi mdi-credit-card' WHERE `id` = $addMenu->id ;");
 	}
 
 	/**

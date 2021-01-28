@@ -71,6 +71,11 @@ class GatewaysController extends Controller
             'gerencianet_client_secret',
 
         ],
+        'braspag_cielo_ecommerce' => [
+            'braspag_client_id',
+            'braspag_client_secret'
+
+        ],
     ];
 
     public $payment_gateways =  array(
@@ -79,6 +84,7 @@ class GatewaysController extends Controller
         array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'cielo', 'name' => 'setting.cielo'),
         array('value' => 'braspag', 'name' => 'setting.braspag'),
+        array('value' => 'braspag_cielo_ecommerce', 'name' => 'setting.braspag_cielo_ecommerce'),
         array('value' => 'getnet', 'name' => 'setting.getnet'),
         array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),

@@ -138,6 +138,9 @@ return array(
 	, 'braspag_merchant_id'											=> 'Braspag Merchant Id'
 	, 'braspag_merchant_key'										=> 'Braspag Merchant Key'
 	, 'braspag_token'												=> 'Braspag Token'
+	, 'braspag_cielo_ecommerce'										=> 'Braspag Cielo Ecommerce'
+	, 'braspag_client_id'											=> 'ID do cliente'
+	, 'braspag_client_secret'										=> 'Senha do cliente'
 
 	, 'getnet'														=> 'GetNet'
 	, 'getnet_client_id'											=> 'GetNet Client Id'

@@ -332,6 +332,71 @@ export default {
           </div>
           <!-- / Configurações do Braspag-->
 
+
+          <!--Configurações do Braspag Cielo Ecommerce-->
+          <div
+            class="panel panel-default braspag_cielo_ecommerce"
+            v-if="settings.default_payment == 'braspag_cielo_ecommerce'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.braspag_cielo_ecommerce") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.braspag_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.braspag_client_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-getnet"
+                      v-model="settings.braspag_cielo_ecommerce.braspag_client_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.braspag_client_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.braspag_client_secret')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-getnet"
+                      v-model="settings.braspag_cielo_ecommerce.braspag_client_secret"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Config. Braspag Cielo Ecommerce-->
+
+
+
           <!--Configurações do Getnet-->
           <div
             class="panel panel-default getnet"

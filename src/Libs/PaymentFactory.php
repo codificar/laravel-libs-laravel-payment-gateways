@@ -17,6 +17,12 @@ class PaymentFactory
             case PaymentFacade::PAYMENT_GATEWAY_STRIPE:
                 return (new StripeLib());
 
+            case PaymentFacade::PAYMENT_GATEWAY_BRAINTREE:
+                return (new BraintreeLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_BYEBNK:
+                return (new ByeBankLib());
+
             case PaymentFacade::PAYMENT_GATEWAY_ZOOP:
                 return (new ZoopLib());
 
@@ -25,6 +31,12 @@ class PaymentFactory
 
             case PaymentFacade::PAYMENT_GATEWAY_BRASPAG:
                 return (new BrasPagLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_BRASPAG_CIELO_ECOMMERCE:
+                return (new BraspagCieloEcommerceLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_BANCRYP:
+                return (new BancrypLib());
 
             case PaymentFacade::PAYMENT_GATEWAY_GETNET:
                 return (new GetNetLib());
@@ -39,6 +51,9 @@ class PaymentFactory
 
             case PaymentFacade::PAYMENT_GATEWAY_GERENCIANET:
                 return (new GerenciaNetLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_CARTO:
+                return (new CartoLib());
         }
     }
 
@@ -48,5 +63,17 @@ class PaymentFactory
             case PaymentFacade::PAYMENT_GATEWAY_GERENCIANET:
                 return (new GerenciaNetLib());
         }
+    }
+
+    public static function isZoop(){
+        return (Settings::findByKey('default_payment') == PaymentFacade::PAYMENT_GATEWAY_ZOOP) ;
+    }
+
+    public static function cartoGateway(){
+        return(new CartoLib());
+    }
+
+    public static function BancrypGateway(){
+        return(new BancrypLib());
     }
 }

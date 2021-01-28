@@ -18,6 +18,11 @@ class PaymentFacade extends \Illuminate\Support\Facades\Facade
     const PAYMENT_GATEWAY_BANCARD = 'bancard';
     const PAYMENT_GATEWAY_TRANSBANK = 'transbank';
     const PAYMENT_GATEWAY_GERENCIANET = 'gerencianet';
+    const PAYMENT_GATEWAY_CARTO = 'carto';
+    const PAYMENT_GATEWAY_BRAINTREE = 'braintree';
+    const PAYMENT_GATEWAY_BYEBNK = 'byebnk';
+    const PAYMENT_GATEWAY_BRASPAG_CIELO_ECOMMERCE = 'braspag_cielo_ecommerce';
+    const PAYMENT_GATEWAY_BANCRYP = 'bancryp';
 
     /**
      * @param  array  $parameters

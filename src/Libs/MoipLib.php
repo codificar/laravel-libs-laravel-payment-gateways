@@ -1,9 +1,18 @@
 <?php
 
+namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
-class MoipLib extends PaymentLib{
+use Payment;
+use Provider;
+use Transaction;
+use User;
+use LedgerBankAccount;
+use Settings;
+use ApiErrors;
 
+
+class MoipLib extends IPayment{
 
 
 	/* Stripe Error Types */
@@ -61,6 +70,7 @@ class MoipLib extends PaymentLib{
 				"card_token" 			=> $token->card->id ,
 				"card_type" 			=> strtolower($token->card->brand) ,
 				"last_four" 			=> $token->card->last4 ,
+				"gateway"				=> "moip"
 			);
 		}
 		catch(Stripe\CardError $ex){
@@ -1588,4 +1598,32 @@ class MoipLib extends PaymentLib{
 			);
 		}
 	}
+
+	//finish
+    public function debit(Payment $payment, $amount, $description)
+    {
+        \Log::error('debit_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'debit_not_implemented',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    //finish
+    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    {
+        \Log::error('debit_split_not_implemented');
+
+        return array(
+            "success" 			=> false,
+            "type" 				=> 'api_debit_error',
+            "code" 				=> 'api_debit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
+    }
 }

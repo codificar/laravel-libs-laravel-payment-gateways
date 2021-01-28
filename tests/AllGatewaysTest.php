@@ -78,6 +78,45 @@ class AllGatewaysTest extends TestCase
 		// $this->runSPlitGateways($gateway, '4242424242424242');
 	}
 
+	public function testCarto() {
+		$gateway = 'carto';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'carto_login')->update(['value' => '3235']);
+		Settings::where('key', 'carto_password')->update(['value' => '123456']);
+
+		echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
+		// $this->runInterfaceGateways($gateway, '1010420013471920');
+	}
+
+	public function testBancryp() {
+		$gateway = 'bancryp';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'bancryp_api_key')->update(['value' => '3235']);
+		Settings::where('key', 'bancryp_secret_key')->update(['value' => '123456']);
+
+		echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
+		// $this->runInterfaceGateways($gateway, '1010420013471920');
+	}
+
+	public function testBraspagCieloEcommerce() {
+		$gateway = 'braspag_cielo_ecommerce';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'braspag_client_id')->update(['value' => '3235']);
+		Settings::where('key', 'braspag_client_secret')->update(['value' => '123456']);
+
+		echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
+		// $this->runInterfaceGateways($gateway, '1010420013471920');
+	}
+
 	public function testZoop() {
 		$gateway = 'zoop';
 		//Update the gateway selected
@@ -89,7 +128,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'zoop_marketplace_id')->update(['value' => 'c7bbd8b1b7574077804948faa27ff903']);
 
 		$this->assertTrue(true);
-		echo "\n".$gateway." - Precisa terminar a implementação";
+		echo "\n".$gateway." - nao implementado ainda";
 		// $this->runInterfaceGateways($gateway);
 	}
 
@@ -104,7 +143,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'gerencianet_sandbox')->update(['value' => 'true']);
 
 		$this->assertTrue(true);
-		echo "\n".$gateway." - Precisa terminar a implementação";
+		echo "\n".$gateway." - implementado, mas nao possui teste unitario (precisa ser feito a parte)";
 		// $this->runInterfaceGateways($gateway);
 	}
 
@@ -122,7 +161,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'directpay_encrypt_key')->update(['value' => '58DFC6D0C524FB9F3B331C73DB21E356']);
 
 		$this->assertTrue(true);
-		echo "\n".$gateway." - Precisa terminar a implementação";
+		echo "\n".$gateway." - implementado, mas nao possui teste unitario (precisa ser feito a parte)";
 		// $this->runInterfaceGateways($gateway);
 	}
 
@@ -136,7 +175,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'bancard_public_key')->update(['value' => 'BQzqR40EGL7jcA5si2AG7QUW6H4G65ip']);
 		
 		$this->assertTrue(true);
-		echo "\n".$gateway." - Precisa terminar a implementação";
+		echo "\n".$gateway." - implementado, mas nao possui teste unitario (precisa ser feito a parte)";
 		// $this->runInterfaceGateways($gateway);
 	}
 
@@ -151,7 +190,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'transbank_private_key')->update(['value' => '789']);
 		
 		$this->assertTrue(true);
-		echo "\n".$gateway." - Precisa terminar a implementação";
+		echo "\n".$gateway." - implementado, mas nao possui teste unitario (precisa ser feito a parte)";
 		// $this->runInterfaceGateways($gateway);
 	}
 
@@ -176,7 +215,9 @@ class AllGatewaysTest extends TestCase
 		$cardId = $createCard['payment']['id'];
 		
 		//Realiza uma cobranca direta e sem split
+		\Log::debug("gateway: " . $gateway . " - cardId: " . $cardId);
 		$charge = $interface->testCharge($cardId);
+		\Log::debug(print_r($charge, true));
 		$this->assertTrue($charge['success']);
 		$this->assertTrue($charge['captured']);
 		$this->assertTrue($charge['paid']);
