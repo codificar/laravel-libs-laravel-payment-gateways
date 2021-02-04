@@ -3,21 +3,17 @@ import axios from "axios";
 import moment from "moment";
 export default {
   props: [
-    "PaymentGateways", 
-    "HasInvoiceBillet",
-    "InvoiceBillet", 
-    "Enums", 
-    "Settings"
+    "PaymentMethods", 
+    "Gateways"
   ],
   data() {
     return {
-      payment_gateways: {},
-      invoice_billet: {},
-      enums: {},
-      settings: {},
+      gateways: {},
+      payment_methods: {}
     };
   },
   methods: {
+
     saveSettings() {
       this.$swal({
         title: this.trans("setting.edit_confirm"),
@@ -31,53 +27,13 @@ export default {
           new Promise((resolve, reject) => {
             axios
               .post("/libs/settings/save/gateways", {
-                settings: this.settings,
+                payment_methods: this.payment_methods,
+                gateways: this.gateways
               })
               .then((response) => {
                 if (response.data.success) {
-                  this.$swal({
-                    title: this.trans("setting.success_set_gateway"),
-                    type: "success",
-                  }).then((result) => {});
-                } else {
-                  this.$swal({
-                    title: this.trans("setting.failed_set_gateway"),
-                    html:
-                      '<label class="alert alert-danger alert-dismissable text-left">' +
-                      response.data.errors +
-                      "</label>",
-                    type: "error",
-                  }).then((result) => {});
-                }
-              })
-              .catch((error) => {
-                console.log(error);
-                reject(error);
-                return false;
-              });
-          });
-        }
-      });
-    },
-
-    saveSettingsBillet() {
-      this.$swal({
-        title: this.trans("setting.edit_confirm"),
-        type: "warning",
-        showCancelButton: true,
-        confirmButtonText: this.trans("setting.yes"),
-        cancelButtonText: this.trans("setting.no"),
-      }).then((result) => {
-        if (result.value) {
-          //Submit form if its valid and email doesnt exists
-          console.log("inv:", this.invoice_billet);
-          new Promise((resolve, reject) => {
-            axios
-              .post("/libs/settings/save/billet_invoice", {
-                invoice_billet: this.invoice_billet,
-              })
-              .then((response) => {
-                if (response.data.success) {
+                  console.log("prox is gate");
+                  console.log(this.gateways);
                   this.$swal({
                     title: this.trans("setting.success_set_gateway"),
                     type: "success",
@@ -106,19 +62,80 @@ export default {
 
   },
   created() {
-    this.PaymentGateways ? (this.payment_gateways = JSON.parse(this.PaymentGateways)) : null;
-    this.InvoiceBillet ? (this.invoice_billet = JSON.parse(this.InvoiceBillet)) : null;
-    this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
-    this.Enums ? (this.enums = JSON.parse(this.Enums)) : null;
+    this.PaymentMethods ? (this.payment_methods = JSON.parse(this.PaymentMethods)) : null;
+    this.Gateways ? (this.gateways = JSON.parse(this.Gateways)) : null;
+    console.log(this.payment_methods);
   },
 };
 </script>
 <template>
-  <div>
-    <!-- Row -->
+  <div>    
+    <!-- formas de pagamento -->
     <div class="tab-content">
       <div class="card-outline-info">
-        <!--Payment Gateway-->
+          <div class="card-header">
+            <h4 class="m-b-0 text-white">{{ trans("setting.payment_methods") }}</h4>
+          </div>
+          <div class="card-block">
+            <div class="row">
+              <div class="col-lg-12">
+                <div class="panel-heading">
+                  <h3 class="panel-title">
+                    {{ trans("setting.choose_payment_methods") }}
+                  </h3>
+                  <hr />
+                </div>
+                <div class="form-group">
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_money" v-model="payment_methods.payment_money">
+                    <label class="form-check-label" for="payment_money">{{trans('setting.money')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_card" v-model="payment_methods.payment_card">
+                    <label class="form-check-label" for="payment_card">{{trans('setting.card')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_debitCard" v-model="payment_methods.payment_debitCard">
+                    <label class="form-check-label" for="payment_debitCard">{{trans('setting.debitCard')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_machine" v-model="payment_methods.payment_machine">
+                    <label class="form-check-label" for="payment_machine">{{trans('setting.machine')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_carto" v-model="payment_methods.payment_carto">
+                    <label class="form-check-label" for="payment_carto">{{trans('setting.carto')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_crypt" v-model="payment_methods.payment_crypt">
+                    <label class="form-check-label" for="payment_crypt">{{trans('setting.crypt_coin')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_balance" v-model="payment_methods.payment_balance">
+                    <label class="form-check-label" for="payment_balance">{{trans('setting.payment_balance')}}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_prepaid" v-model="payment_methods.payment_prepaid">
+                    <label class="form-check-label" for="payment_prepaid">
+                      {{trans('setting.payment_prepaid')}}
+                      <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.payment_prepaid_msg')"><span class="mdi mdi-comment-question-outline"></span></a>
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_billing" v-model="payment_methods.payment_billing">
+                    <label class="form-check-label" for="payment_billing">{{trans('setting.payment_billing')}}</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div> <!-- / formas de pagamento -->
+
+
+    <!--Payment Gateway-->
+    <div v-if="payment_methods.payment_card || payment_methods.payment_debitCard" class="card-margin-top">
+      <div class="card-outline-info">
         <div class="card-header">
           <h4 class="m-b-0 text-white">{{ trans("setting.pay_gateway") }}</h4>
         </div>
@@ -140,12 +157,12 @@ export default {
                 </label>
 
                 <select
-                  v-model="settings.default_payment"
+                  v-model="gateways.default_payment"
                   name="default_payment"
                   class="select form-control"
                 >
                   <option
-                    v-for="method in payment_gateways"
+                    v-for="method in gateways.list_gateways"
                     v-bind:value="method.value"
                     v-bind:key="method.value"
                   >
@@ -159,7 +176,7 @@ export default {
           <!--Configurações do Pagar.Me-->
           <div
             class="panel panel-default pagarme"
-            v-if="settings.default_payment == 'pagarme'"
+            v-if="gateways.default_payment == 'pagarme'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">
@@ -188,7 +205,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-pagarme"
-                      v-model="settings.pagarme.pagarme_encryption_key"
+                      v-model="gateways.pagarme.pagarme_encryption_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -212,7 +229,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-pagarme"
-                      v-model="settings.pagarme.pagarme_recipient_id"
+                      v-model="gateways.pagarme.pagarme_recipient_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -236,7 +253,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-pagarme"
-                      v-model="settings.pagarme.pagarme_api_key"
+                      v-model="gateways.pagarme.pagarme_api_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -249,7 +266,7 @@ export default {
           <!--Configurações do Braspag-->
           <div
             class="panel panel-default braspag"
-            v-if="settings.default_payment == 'braspag'"
+            v-if="gateways.default_payment == 'braspag'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.braspag") }}</h3>
@@ -274,7 +291,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-braspag"
-                      v-model="settings.braspag.braspag_merchant_id"
+                      v-model="gateways.braspag.braspag_merchant_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -298,7 +315,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-braspag"
-                      v-model="settings.braspag.braspag_merchant_key"
+                      v-model="gateways.braspag.braspag_merchant_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -322,7 +339,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-braspag"
-                      v-model="settings.braspag.braspag_token"
+                      v-model="gateways.braspag.braspag_token"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -336,7 +353,7 @@ export default {
           <!--Configurações do Braspag Cielo Ecommerce-->
           <div
             class="panel panel-default braspag_cielo_ecommerce"
-            v-if="settings.default_payment == 'braspag_cielo_ecommerce'"
+            v-if="gateways.default_payment == 'braspag_cielo_ecommerce'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.braspag_cielo_ecommerce") }}</h3>
@@ -361,7 +378,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="settings.braspag_cielo_ecommerce.braspag_client_id"
+                      v-model="gateways.braspag_cielo_ecommerce.braspag_client_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -385,7 +402,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="settings.braspag_cielo_ecommerce.braspag_client_secret"
+                      v-model="gateways.braspag_cielo_ecommerce.braspag_client_secret"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -400,7 +417,7 @@ export default {
           <!--Configurações do Getnet-->
           <div
             class="panel panel-default getnet"
-            v-if="settings.default_payment == 'getnet'"
+            v-if="gateways.default_payment == 'getnet'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.getnet") }}</h3>
@@ -425,7 +442,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="settings.getnet.getnet_client_id"
+                      v-model="gateways.getnet.getnet_client_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -449,7 +466,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="settings.getnet.getnet_client_secret"
+                      v-model="gateways.getnet.getnet_client_secret"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -473,7 +490,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="settings.getnet.getnet_seller_id"
+                      v-model="gateways.getnet.getnet_seller_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -486,7 +503,7 @@ export default {
           <!--Configurações do Directpay-->
           <div
             class="panel panel-default directpay"
-            v-if="settings.default_payment == 'directpay'"
+            v-if="gateways.default_payment == 'directpay'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.directpay") }}</h3>
@@ -513,7 +530,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_encrypt_key"
+                      v-model="gateways.directpay.directpay_encrypt_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -537,7 +554,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_encrypt_value"
+                      v-model="gateways.directpay.directpay_encrypt_value"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -563,7 +580,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_requester_id"
+                      v-model="gateways.directpay.directpay_requester_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -589,7 +606,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_requester_password"
+                      v-model="gateways.directpay.directpay_requester_password"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -615,7 +632,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_requester_token"
+                      v-model="gateways.directpay.directpay_requester_token"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -639,7 +656,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-directpay"
-                      v-model="settings.directpay.directpay_unique_trx_id"
+                      v-model="gateways.directpay.directpay_unique_trx_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -652,7 +669,7 @@ export default {
           <!--Configurações do Cielo-->
           <div
             class="panel panel-default cielo"
-            v-if="settings.default_payment == 'cielo'"
+            v-if="gateways.default_payment == 'cielo'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.cielo") }}</h3>
@@ -677,7 +694,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-cielo"
-                      v-model="settings.cielo.cielo_merchant_id"
+                      v-model="gateways.cielo.cielo_merchant_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -701,7 +718,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-cielo"
-                      v-model="settings.cielo.cielo_merchant_key"
+                      v-model="gateways.cielo.cielo_merchant_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -714,7 +731,7 @@ export default {
           <!--Configurações do Strip-->
           <div
             class="panel panel-default stripe"
-            v-if="settings.default_payment == 'stripe'"
+            v-if="gateways.default_payment == 'stripe'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">
@@ -741,7 +758,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-strip"
-                      v-model="settings.stripe.stripe_secret_key"
+                      v-model="gateways.stripe.stripe_secret_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -763,7 +780,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-strip"
-                      v-model="settings.stripe.stripe_publishable_key"
+                      v-model="gateways.stripe.stripe_publishable_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -784,12 +801,12 @@ export default {
                     </label>
 
                     <select
-                      v-model="settings.stripe.stripe_connect"
+                      v-model="gateways.stripe.stripe_connect"
                       name="stripe_connect"
                       class="select form-control"
                     >
                       <option
-                        v-for="method in enums.stripe_connect"
+                        v-for="method in gateways.stripe.stripe_connect"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >
@@ -816,12 +833,12 @@ export default {
                     </label>
 
                     <select
-                      v-model="settings.stripe.stripe_total_split_refund"
+                      v-model="gateways.stripe.stripe_total_split_refund"
                       name="stripe_total_split_refund"
                       class="select form-control"
                     >
                       <option
-                        v-for="method in enums.stripe_total_split_refund"
+                        v-for="method in gateways.stripe.stripe_total_split_refund"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >
@@ -838,7 +855,7 @@ export default {
           <!--Configurações do Zoop-->
           <div
             class="panel panel-default zoop"
-            v-if="settings.default_payment == 'zoop'"
+            v-if="gateways.default_payment == 'zoop'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">{{ trans("setting.zoop_settings") }}</h3>
@@ -863,7 +880,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-zoop"
-                      v-model="settings.zoop.zoop_marketplace_id"
+                      v-model="gateways.zoop.zoop_marketplace_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -887,7 +904,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-zoop"
-                      v-model="settings.zoop.zoop_publishable_key"
+                      v-model="gateways.zoop.zoop_publishable_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -911,7 +928,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-zoop"
-                      v-model="settings.zoop.zoop_seller_id"
+                      v-model="gateways.zoop.zoop_seller_id"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -925,7 +942,7 @@ export default {
           <!--Configurações do Bancard-->
           <div
             class="panel panel-default bancard"
-            v-if="settings.default_payment == 'bancard'"
+            v-if="gateways.default_payment == 'bancard'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">
@@ -952,7 +969,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-bancard"
-                      v-model="settings.bancard.bancard_public_key"
+                      v-model="gateways.bancard.bancard_public_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -974,7 +991,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-bancard"
-                      v-model="settings.bancard.bancard_private_key"
+                      v-model="gateways.bancard.bancard_private_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -987,7 +1004,7 @@ export default {
           <!--Configurações do Transbank-->
           <div
             class="panel panel-default transbank"
-            v-if="settings.default_payment == 'transbank'"
+            v-if="gateways.default_payment == 'transbank'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">
@@ -1016,7 +1033,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-tranbank"
-                      v-model="settings.transbank.transbank_private_key"
+                      v-model="gateways.transbank.transbank_private_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -1040,7 +1057,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-tranbank"
-                      v-model="settings.transbank.transbank_commerce_code"
+                      v-model="gateways.transbank.transbank_commerce_code"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -1066,7 +1083,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-tranbank"
-                      v-model="settings.transbank.transbank_public_cert"
+                      v-model="gateways.transbank.transbank_public_cert"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -1075,24 +1092,174 @@ export default {
             </div>
           </div>
           <!-- / Configurações do Transbank-->
-
-          <!--Save-->
-          <div class="panel panel-default">
-            <div class="form-group text-right">
-              <button v-on:click="saveSettings()" class="btn btn-success">
-                <span
-                  class="glyphicon glyphicon-floppy-disk"
-                  aria-hidden="true"
-                ></span>
-                {{ trans("setting.save") }}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
+    </div>
 
 
-      <div v-if="HasInvoiceBillet" class="card-outline-info"><!-- Boleto -->
+    <div v-if="payment_methods.payment_carto" class="card-margin-top">
+      <div class="card-outline-info">
+        <div class="card-header">
+            <h4 class="m-b-0 text-white">{{ trans('setting.carto') }}</h4>
+        </div>
+        <div class="card-block">
+            <!--Configurações de boleto do gerencianet-->
+            <div class="panel panel-default gerencianet">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{trans('setting.carto')}}</h3>
+                    <hr>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="usr">
+                                    {{trans('setting.carto_login')}}
+                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.carto_login')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                                </label>
+                                <input v-model="gateways.gerencianet.carto_login" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
+                                <div class="help-block with-errors"></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="usr">
+                                    {{trans('setting.carto_password')}} 
+                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.carto_password')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
+                                </label>
+                                <input v-model="gateways.gerencianet.carto_password" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
+                                <div class="help-block with-errors"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div> 
+
+
+
+
+    <!-- prepaid -->
+    <div v-if="payment_methods.payment_prepaid" class="card-margin-top">
+      
+      <div class="card-outline-info">
+        <div class="card-header">
+            <h4 class="m-b-0 text-white">{{ trans('setting.payment_prepaid') }}</h4>
+        </div>
+        <div class="card-block">
+        
+
+
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.prepaid_min_billet_value") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('settingTableSeeder.prepaid_min_billet_value')"
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control input-braspag"
+                  v-model="gateways.braspag.prepaid_min_billet_value"
+                />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.prepaid_tax_billet") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="
+                      trans('settingTableSeeder.prepaid_tax_billet')
+                    "
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control input-braspag"
+                  v-model="gateways.braspag.prepaid_tax_billet"
+                />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+              <div class="col-lg-6">
+                  <div class="panel-heading">
+                    <h3 class="panel-title">
+                      {{ trans("setting.prepaid_billet") }}
+                    </h3>
+                  </div>
+                  <div class="form-group">
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_user" v-model="payment_methods.prepaid_billet_user">
+                      <label class="form-check-label" for="prepaid_billet_user">{{trans('setting.user')}}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_provider" v-model="payment_methods.prepaid_billet_provider">
+                      <label class="form-check-label" for="prepaid_billet_provider">{{trans('setting.provider')}}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_corp" v-model="payment_methods.prepaid_billet_corp">
+                      <label class="form-check-label" for="prepaid_billet_corp">{{trans('setting.corp')}}</label>
+                    </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                  <div class="panel-heading">
+                    <h3 class="panel-title">
+                      {{ trans("setting.prepaid_card") }}
+                    </h3>
+                  </div>
+                  <div class="form-group">
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_user" v-model="payment_methods.prepaid_card_user">
+                      <label class="form-check-label" for="prepaid_card_user">{{trans('setting.user')}}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_provider" v-model="payment_methods.prepaid_card_provider">
+                      <label class="form-check-label" for="prepaid_card_provider">{{trans('setting.provider')}}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_corp" v-model="payment_methods.prepaid_card_corp">
+                      <label class="form-check-label" for="prepaid_card_corp">{{trans('setting.corp')}}</label>
+                    </div>
+                </div>
+              </div>
+          </div>
+            
+        </div>
+      </div>
+    </div> <!-- / prepaid -->
+
+
+
+
+
+    
+
+    <!-- Boleto Gerencianet -->
+    <div v-if="payment_methods.payment_billing" class="card-margin-top">
+      
+      <div class="card-outline-info">
         <div class="card-header">
             <h4 class="m-b-0 text-white">{{ trans('setting.boleto_gateway') }}</h4>
         </div>
@@ -1104,7 +1271,11 @@ export default {
                             {{trans('setting.default_pay_gate_boleto')}}
                             <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.boleto_gateway')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
                         </label>
-                        <select v-model="invoice_billet.default_payment_boleto" class="select form-control">
+                        <select
+                            v-model="gateways.default_payment_boleto"
+                            name="default_payment_boleto"
+                            class="select form-control"
+                          >
 														<option value="gerencianet">Gerencianet</option>
                         </select>
                     </div>
@@ -1115,7 +1286,7 @@ export default {
                             {{trans('setting.operation_mode')}}
                             <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_sandbox')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
                         </label>
-                        <select v-model="invoice_billet.gerencianet_sandbox" class="form-control" required>
+                        <select v-model="gateways.gerencianet.gerencianet_sandbox" class="select form-control" required>
                             <option value="true"> {{trans('setting.Sandbox')}} </option>
                             <option value="false"> {{trans('setting.production')}} </option>
                         </select>
@@ -1136,7 +1307,7 @@ export default {
                                     {{trans('setting.gerencianet_client_id')}}
                                     <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_id')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
                                 </label>
-                                <input v-model="invoice_billet.gerencianet_client_id" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
+                                <input v-model="gateways.gerencianet.gerencianet_client_id" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
                                 <div class="help-block with-errors"></div>
                             </div>
                         </div>
@@ -1146,29 +1317,43 @@ export default {
                                     {{trans('setting.gerencianet_client_secret')}} 
                                     <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_secret')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
                                 </label>
-                                <input v-model="invoice_billet.gerencianet_client_secret" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
+                                <input v-model="gateways.gerencianet.gerencianet_client_secret" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
                                 <div class="help-block with-errors"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div> <!-- / Configurações de boleto do Gerencianet-->
-
-             <!--Save-->
-            <div class="panel panel-default">
-              <div class="form-group text-right">
-                <button v-on:click="saveSettingsBillet()" class="btn btn-success">
-                  <span
-                    class="glyphicon glyphicon-floppy-disk"
-                    aria-hidden="true"
-                  ></span>
-                  {{ trans("setting.save") }}
-                </button>
-              </div>
-            </div>
         </div>
-      </div> <!-- / Boleto -->
+      </div>
+    </div> <!-- / Boleto -->
 
+
+    <!--Save-->
+    <div style="background-color: white; padding-bottom: 2px; padding-right: 10px;" class="panel panel-default">
+      <div class="form-group text-right">
+        <button v-on:click="saveSettings()" class="btn btn-success">
+          <span
+            class="glyphicon glyphicon-floppy-disk"
+            aria-hidden="true"
+          ></span>
+          {{ trans("setting.save_data") }}
+        </button>
+      </div>
     </div>
+
   </div>
 </template>
+
+<style>
+  .checkbox-style {
+    width: 17px !important; 
+    height: 17px !important;
+    margin-left: 0px !important;
+    margin-top: 2px !important;
+  }
+
+  .card-margin-top {
+    margin-top: 30px !important;
+  }
+</style>

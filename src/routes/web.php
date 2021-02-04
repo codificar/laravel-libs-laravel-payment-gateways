@@ -15,7 +15,6 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
     Route::group(['prefix' => 'libs/settings'], function () {
 
         Route::post('/save/gateways', array('as' => 'webAdminSaveSettingsGateways', 'uses' => 'GatewaysController@saveSettings'));
-        Route::post('/save/billet_invoice', array('as' => 'webAdminSaveBilletIvoice', 'uses' => 'GatewaysController@saveBilletInvoiceSettings'));
     });
 });
 
