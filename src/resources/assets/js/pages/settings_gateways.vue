@@ -2,18 +2,14 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: [
-    "PaymentMethods", 
-    "Gateways"
-  ],
+  props: ["PaymentMethods", "Gateways"],
   data() {
     return {
       gateways: {},
-      payment_methods: {}
+      payment_methods: {},
     };
   },
   methods: {
-
     saveSettings() {
       this.$swal({
         title: this.trans("setting.edit_confirm"),
@@ -28,7 +24,7 @@ export default {
             axios
               .post("/libs/settings/save/gateways", {
                 payment_methods: this.payment_methods,
-                gateways: this.gateways
+                gateways: this.gateways,
               })
               .then((response) => {
                 if (response.data.success) {
@@ -58,83 +54,155 @@ export default {
         }
       });
     },
-
-
   },
   created() {
-    this.PaymentMethods ? (this.payment_methods = JSON.parse(this.PaymentMethods)) : null;
+    this.PaymentMethods
+      ? (this.payment_methods = JSON.parse(this.PaymentMethods))
+      : null;
     this.Gateways ? (this.gateways = JSON.parse(this.Gateways)) : null;
     console.log(this.payment_methods);
   },
 };
 </script>
 <template>
-  <div>    
+  <div>
     <!-- formas de pagamento -->
     <div class="tab-content">
       <div class="card-outline-info">
-          <div class="card-header">
-            <h4 class="m-b-0 text-white">{{ trans("setting.payment_methods") }}</h4>
-          </div>
-          <div class="card-block">
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="panel-heading">
-                  <h3 class="panel-title">
-                    {{ trans("setting.choose_payment_methods") }}
-                  </h3>
-                  <hr />
+        <div class="card-header">
+          <h4 class="m-b-0 text-white">
+            {{ trans("setting.payment_methods") }}
+          </h4>
+        </div>
+        <div class="card-block">
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="panel-heading">
+                <h3 class="panel-title">
+                  {{ trans("setting.choose_payment_methods") }}
+                </h3>
+                <hr />
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_money"
+                    v-model="payment_methods.payment_money"
+                  />
+                  <label class="form-check-label" for="payment_money">{{
+                    trans("setting.money")
+                  }}</label>
                 </div>
-                <div class="form-group">
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_money" v-model="payment_methods.payment_money">
-                    <label class="form-check-label" for="payment_money">{{trans('setting.money')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_card" v-model="payment_methods.payment_card">
-                    <label class="form-check-label" for="payment_card">{{trans('setting.card')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_debitCard" v-model="payment_methods.payment_debitCard">
-                    <label class="form-check-label" for="payment_debitCard">{{trans('setting.debitCard')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_machine" v-model="payment_methods.payment_machine">
-                    <label class="form-check-label" for="payment_machine">{{trans('setting.machine')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_carto" v-model="payment_methods.payment_carto">
-                    <label class="form-check-label" for="payment_carto">{{trans('setting.carto')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_crypt" v-model="payment_methods.payment_crypt">
-                    <label class="form-check-label" for="payment_crypt">{{trans('setting.crypt_coin')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_balance" v-model="payment_methods.payment_balance">
-                    <label class="form-check-label" for="payment_balance">{{trans('setting.payment_balance')}}</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_prepaid" v-model="payment_methods.payment_prepaid">
-                    <label class="form-check-label" for="payment_prepaid">
-                      {{trans('setting.payment_prepaid')}}
-                      <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.payment_prepaid_msg')"><span class="mdi mdi-comment-question-outline"></span></a>
-                    </label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input checkbox-style" type="checkbox" id="payment_billing" v-model="payment_methods.payment_billing">
-                    <label class="form-check-label" for="payment_billing">{{trans('setting.payment_billing')}}</label>
-                  </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_card"
+                    v-model="payment_methods.payment_card"
+                  />
+                  <label class="form-check-label" for="payment_card">{{
+                    trans("setting.card")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_debitCard"
+                    v-model="payment_methods.payment_debitCard"
+                  />
+                  <label class="form-check-label" for="payment_debitCard">{{
+                    trans("setting.debitCard")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_machine"
+                    v-model="payment_methods.payment_machine"
+                  />
+                  <label class="form-check-label" for="payment_machine">{{
+                    trans("setting.machine")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_carto"
+                    v-model="payment_methods.payment_carto"
+                  />
+                  <label class="form-check-label" for="payment_carto">{{
+                    trans("setting.carto")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_crypt"
+                    v-model="payment_methods.payment_crypt"
+                  />
+                  <label class="form-check-label" for="payment_crypt">{{
+                    trans("setting.crypt_coin")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_balance"
+                    v-model="payment_methods.payment_balance"
+                  />
+                  <label class="form-check-label" for="payment_balance">{{
+                    trans("setting.payment_balance")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_prepaid"
+                    v-model="payment_methods.payment_prepaid"
+                  />
+                  <label class="form-check-label" for="payment_prepaid">
+                    {{ trans("setting.payment_prepaid") }}
+                    <a
+                      href="#"
+                      class="question-field"
+                      data-toggle="tooltip"
+                      :title="trans('setting.payment_prepaid_msg')"
+                      ><span class="mdi mdi-comment-question-outline"></span
+                    ></a>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_billing"
+                    v-model="payment_methods.payment_billing"
+                  />
+                  <label class="form-check-label" for="payment_billing">{{
+                    trans("setting.payment_billing")
+                  }}</label>
                 </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
-    </div> <!-- / formas de pagamento -->
-
+    </div>
+    <!-- / formas de pagamento -->
 
     <!--Payment Gateway-->
-    <div v-if="payment_methods.payment_card || payment_methods.payment_debitCard" class="card-margin-top">
+    <div
+      v-if="payment_methods.payment_card || payment_methods.payment_debitCard"
+      class="card-margin-top"
+    >
       <div class="card-outline-info">
         <div class="card-header">
           <h4 class="m-b-0 text-white">{{ trans("setting.pay_gateway") }}</h4>
@@ -349,14 +417,15 @@ export default {
           </div>
           <!-- / Configurações do Braspag-->
 
-
           <!--Configurações do Braspag Cielo Ecommerce-->
           <div
             class="panel panel-default braspag_cielo_ecommerce"
             v-if="gateways.default_payment == 'braspag_cielo_ecommerce'"
           >
             <div class="panel-heading">
-              <h3 class="panel-title">{{ trans("setting.braspag_cielo_ecommerce") }}</h3>
+              <h3 class="panel-title">
+                {{ trans("setting.braspag_cielo_ecommerce") }}
+              </h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -378,7 +447,9 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="gateways.braspag_cielo_ecommerce.braspag_client_id"
+                      v-model="
+                        gateways.braspag_cielo_ecommerce.braspag_client_id
+                      "
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -391,9 +462,7 @@ export default {
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="
-                          trans('setting.braspag_client_secret')
-                        "
+                        :title="trans('setting.braspag_client_secret')"
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -402,7 +471,9 @@ export default {
                     <input
                       type="text"
                       class="form-control input-getnet"
-                      v-model="gateways.braspag_cielo_ecommerce.braspag_client_secret"
+                      v-model="
+                        gateways.braspag_cielo_ecommerce.braspag_client_secret
+                      "
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -411,8 +482,6 @@ export default {
             </div>
           </div>
           <!-- / Config. Braspag Cielo Ecommerce-->
-
-
 
           <!--Configurações do Getnet-->
           <div
@@ -838,7 +907,8 @@ export default {
                       class="select form-control"
                     >
                       <option
-                        v-for="method in gateways.stripe.stripe_total_split_refund"
+                        v-for="method in gateways.stripe
+                          .stripe_total_split_refund"
                         v-bind:value="method.value"
                         v-bind:key="method.value"
                       >
@@ -937,7 +1007,6 @@ export default {
             </div>
           </div>
           <!-- / Configurações do Zoop-->
-
 
           <!--Configurações do Bancard-->
           <div
@@ -1096,62 +1165,80 @@ export default {
       </div>
     </div>
 
-
     <div v-if="payment_methods.payment_carto" class="card-margin-top">
       <div class="card-outline-info">
         <div class="card-header">
-            <h4 class="m-b-0 text-white">{{ trans('setting.carto') }}</h4>
+          <h4 class="m-b-0 text-white">{{ trans("setting.carto") }}</h4>
         </div>
         <div class="card-block">
-            <!--Configurações de boleto do gerencianet-->
-            <div class="panel panel-default gerencianet">
-                <div class="panel-heading">
-                    <h3 class="panel-title">{{trans('setting.carto')}}</h3>
-                    <hr>
-                </div>
-                <div class="panel-body">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="form-group">
-                                <label for="usr">
-                                    {{trans('setting.carto_login')}}
-                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.carto_login')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                                </label>
-                                <input v-model="gateways.gerencianet.carto_login" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
-                                <div class="help-block with-errors"></div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="form-group">
-                                <label for="usr">
-                                    {{trans('setting.carto_password')}} 
-                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.carto_password')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                                </label>
-                                <input v-model="gateways.gerencianet.carto_password" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
-                                <div class="help-block with-errors"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          <!--Configurações de boleto do gerencianet-->
+          <div class="panel panel-default gerencianet">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.carto") }}</h3>
+              <hr />
             </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.carto_login") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.carto_login')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.gerencianet.carto_login"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.carto_password") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.carto_password')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.gerencianet.carto_password"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div> 
-
-
-
+    </div>
 
     <!-- prepaid -->
     <div v-if="payment_methods.payment_prepaid" class="card-margin-top">
-      
       <div class="card-outline-info">
         <div class="card-header">
-            <h4 class="m-b-0 text-white">{{ trans('setting.payment_prepaid') }}</h4>
+          <h4 class="m-b-0 text-white">
+            {{ trans("setting.payment_prepaid") }}
+          </h4>
         </div>
         <div class="card-block">
-        
-
-
           <div class="row">
             <div class="col-lg-6">
               <div class="form-group">
@@ -1161,7 +1248,9 @@ export default {
                     href="#"
                     class="question-field"
                     data-toggle="tooltip"
-                    :title="trans('settingTableSeeder.prepaid_min_billet_value')"
+                    :title="
+                      trans('settingTableSeeder.prepaid_min_billet_value')
+                    "
                   >
                     <span class="mdi mdi-comment-question-outline"></span>
                   </a>
@@ -1183,9 +1272,7 @@ export default {
                     href="#"
                     class="question-field"
                     data-toggle="tooltip"
-                    :title="
-                      trans('settingTableSeeder.prepaid_tax_billet')
-                    "
+                    :title="trans('settingTableSeeder.prepaid_tax_billet')"
                   >
                     <span class="mdi mdi-comment-question-outline"></span>
                   </a>
@@ -1202,135 +1289,224 @@ export default {
           </div>
 
           <div class="row">
-              <div class="col-lg-6">
-                  <div class="panel-heading">
-                    <h3 class="panel-title">
-                      {{ trans("setting.prepaid_billet") }}
-                    </h3>
-                  </div>
-                  <div class="form-group">
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_user" v-model="payment_methods.prepaid_billet_user">
-                      <label class="form-check-label" for="prepaid_billet_user">{{trans('setting.user')}}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_provider" v-model="payment_methods.prepaid_billet_provider">
-                      <label class="form-check-label" for="prepaid_billet_provider">{{trans('setting.provider')}}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_billet_corp" v-model="payment_methods.prepaid_billet_corp">
-                      <label class="form-check-label" for="prepaid_billet_corp">{{trans('setting.corp')}}</label>
-                    </div>
+            <div class="col-lg-6">
+              <div class="panel-heading">
+                <h3 class="panel-title">
+                  {{ trans("setting.prepaid_billet") }}
+                </h3>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_billet_user"
+                    v-model="payment_methods.prepaid_billet_user"
+                  />
+                  <label class="form-check-label" for="prepaid_billet_user">{{
+                    trans("setting.user")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_billet_provider"
+                    v-model="payment_methods.prepaid_billet_provider"
+                  />
+                  <label
+                    class="form-check-label"
+                    for="prepaid_billet_provider"
+                    >{{ trans("setting.provider") }}</label
+                  >
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_billet_corp"
+                    v-model="payment_methods.prepaid_billet_corp"
+                  />
+                  <label class="form-check-label" for="prepaid_billet_corp">{{
+                    trans("setting.corp")
+                  }}</label>
                 </div>
               </div>
-              <div class="col-lg-6">
-                  <div class="panel-heading">
-                    <h3 class="panel-title">
-                      {{ trans("setting.prepaid_card") }}
-                    </h3>
-                  </div>
-                  <div class="form-group">
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_user" v-model="payment_methods.prepaid_card_user">
-                      <label class="form-check-label" for="prepaid_card_user">{{trans('setting.user')}}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_provider" v-model="payment_methods.prepaid_card_provider">
-                      <label class="form-check-label" for="prepaid_card_provider">{{trans('setting.provider')}}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input checkbox-style" type="checkbox" id="prepaid_card_corp" v-model="payment_methods.prepaid_card_corp">
-                      <label class="form-check-label" for="prepaid_card_corp">{{trans('setting.corp')}}</label>
-                    </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="panel-heading">
+                <h3 class="panel-title">
+                  {{ trans("setting.prepaid_card") }}
+                </h3>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_card_user"
+                    v-model="payment_methods.prepaid_card_user"
+                  />
+                  <label class="form-check-label" for="prepaid_card_user">{{
+                    trans("setting.user")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_card_provider"
+                    v-model="payment_methods.prepaid_card_provider"
+                  />
+                  <label class="form-check-label" for="prepaid_card_provider">{{
+                    trans("setting.provider")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_card_corp"
+                    v-model="payment_methods.prepaid_card_corp"
+                  />
+                  <label class="form-check-label" for="prepaid_card_corp">{{
+                    trans("setting.corp")
+                  }}</label>
                 </div>
               </div>
+            </div>
           </div>
-            
         </div>
       </div>
-    </div> <!-- / prepaid -->
-
-
-
-
-
-    
+    </div>
+    <!-- / prepaid -->
 
     <!-- Boleto Gerencianet -->
     <div v-if="payment_methods.payment_billing" class="card-margin-top">
-      
       <div class="card-outline-info">
         <div class="card-header">
-            <h4 class="m-b-0 text-white">{{ trans('setting.boleto_gateway') }}</h4>
+          <h4 class="m-b-0 text-white">
+            {{ trans("setting.boleto_gateway") }}
+          </h4>
         </div>
         <div class="card-block">
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="form-group">
-                        <label for="usr">
-                            {{trans('setting.default_pay_gate_boleto')}}
-                            <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.boleto_gateway')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                        </label>
-                        <select
-                            v-model="gateways.default_payment_boleto"
-                            name="default_payment_boleto"
-                            class="select form-control"
-                          >
-														<option value="gerencianet">Gerencianet</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="form-group">
-                        <label for="usr">
-                            {{trans('setting.operation_mode')}}
-                            <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_sandbox')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                        </label>
-                        <select v-model="gateways.gerencianet.gerencianet_sandbox" class="select form-control" required>
-                            <option value="true"> {{trans('setting.Sandbox')}} </option>
-                            <option value="false"> {{trans('setting.production')}} </option>
-                        </select>
-                    </div>
-                </div>
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.default_pay_gate_boleto") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('setting.boleto_gateway')"
+                    ><span class="mdi mdi-comment-question-outline"></span
+                  ></a>
+                  <span class="required-field">*</span>
+                </label>
+                <select
+                  v-model="gateways.default_payment_boleto"
+                  name="default_payment_boleto"
+                  class="select form-control"
+                >
+                  <option value="gerencianet">Gerencianet</option>
+                </select>
+              </div>
             </div>
-            <!--Configurações de boleto do gerencianet-->
-            <div class="panel panel-default gerencianet">
-                <div class="panel-heading">
-                    <h3 class="panel-title">{{trans('setting.gerencianet_settings')}}</h3>
-                    <hr>
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.operation_mode") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('setting.gerencianet_sandbox')"
+                    ><span class="mdi mdi-comment-question-outline"></span
+                  ></a>
+                  <span class="required-field">*</span>
+                </label>
+                <select
+                  v-model="gateways.gerencianet.gerencianet_sandbox"
+                  class="select form-control"
+                  required
+                >
+                  <option value="true"> {{ trans("setting.Sandbox") }} </option>
+                  <option value="false">
+                    {{ trans("setting.production") }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!--Configurações de boleto do gerencianet-->
+          <div class="panel panel-default gerencianet">
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.gerencianet_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gerencianet_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.gerencianet_client_id')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.gerencianet.gerencianet_client_id"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
                 </div>
-                <div class="panel-body">
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="form-group">
-                                <label for="usr">
-                                    {{trans('setting.gerencianet_client_id')}}
-                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_id')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                                </label>
-                                <input v-model="gateways.gerencianet.gerencianet_client_id" type="text" class="form-control input-gerencianet"  :data-error="trans('setting.field')">
-                                <div class="help-block with-errors"></div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="form-group">
-                                <label for="usr">
-                                    {{trans('setting.gerencianet_client_secret')}} 
-                                    <a href="#" class="question-field" data-toggle="tooltip" :title="trans('setting.gerencianet_client_secret')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field">*</span>
-                                </label>
-                                <input v-model="gateways.gerencianet.gerencianet_client_secret" type="text" class="form-control input-gerencianet" :data-error="trans('setting.field')">
-                                <div class="help-block with-errors"></div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gerencianet_client_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.gerencianet_client_secret')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.gerencianet.gerencianet_client_secret"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
                 </div>
-            </div> <!-- / Configurações de boleto do Gerencianet-->
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações de boleto do Gerencianet-->
         </div>
       </div>
-    </div> <!-- / Boleto -->
-
+    </div>
+    <!-- / Boleto -->
 
     <!--Save-->
-    <div style="background-color: white; padding-bottom: 2px; padding-right: 10px;" class="panel panel-default">
+    <div
+      style="background-color: white; padding-bottom: 2px; padding-right: 10px;"
+      class="panel panel-default"
+    >
       <div class="form-group text-right">
         <button v-on:click="saveSettings()" class="btn btn-success">
           <span
@@ -1341,19 +1517,18 @@ export default {
         </button>
       </div>
     </div>
-
   </div>
 </template>
 
 <style>
-  .checkbox-style {
-    width: 17px !important; 
-    height: 17px !important;
-    margin-left: 0px !important;
-    margin-top: 2px !important;
-  }
+.checkbox-style {
+  width: 17px !important;
+  height: 17px !important;
+  margin-left: 0px !important;
+  margin-top: 2px !important;
+}
 
-  .card-margin-top {
-    margin-top: 30px !important;
-  }
+.card-margin-top {
+  margin-top: 30px !important;
+}
 </style>
