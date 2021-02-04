@@ -2,11 +2,12 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways"],
+  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid"],
   data() {
     return {
       gateways: {},
       payment_methods: {},
+			carto: {}
     };
   },
   methods: {
@@ -25,6 +26,9 @@ export default {
               .post("/libs/settings/save/gateways", {
                 payment_methods: this.payment_methods,
                 gateways: this.gateways,
+								carto: this.carto,
+								bancryp: this.bancryp,
+								prepaid: this.prepaid
               })
               .then((response) => {
                 if (response.data.success) {
@@ -56,11 +60,11 @@ export default {
     },
   },
   created() {
-    this.PaymentMethods
-      ? (this.payment_methods = JSON.parse(this.PaymentMethods))
-      : null;
+    this.PaymentMethods ? (this.payment_methods = JSON.parse(this.PaymentMethods)) : null;
     this.Gateways ? (this.gateways = JSON.parse(this.Gateways)) : null;
-    console.log(this.payment_methods);
+		this.Carto ? (this.carto = JSON.parse(this.Carto)) : null;
+		this.Bancryp ? (this.bancryp = JSON.parse(this.Bancryp)) : null;
+		this.Prepaid ? (this.prepaid = JSON.parse(this.Prepaid)) : null;
   },
 };
 </script>
@@ -874,13 +878,10 @@ export default {
                       name="stripe_connect"
                       class="select form-control"
                     >
-                      <option
-                        v-for="method in gateways.stripe.stripe_connect"
-                        v-bind:value="method.value"
-                        v-bind:key="method.value"
-                      >
-                        {{ trans(method.name) }}
-                      </option>
+                      <option value="no_connect">{{ trans('setting.no') }}</option>
+                      <option value="custom_accounts">{{ trans('setting.CUSTOM_ACCOUNTS') }}</option>
+                      <option value="express_accounts">{{ trans('setting.EXPRESS_ACCOUNTS') }}</option>
+                      <option value="standard_accounts">{{ trans('setting.STANDARD_ACCOUNTS') }}</option>
                     </select>
                   </div>
                 </div>
@@ -906,14 +907,8 @@ export default {
                       name="stripe_total_split_refund"
                       class="select form-control"
                     >
-                      <option
-                        v-for="method in gateways.stripe
-                          .stripe_total_split_refund"
-                        v-bind:value="method.value"
-                        v-bind:key="method.value"
-                      >
-                        {{ trans(method.name) }}
-                      </option>
+                      <option value="false">{{ trans('setting.no') }}</option>
+                      <option value="true">{{ trans('setting.yes') }}</option>
                     </select>
                   </div>
                 </div>
@@ -1165,6 +1160,8 @@ export default {
       </div>
     </div>
 
+
+		<!-- Carto -->
     <div v-if="payment_methods.payment_carto" class="card-margin-top">
       <div class="card-outline-info">
         <div class="card-header">
@@ -1174,7 +1171,7 @@ export default {
           <!--Configurações de boleto do gerencianet-->
           <div class="panel panel-default gerencianet">
             <div class="panel-heading">
-              <h3 class="panel-title">{{ trans("setting.carto") }}</h3>
+              <h3 class="panel-title">{{ trans("setting.carto_keys") }}</h3>
               <hr />
             </div>
             <div class="panel-body">
@@ -1193,7 +1190,7 @@ export default {
                       <span class="required-field">*</span>
                     </label>
                     <input
-                      v-model="gateways.gerencianet.carto_login"
+                      v-model="carto.carto_login"
                       type="text"
                       class="form-control input-gerencianet"
                       :data-error="trans('setting.field')"
@@ -1215,7 +1212,7 @@ export default {
                       <span class="required-field">*</span>
                     </label>
                     <input
-                      v-model="gateways.gerencianet.carto_password"
+                      v-model="carto.carto_password"
                       type="text"
                       class="form-control input-gerencianet"
                       :data-error="trans('setting.field')"
@@ -1229,6 +1226,74 @@ export default {
         </div>
       </div>
     </div>
+		<!-- Fim Carto -->
+
+		<!-- Bancryp -->
+    <div v-if="payment_methods.payment_crypt" class="card-margin-top">
+      <div class="card-outline-info">
+        <div class="card-header">
+          <h4 class="m-b-0 text-white">{{ trans("setting.crypt_coin") }}</h4>
+        </div>
+        <div class="card-block">
+          <!--Configurações de boleto do gerencianet-->
+          <div class="panel panel-default gerencianet">
+            <div class="panel-heading">
+              <h3 class="panel-title">{{ trans("setting.bancryp_keys") }}</h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.bancryp_api_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.bancryp_api_key')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="bancryp.bancryp_api_key"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.bancryp_secret_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.bancryp_secret_key')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="bancryp.bancryp_secret_key"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+		<!-- Fim Bancryp -->
 
     <!-- prepaid -->
     <div v-if="payment_methods.payment_prepaid" class="card-margin-top">
@@ -1259,7 +1324,7 @@ export default {
                 <input
                   type="text"
                   class="form-control input-braspag"
-                  v-model="gateways.braspag.prepaid_min_billet_value"
+                  v-model="prepaid.prepaid_min_billet_value"
                 />
                 <div class="help-block with-errors"></div>
               </div>
@@ -1281,7 +1346,7 @@ export default {
                 <input
                   type="text"
                   class="form-control input-braspag"
-                  v-model="gateways.braspag.prepaid_tax_billet"
+                  v-model="prepaid.prepaid_tax_billet"
                 />
                 <div class="help-block with-errors"></div>
               </div>
@@ -1301,7 +1366,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_billet_user"
-                    v-model="payment_methods.prepaid_billet_user"
+                    v-model="prepaid.prepaid_billet_user"
                   />
                   <label class="form-check-label" for="prepaid_billet_user">{{
                     trans("setting.user")
@@ -1312,7 +1377,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_billet_provider"
-                    v-model="payment_methods.prepaid_billet_provider"
+                    v-model="prepaid.prepaid_billet_provider"
                   />
                   <label
                     class="form-check-label"
@@ -1325,7 +1390,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_billet_corp"
-                    v-model="payment_methods.prepaid_billet_corp"
+                    v-model="prepaid.prepaid_billet_corp"
                   />
                   <label class="form-check-label" for="prepaid_billet_corp">{{
                     trans("setting.corp")
@@ -1345,7 +1410,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_card_user"
-                    v-model="payment_methods.prepaid_card_user"
+                    v-model="prepaid.prepaid_card_user"
                   />
                   <label class="form-check-label" for="prepaid_card_user">{{
                     trans("setting.user")
@@ -1356,7 +1421,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_card_provider"
-                    v-model="payment_methods.prepaid_card_provider"
+                    v-model="prepaid.prepaid_card_provider"
                   />
                   <label class="form-check-label" for="prepaid_card_provider">{{
                     trans("setting.provider")
@@ -1367,7 +1432,7 @@ export default {
                     class="form-check-input checkbox-style"
                     type="checkbox"
                     id="prepaid_card_corp"
-                    v-model="payment_methods.prepaid_card_corp"
+                    v-model="prepaid.prepaid_card_corp"
                   />
                   <label class="form-check-label" for="prepaid_card_corp">{{
                     trans("setting.corp")

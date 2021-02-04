@@ -104,6 +104,17 @@ class GatewaysController extends Controller
         'payment_billing'
     );
 
+    public $keys_prepaid =  array(
+        'prepaid_min_billet_value',
+        'prepaid_tax_billet',
+        'prepaid_billet_user',
+        'prepaid_billet_provider',
+        'prepaid_billet_corp',
+        'prepaid_card_user',
+        'prepaid_card_provider',
+        'prepaid_card_corp'
+    );
+
     /**
      * Recupera settings e acessa view
      * @return View
@@ -129,13 +140,36 @@ class GatewaysController extends Controller
                 $temp_setting = Settings::where('key', '=', $value)->first();
                 $gateways[$key][$value] = $temp_setting ? $temp_setting->value : null;
             }
-        }        
+        }   
+        
+        //Pega informacoes do carto
+        $carto = array();
+        $carto['carto_login'] = Settings::findByKey('carto_login');
+        $carto['carto_password'] = Settings::findByKey('carto_password');
+
+        //Pega informacoes do bancryp
+        $bancryp = array();
+        $bancryp['bancryp_api_key'] = Settings::findByKey('bancryp_api_key');
+        $bancryp['bancryp_secret_key'] = Settings::findByKey('bancryp_secret_key');
+
+        //Pega informacoes do pre-pago
+        $prepaid = array();
+        foreach ($this->keys_prepaid as $key) {
+            if($key == 'prepaid_min_billet_value' || $key == 'prepaid_tax_billet') {
+                $prepaid[$key] = Settings::findByKey($key);
+            } else {
+                $prepaid[$key] = (bool)Settings::findByKey($key);
+            }
+        }   
         
         //retorna view
         return View::make('gateways::settings')
             ->with([
                 'payment_methods' => $payment_methods,
-                'gateways' => $gateways
+                'gateways' => $gateways,
+                'carto' => $carto,
+                'bancryp' => $bancryp,
+                'prepaid' => $prepaid
             ]);
     }
 
@@ -180,6 +214,28 @@ class GatewaysController extends Controller
             foreach ($request->gateways[$defaultPaymentBillet] as $key => $value) {
                 //Verifica se a key do gateway existe
                 if(in_array($key, $this->keys_gateways[$defaultPaymentBillet])) {
+                    $this->updateOrCreateSettingKey($key, $value);
+                }
+            }
+        }
+
+        //Salva as chaves do carto
+        if($request->payment_methods['payment_carto']) {
+            $this->updateOrCreateSettingKey('carto_login', $request->carto['carto_login']);
+            $this->updateOrCreateSettingKey('carto_password', $request->carto['carto_password']);
+        }
+
+        //Salva as chaves do bancryp
+        if($request->payment_methods['payment_crypt']) {
+            $this->updateOrCreateSettingKey('bancryp_api_key', $request->bancryp['bancryp_api_key']);
+            $this->updateOrCreateSettingKey('bancryp_secret_key', $request->bancryp['bancryp_secret_key']);
+        }
+
+        //Salva as configuracoes do pre-pago
+        if($request->payment_methods['payment_prepaid']) {
+            foreach ($request->prepaid as $key => $value) {
+                //Verifica se a key existe
+                if(in_array($key, $this->keys_prepaid)) {
                     $this->updateOrCreateSettingKey($key, $value);
                 }
             }

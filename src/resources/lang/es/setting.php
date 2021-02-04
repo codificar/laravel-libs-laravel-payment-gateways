@@ -538,6 +538,13 @@ return array(
 	, 'prepaid_card'										=> 'Inserção de saldo no cartão de crédito'
 	, 'prepaid_min_billet_value'							=> 'Valor mínimo para gerar um boleto'
 	, 'prepaid_tax_billet'									=> 'Taxa para gerar um boleto'
+	, 'carto_keys'											=> 'Credenciais do Carto'
+	, 'carto_login'											=> 'Login do Carto'
+	, 'carto_password'										=> 'Senha do Carto'
+	, 'carto_password'										=> 'Senha do Carto'
+	, 'bancryp_keys'										=> 'Credenciais do Bancryp'
+	, 'bancryp_api_key'										=> 'Chave de Api do Bancryp'
+	, 'bancryp_secret_key'									=> 'Secret Key do Bancryp'
 
 	/*
 	|--------------------------------------------------------------------------

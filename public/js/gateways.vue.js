@@ -51327,7 +51327,7 @@ exports = module.exports = __webpack_require__(7)(false);
 
 
 // module
-exports.push([module.i, "\n.checkbox-style {\n  width: 17px !important; \n  height: 17px !important;\n  margin-left: 0px !important;\n  margin-top: 2px !important;\n}\n.card-margin-top {\n  margin-top: 30px !important;\n}\n", ""]);
+exports.push([module.i, "\n.checkbox-style {\n  width: 17px !important;\n  height: 17px !important;\n  margin-left: 0px !important;\n  margin-top: 2px !important;\n}\n.card-margin-top {\n  margin-top: 30px !important;\n}\n", ""]);
 
 // exports
 
@@ -51716,11 +51716,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  props: ["PaymentMethods", "Gateways"],
+  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid"],
   data: function data() {
     return {
       gateways: {},
-      payment_methods: {}
+      payment_methods: {},
+      carto: {}
     };
   },
 
@@ -51740,7 +51741,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
           new Promise(function (resolve, reject) {
             __WEBPACK_IMPORTED_MODULE_0_axios___default.a.post("/libs/settings/save/gateways", {
               payment_methods: _this.payment_methods,
-              gateways: _this.gateways
+              gateways: _this.gateways,
+              carto: _this.carto,
+              bancryp: _this.bancryp,
+              prepaid: _this.prepaid
             }).then(function (response) {
               if (response.data.success) {
                 console.log("prox is gate");
@@ -51769,7 +51773,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
   created: function created() {
     this.PaymentMethods ? this.payment_methods = JSON.parse(this.PaymentMethods) : null;
     this.Gateways ? this.gateways = JSON.parse(this.Gateways) : null;
-    console.log(this.payment_methods);
+    this.Carto ? this.carto = JSON.parse(this.Carto) : null;
+    this.Bancryp ? this.bancryp = JSON.parse(this.Bancryp) : null;
+    this.Prepaid ? this.prepaid = JSON.parse(this.Prepaid) : null;
   }
 });
 
@@ -52913,7 +52919,11 @@ var render = function() {
       _c("div", { staticClass: "card-outline-info" }, [
         _c("div", { staticClass: "card-header" }, [
           _c("h4", { staticClass: "m-b-0 text-white" }, [
-            _vm._v(_vm._s(_vm.trans("setting.payment_methods")))
+            _vm._v(
+              "\n            " +
+                _vm._s(_vm.trans("setting.payment_methods")) +
+                "\n          "
+            )
           ])
         ]),
         _vm._v(" "),
@@ -52923,9 +52933,9 @@ var render = function() {
               _c("div", { staticClass: "panel-heading" }, [
                 _c("h3", { staticClass: "panel-title" }, [
                   _vm._v(
-                    "\n                    " +
+                    "\n                  " +
                       _vm._s(_vm.trans("setting.choose_payment_methods")) +
-                      "\n                  "
+                      "\n                "
                   )
                 ]),
                 _vm._v(" "),
@@ -53400,9 +53410,9 @@ var render = function() {
                     },
                     [
                       _vm._v(
-                        "\n                      " +
+                        "\n                    " +
                           _vm._s(_vm.trans("setting.payment_prepaid")) +
-                          "\n                      "
+                          "\n                    "
                       ),
                       _c(
                         "a",
@@ -54044,7 +54054,11 @@ var render = function() {
                       _c("div", { staticClass: "panel-heading" }, [
                         _c("h3", { staticClass: "panel-title" }, [
                           _vm._v(
-                            _vm._s(_vm.trans("setting.braspag_cielo_ecommerce"))
+                            "\n                " +
+                              _vm._s(
+                                _vm.trans("setting.braspag_cielo_ecommerce")
+                              ) +
+                              "\n              "
                           )
                         ]),
                         _vm._v(" "),
@@ -54097,7 +54111,7 @@ var render = function() {
                                       _vm.gateways.braspag_cielo_ecommerce
                                         .braspag_client_id,
                                     expression:
-                                      "gateways.braspag_cielo_ecommerce.braspag_client_id"
+                                      "\n                        gateways.braspag_cielo_ecommerce.braspag_client_id\n                      "
                                   }
                                 ],
                                 staticClass: "form-control input-getnet",
@@ -54171,7 +54185,7 @@ var render = function() {
                                       _vm.gateways.braspag_cielo_ecommerce
                                         .braspag_client_secret,
                                     expression:
-                                      "gateways.braspag_cielo_ecommerce.braspag_client_secret"
+                                      "\n                        gateways.braspag_cielo_ecommerce.braspag_client_secret\n                      "
                                   }
                                 ],
                                 staticClass: "form-control input-getnet",
@@ -55249,26 +55263,49 @@ var render = function() {
                                   }
                                 }
                               },
-                              _vm._l(
-                                _vm.gateways.stripe.stripe_connect,
-                                function(method) {
-                                  return _c(
-                                    "option",
-                                    {
-                                      key: method.value,
-                                      domProps: { value: method.value }
-                                    },
-                                    [
-                                      _vm._v(
-                                        "\n                        " +
-                                          _vm._s(_vm.trans(method.name)) +
-                                          "\n                      "
+                              [
+                                _c(
+                                  "option",
+                                  { attrs: { value: "no_connect" } },
+                                  [_vm._v(_vm._s(_vm.trans("setting.no")))]
+                                ),
+                                _vm._v(" "),
+                                _c(
+                                  "option",
+                                  { attrs: { value: "custom_accounts" } },
+                                  [
+                                    _vm._v(
+                                      _vm._s(
+                                        _vm.trans("setting.CUSTOM_ACCOUNTS")
                                       )
-                                    ]
-                                  )
-                                }
-                              ),
-                              0
+                                    )
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c(
+                                  "option",
+                                  { attrs: { value: "express_accounts" } },
+                                  [
+                                    _vm._v(
+                                      _vm._s(
+                                        _vm.trans("setting.EXPRESS_ACCOUNTS")
+                                      )
+                                    )
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c(
+                                  "option",
+                                  { attrs: { value: "standard_accounts" } },
+                                  [
+                                    _vm._v(
+                                      _vm._s(
+                                        _vm.trans("setting.STANDARD_ACCOUNTS")
+                                      )
+                                    )
+                                  ]
+                                )
+                              ]
                             )
                           ])
                         ]),
@@ -55347,26 +55384,15 @@ var render = function() {
                                   }
                                 }
                               },
-                              _vm._l(
-                                _vm.gateways.stripe.stripe_total_split_refund,
-                                function(method) {
-                                  return _c(
-                                    "option",
-                                    {
-                                      key: method.value,
-                                      domProps: { value: method.value }
-                                    },
-                                    [
-                                      _vm._v(
-                                        "\n                        " +
-                                          _vm._s(_vm.trans(method.name)) +
-                                          "\n                      "
-                                      )
-                                    ]
-                                  )
-                                }
-                              ),
-                              0
+                              [
+                                _c("option", { attrs: { value: "false" } }, [
+                                  _vm._v(_vm._s(_vm.trans("setting.no")))
+                                ]),
+                                _vm._v(" "),
+                                _c("option", { attrs: { value: "true" } }, [
+                                  _vm._v(_vm._s(_vm.trans("setting.yes")))
+                                ])
+                              ]
                             )
                           ])
                         ])
@@ -56004,7 +56030,7 @@ var render = function() {
               _c("div", { staticClass: "panel panel-default gerencianet" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.carto")))
+                    _vm._v(_vm._s(_vm.trans("setting.carto_keys")))
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -56016,9 +56042,9 @@ var render = function() {
                       _c("div", { staticClass: "form-group" }, [
                         _c("label", { attrs: { for: "usr" } }, [
                           _vm._v(
-                            "\n                                    " +
+                            "\n                      " +
                               _vm._s(_vm.trans("setting.carto_login")) +
-                              "\n                                    "
+                              "\n                      "
                           ),
                           _c(
                             "a",
@@ -56047,8 +56073,8 @@ var render = function() {
                             {
                               name: "model",
                               rawName: "v-model",
-                              value: _vm.gateways.gerencianet.carto_login,
-                              expression: "gateways.gerencianet.carto_login"
+                              value: _vm.carto.carto_login,
+                              expression: "carto.carto_login"
                             }
                           ],
                           staticClass: "form-control input-gerencianet",
@@ -56056,16 +56082,14 @@ var render = function() {
                             type: "text",
                             "data-error": _vm.trans("setting.field")
                           },
-                          domProps: {
-                            value: _vm.gateways.gerencianet.carto_login
-                          },
+                          domProps: { value: _vm.carto.carto_login },
                           on: {
                             input: function($event) {
                               if ($event.target.composing) {
                                 return
                               }
                               _vm.$set(
-                                _vm.gateways.gerencianet,
+                                _vm.carto,
                                 "carto_login",
                                 $event.target.value
                               )
@@ -56081,9 +56105,9 @@ var render = function() {
                       _c("div", { staticClass: "form-group" }, [
                         _c("label", { attrs: { for: "usr" } }, [
                           _vm._v(
-                            "\n                                    " +
+                            "\n                      " +
                               _vm._s(_vm.trans("setting.carto_password")) +
-                              " \n                                    "
+                              "\n                      "
                           ),
                           _c(
                             "a",
@@ -56112,8 +56136,8 @@ var render = function() {
                             {
                               name: "model",
                               rawName: "v-model",
-                              value: _vm.gateways.gerencianet.carto_password,
-                              expression: "gateways.gerencianet.carto_password"
+                              value: _vm.carto.carto_password,
+                              expression: "carto.carto_password"
                             }
                           ],
                           staticClass: "form-control input-gerencianet",
@@ -56121,17 +56145,169 @@ var render = function() {
                             type: "text",
                             "data-error": _vm.trans("setting.field")
                           },
-                          domProps: {
-                            value: _vm.gateways.gerencianet.carto_password
-                          },
+                          domProps: { value: _vm.carto.carto_password },
                           on: {
                             input: function($event) {
                               if ($event.target.composing) {
                                 return
                               }
                               _vm.$set(
-                                _vm.gateways.gerencianet,
+                                _vm.carto,
                                 "carto_password",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ])
+                  ])
+                ])
+              ])
+            ])
+          ])
+        ])
+      : _vm._e(),
+    _vm._v(" "),
+    _vm.payment_methods.payment_crypt
+      ? _c("div", { staticClass: "card-margin-top" }, [
+          _c("div", { staticClass: "card-outline-info" }, [
+            _c("div", { staticClass: "card-header" }, [
+              _c("h4", { staticClass: "m-b-0 text-white" }, [
+                _vm._v(_vm._s(_vm.trans("setting.crypt_coin")))
+              ])
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "card-block" }, [
+              _c("div", { staticClass: "panel panel-default gerencianet" }, [
+                _c("div", { staticClass: "panel-heading" }, [
+                  _c("h3", { staticClass: "panel-title" }, [
+                    _vm._v(_vm._s(_vm.trans("setting.bancryp_keys")))
+                  ]),
+                  _vm._v(" "),
+                  _c("hr")
+                ]),
+                _vm._v(" "),
+                _c("div", { staticClass: "panel-body" }, [
+                  _c("div", { staticClass: "row" }, [
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                      " +
+                              _vm._s(_vm.trans("setting.bancryp_api_key")) +
+                              "\n                      "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans("setting.bancryp_api_key")
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.bancryp.bancryp_api_key,
+                              expression: "bancryp.bancryp_api_key"
+                            }
+                          ],
+                          staticClass: "form-control input-gerencianet",
+                          attrs: {
+                            type: "text",
+                            "data-error": _vm.trans("setting.field")
+                          },
+                          domProps: { value: _vm.bancryp.bancryp_api_key },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.bancryp,
+                                "bancryp_api_key",
+                                $event.target.value
+                              )
+                            }
+                          }
+                        }),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "help-block with-errors" })
+                      ])
+                    ]),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "col-lg-6" }, [
+                      _c("div", { staticClass: "form-group" }, [
+                        _c("label", { attrs: { for: "usr" } }, [
+                          _vm._v(
+                            "\n                      " +
+                              _vm._s(_vm.trans("setting.bancryp_secret_key")) +
+                              "\n                      "
+                          ),
+                          _c(
+                            "a",
+                            {
+                              staticClass: "question-field",
+                              attrs: {
+                                href: "#",
+                                "data-toggle": "tooltip",
+                                title: _vm.trans("setting.bancryp_secret_key")
+                              }
+                            },
+                            [
+                              _c("span", {
+                                staticClass: "mdi mdi-comment-question-outline"
+                              })
+                            ]
+                          ),
+                          _vm._v(" "),
+                          _c("span", { staticClass: "required-field" }, [
+                            _vm._v("*")
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("input", {
+                          directives: [
+                            {
+                              name: "model",
+                              rawName: "v-model",
+                              value: _vm.bancryp.bancryp_secret_key,
+                              expression: "bancryp.bancryp_secret_key"
+                            }
+                          ],
+                          staticClass: "form-control input-gerencianet",
+                          attrs: {
+                            type: "text",
+                            "data-error": _vm.trans("setting.field")
+                          },
+                          domProps: { value: _vm.bancryp.bancryp_secret_key },
+                          on: {
+                            input: function($event) {
+                              if ($event.target.composing) {
+                                return
+                              }
+                              _vm.$set(
+                                _vm.bancryp,
+                                "bancryp_secret_key",
                                 $event.target.value
                               )
                             }
@@ -56154,7 +56330,11 @@ var render = function() {
           _c("div", { staticClass: "card-outline-info" }, [
             _c("div", { staticClass: "card-header" }, [
               _c("h4", { staticClass: "m-b-0 text-white" }, [
-                _vm._v(_vm._s(_vm.trans("setting.payment_prepaid")))
+                _vm._v(
+                  "\n            " +
+                    _vm._s(_vm.trans("setting.payment_prepaid")) +
+                    "\n          "
+                )
               ])
             ]),
             _vm._v(" "),
@@ -56199,23 +56379,20 @@ var render = function() {
                         {
                           name: "model",
                           rawName: "v-model",
-                          value: _vm.gateways.braspag.prepaid_min_billet_value,
-                          expression:
-                            "gateways.braspag.prepaid_min_billet_value"
+                          value: _vm.prepaid.prepaid_min_billet_value,
+                          expression: "prepaid.prepaid_min_billet_value"
                         }
                       ],
                       staticClass: "form-control input-braspag",
                       attrs: { type: "text" },
-                      domProps: {
-                        value: _vm.gateways.braspag.prepaid_min_billet_value
-                      },
+                      domProps: { value: _vm.prepaid.prepaid_min_billet_value },
                       on: {
                         input: function($event) {
                           if ($event.target.composing) {
                             return
                           }
                           _vm.$set(
-                            _vm.gateways.braspag,
+                            _vm.prepaid,
                             "prepaid_min_billet_value",
                             $event.target.value
                           )
@@ -56264,22 +56441,20 @@ var render = function() {
                         {
                           name: "model",
                           rawName: "v-model",
-                          value: _vm.gateways.braspag.prepaid_tax_billet,
-                          expression: "gateways.braspag.prepaid_tax_billet"
+                          value: _vm.prepaid.prepaid_tax_billet,
+                          expression: "prepaid.prepaid_tax_billet"
                         }
                       ],
                       staticClass: "form-control input-braspag",
                       attrs: { type: "text" },
-                      domProps: {
-                        value: _vm.gateways.braspag.prepaid_tax_billet
-                      },
+                      domProps: { value: _vm.prepaid.prepaid_tax_billet },
                       on: {
                         input: function($event) {
                           if ($event.target.composing) {
                             return
                           }
                           _vm.$set(
-                            _vm.gateways.braspag,
+                            _vm.prepaid,
                             "prepaid_tax_billet",
                             $event.target.value
                           )
@@ -56297,9 +56472,9 @@ var render = function() {
                   _c("div", { staticClass: "panel-heading" }, [
                     _c("h3", { staticClass: "panel-title" }, [
                       _vm._v(
-                        "\n                      " +
+                        "\n                  " +
                           _vm._s(_vm.trans("setting.prepaid_billet")) +
-                          "\n                    "
+                          "\n                "
                       )
                     ])
                   ]),
@@ -56311,25 +56486,22 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_billet_user,
-                            expression: "payment_methods.prepaid_billet_user"
+                            value: _vm.prepaid.prepaid_billet_user,
+                            expression: "prepaid.prepaid_billet_user"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
                         attrs: { type: "checkbox", id: "prepaid_billet_user" },
                         domProps: {
                           checked: Array.isArray(
-                            _vm.payment_methods.prepaid_billet_user
+                            _vm.prepaid.prepaid_billet_user
                           )
-                            ? _vm._i(
-                                _vm.payment_methods.prepaid_billet_user,
-                                null
-                              ) > -1
-                            : _vm.payment_methods.prepaid_billet_user
+                            ? _vm._i(_vm.prepaid.prepaid_billet_user, null) > -1
+                            : _vm.prepaid.prepaid_billet_user
                         },
                         on: {
                           change: function($event) {
-                            var $$a = _vm.payment_methods.prepaid_billet_user,
+                            var $$a = _vm.prepaid.prepaid_billet_user,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56338,24 +56510,20 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_user",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_user",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
-                              _vm.$set(
-                                _vm.payment_methods,
-                                "prepaid_billet_user",
-                                $$c
-                              )
+                              _vm.$set(_vm.prepaid, "prepaid_billet_user", $$c)
                             }
                           }
                         }
@@ -56377,9 +56545,8 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_billet_provider,
-                            expression:
-                              "payment_methods.prepaid_billet_provider"
+                            value: _vm.prepaid.prepaid_billet_provider,
+                            expression: "prepaid.prepaid_billet_provider"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
@@ -56389,18 +56556,17 @@ var render = function() {
                         },
                         domProps: {
                           checked: Array.isArray(
-                            _vm.payment_methods.prepaid_billet_provider
+                            _vm.prepaid.prepaid_billet_provider
                           )
                             ? _vm._i(
-                                _vm.payment_methods.prepaid_billet_provider,
+                                _vm.prepaid.prepaid_billet_provider,
                                 null
                               ) > -1
-                            : _vm.payment_methods.prepaid_billet_provider
+                            : _vm.prepaid.prepaid_billet_provider
                         },
                         on: {
                           change: function($event) {
-                            var $$a =
-                                _vm.payment_methods.prepaid_billet_provider,
+                            var $$a = _vm.prepaid.prepaid_billet_provider,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56409,21 +56575,21 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_provider",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_provider",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
                               _vm.$set(
-                                _vm.payment_methods,
+                                _vm.prepaid,
                                 "prepaid_billet_provider",
                                 $$c
                               )
@@ -56448,25 +56614,22 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_billet_corp,
-                            expression: "payment_methods.prepaid_billet_corp"
+                            value: _vm.prepaid.prepaid_billet_corp,
+                            expression: "prepaid.prepaid_billet_corp"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
                         attrs: { type: "checkbox", id: "prepaid_billet_corp" },
                         domProps: {
                           checked: Array.isArray(
-                            _vm.payment_methods.prepaid_billet_corp
+                            _vm.prepaid.prepaid_billet_corp
                           )
-                            ? _vm._i(
-                                _vm.payment_methods.prepaid_billet_corp,
-                                null
-                              ) > -1
-                            : _vm.payment_methods.prepaid_billet_corp
+                            ? _vm._i(_vm.prepaid.prepaid_billet_corp, null) > -1
+                            : _vm.prepaid.prepaid_billet_corp
                         },
                         on: {
                           change: function($event) {
-                            var $$a = _vm.payment_methods.prepaid_billet_corp,
+                            var $$a = _vm.prepaid.prepaid_billet_corp,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56475,24 +56638,20 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_corp",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_billet_corp",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
-                              _vm.$set(
-                                _vm.payment_methods,
-                                "prepaid_billet_corp",
-                                $$c
-                              )
+                              _vm.$set(_vm.prepaid, "prepaid_billet_corp", $$c)
                             }
                           }
                         }
@@ -56514,9 +56673,9 @@ var render = function() {
                   _c("div", { staticClass: "panel-heading" }, [
                     _c("h3", { staticClass: "panel-title" }, [
                       _vm._v(
-                        "\n                      " +
+                        "\n                  " +
                           _vm._s(_vm.trans("setting.prepaid_card")) +
-                          "\n                    "
+                          "\n                "
                       )
                     ])
                   ]),
@@ -56528,25 +56687,20 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_card_user,
-                            expression: "payment_methods.prepaid_card_user"
+                            value: _vm.prepaid.prepaid_card_user,
+                            expression: "prepaid.prepaid_card_user"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
                         attrs: { type: "checkbox", id: "prepaid_card_user" },
                         domProps: {
-                          checked: Array.isArray(
-                            _vm.payment_methods.prepaid_card_user
-                          )
-                            ? _vm._i(
-                                _vm.payment_methods.prepaid_card_user,
-                                null
-                              ) > -1
-                            : _vm.payment_methods.prepaid_card_user
+                          checked: Array.isArray(_vm.prepaid.prepaid_card_user)
+                            ? _vm._i(_vm.prepaid.prepaid_card_user, null) > -1
+                            : _vm.prepaid.prepaid_card_user
                         },
                         on: {
                           change: function($event) {
-                            var $$a = _vm.payment_methods.prepaid_card_user,
+                            var $$a = _vm.prepaid.prepaid_card_user,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56555,24 +56709,20 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_user",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_user",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
-                              _vm.$set(
-                                _vm.payment_methods,
-                                "prepaid_card_user",
-                                $$c
-                              )
+                              _vm.$set(_vm.prepaid, "prepaid_card_user", $$c)
                             }
                           }
                         }
@@ -56594,8 +56744,8 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_card_provider,
-                            expression: "payment_methods.prepaid_card_provider"
+                            value: _vm.prepaid.prepaid_card_provider,
+                            expression: "prepaid.prepaid_card_provider"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
@@ -56605,17 +56755,15 @@ var render = function() {
                         },
                         domProps: {
                           checked: Array.isArray(
-                            _vm.payment_methods.prepaid_card_provider
+                            _vm.prepaid.prepaid_card_provider
                           )
-                            ? _vm._i(
-                                _vm.payment_methods.prepaid_card_provider,
-                                null
-                              ) > -1
-                            : _vm.payment_methods.prepaid_card_provider
+                            ? _vm._i(_vm.prepaid.prepaid_card_provider, null) >
+                              -1
+                            : _vm.prepaid.prepaid_card_provider
                         },
                         on: {
                           change: function($event) {
-                            var $$a = _vm.payment_methods.prepaid_card_provider,
+                            var $$a = _vm.prepaid.prepaid_card_provider,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56624,21 +56772,21 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_provider",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_provider",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
                               _vm.$set(
-                                _vm.payment_methods,
+                                _vm.prepaid,
                                 "prepaid_card_provider",
                                 $$c
                               )
@@ -56663,25 +56811,20 @@ var render = function() {
                           {
                             name: "model",
                             rawName: "v-model",
-                            value: _vm.payment_methods.prepaid_card_corp,
-                            expression: "payment_methods.prepaid_card_corp"
+                            value: _vm.prepaid.prepaid_card_corp,
+                            expression: "prepaid.prepaid_card_corp"
                           }
                         ],
                         staticClass: "form-check-input checkbox-style",
                         attrs: { type: "checkbox", id: "prepaid_card_corp" },
                         domProps: {
-                          checked: Array.isArray(
-                            _vm.payment_methods.prepaid_card_corp
-                          )
-                            ? _vm._i(
-                                _vm.payment_methods.prepaid_card_corp,
-                                null
-                              ) > -1
-                            : _vm.payment_methods.prepaid_card_corp
+                          checked: Array.isArray(_vm.prepaid.prepaid_card_corp)
+                            ? _vm._i(_vm.prepaid.prepaid_card_corp, null) > -1
+                            : _vm.prepaid.prepaid_card_corp
                         },
                         on: {
                           change: function($event) {
-                            var $$a = _vm.payment_methods.prepaid_card_corp,
+                            var $$a = _vm.prepaid.prepaid_card_corp,
                               $$el = $event.target,
                               $$c = $$el.checked ? true : false
                             if (Array.isArray($$a)) {
@@ -56690,24 +56833,20 @@ var render = function() {
                               if ($$el.checked) {
                                 $$i < 0 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_corp",
                                     $$a.concat([$$v])
                                   )
                               } else {
                                 $$i > -1 &&
                                   _vm.$set(
-                                    _vm.payment_methods,
+                                    _vm.prepaid,
                                     "prepaid_card_corp",
                                     $$a.slice(0, $$i).concat($$a.slice($$i + 1))
                                   )
                               }
                             } else {
-                              _vm.$set(
-                                _vm.payment_methods,
-                                "prepaid_card_corp",
-                                $$c
-                              )
+                              _vm.$set(_vm.prepaid, "prepaid_card_corp", $$c)
                             }
                           }
                         }
@@ -56735,7 +56874,11 @@ var render = function() {
           _c("div", { staticClass: "card-outline-info" }, [
             _c("div", { staticClass: "card-header" }, [
               _c("h4", { staticClass: "m-b-0 text-white" }, [
-                _vm._v(_vm._s(_vm.trans("setting.boleto_gateway")))
+                _vm._v(
+                  "\n            " +
+                    _vm._s(_vm.trans("setting.boleto_gateway")) +
+                    "\n          "
+                )
               ])
             ]),
             _vm._v(" "),
@@ -56745,9 +56888,9 @@ var render = function() {
                   _c("div", { staticClass: "form-group" }, [
                     _c("label", { attrs: { for: "usr" } }, [
                       _vm._v(
-                        "\n                            " +
+                        "\n                  " +
                           _vm._s(_vm.trans("setting.default_pay_gate_boleto")) +
-                          "\n                            "
+                          "\n                  "
                       ),
                       _c(
                         "a",
@@ -56817,9 +56960,9 @@ var render = function() {
                   _c("div", { staticClass: "form-group" }, [
                     _c("label", { attrs: { for: "usr" } }, [
                       _vm._v(
-                        "\n                            " +
+                        "\n                  " +
                           _vm._s(_vm.trans("setting.operation_mode")) +
-                          "\n                            "
+                          "\n                  "
                       ),
                       _c(
                         "a",
@@ -56886,7 +57029,9 @@ var render = function() {
                         _vm._v(" "),
                         _c("option", { attrs: { value: "false" } }, [
                           _vm._v(
-                            " " + _vm._s(_vm.trans("setting.production")) + " "
+                            "\n                    " +
+                              _vm._s(_vm.trans("setting.production")) +
+                              "\n                  "
                           )
                         ])
                       ]
@@ -56898,7 +57043,11 @@ var render = function() {
               _c("div", { staticClass: "panel panel-default gerencianet" }, [
                 _c("div", { staticClass: "panel-heading" }, [
                   _c("h3", { staticClass: "panel-title" }, [
-                    _vm._v(_vm._s(_vm.trans("setting.gerencianet_settings")))
+                    _vm._v(
+                      "\n                " +
+                        _vm._s(_vm.trans("setting.gerencianet_settings")) +
+                        "\n              "
+                    )
                   ]),
                   _vm._v(" "),
                   _c("hr")
@@ -56910,11 +57059,11 @@ var render = function() {
                       _c("div", { staticClass: "form-group" }, [
                         _c("label", { attrs: { for: "usr" } }, [
                           _vm._v(
-                            "\n                                    " +
+                            "\n                      " +
                               _vm._s(
                                 _vm.trans("setting.gerencianet_client_id")
                               ) +
-                              "\n                                    "
+                              "\n                      "
                           ),
                           _c(
                             "a",
@@ -56982,11 +57131,11 @@ var render = function() {
                       _c("div", { staticClass: "form-group" }, [
                         _c("label", { attrs: { for: "usr" } }, [
                           _vm._v(
-                            "\n                                    " +
+                            "\n                      " +
                               _vm._s(
                                 _vm.trans("setting.gerencianet_client_secret")
                               ) +
-                              " \n                                    "
+                              "\n                      "
                           ),
                           _c(
                             "a",
