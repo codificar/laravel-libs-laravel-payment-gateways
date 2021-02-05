@@ -82,11 +82,11 @@ class AllGatewaysTest extends TestCase
 		$gateway = 'carto';
 
 		//Change the keys
-		Settings::where('key', 'carto_login')->update(['value' => '3235']);
+		Settings::where('key', 'carto_login')->update(['value' => '2962']);
 		Settings::where('key', 'carto_password')->update(['value' => '123456']);
 
 		// echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
-		$this->runInterfaceGateways($gateway, '1010420013471920', true);
+		$this->runInterfaceGateways($gateway, '1000500030001000', true);
 	}
 
 	public function testBancryp() {
@@ -225,7 +225,7 @@ class AllGatewaysTest extends TestCase
 		echo "\n".$gateway." - charge sem split: ok";
 
 		//Realiza uma pre-autorizacao (chargeNoCapture) sem split
-		$chargeNoCapture = $interface->testChargeNoCapture($cardId);
+		$chargeNoCapture = $interface->testChargeNoCapture($cardId, $isTerraCard);
 		$this->assertTrue($chargeNoCapture['success']);
 		$this->assertFalse($chargeNoCapture['captured']);
 		$this->assertFalse($chargeNoCapture['paid']);

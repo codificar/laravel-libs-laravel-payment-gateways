@@ -22,7 +22,7 @@ class GatewaysInterfaceTest {
 
     public function testCharge($cardId, $isCarto = false)
     {
-		$value = 5.20;
+		$value = 3.28;
 		if($isCarto) {
 			$gateway = PaymentFactory::cartoGateway();
 		} else {
@@ -48,10 +48,14 @@ class GatewaysInterfaceTest {
 		return $response;
 	}
 	
-    public function testChargeNoCapture($cardId)
+    public function testChargeNoCapture($cardId, $isCarto)
     {
-		$value = 12.34;
-		$gateway = PaymentFactory::createGateway();
+		$value = 4.29;
+		if($isCarto) {
+			$gateway = PaymentFactory::cartoGateway();
+		} else {
+			$gateway = PaymentFactory::createGateway();
+		}
 		$user = $this->userRandomForTest();
 		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$response = $gateway->charge($payment, $value, 'payment test', false);

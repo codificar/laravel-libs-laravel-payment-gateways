@@ -31,11 +31,61 @@ class CartoLib implements IPayment
     
     public function charge(Payment $payment, $amount, $description, $capture = false, User $user = null)
 	{
+		//Se for para realizar a captura sem pre autorizacao, chama o metodo capture
+		if($capture) {
+			return $this->chargeAndCapture($amount, $payment);
+		} 
+		//Se nao for para realizar a captura, apenas verifica o saldo. Se o saldo for maior ou igual o preco da corrida, entao "simulamos" uma pre autorizacao.
+		else {
+			\Log::debug("pre autorizacao carto");
+			try {
+				$response = CartoApi::checkCardBalance($payment, $amount, $user);
+				if ($response->success) {
+					$result = array(
+						'success'			=>	true,
+						'captured'			=>	'false',
+						'transaction_id'	=>	$response->transaction_id,
+						'paid'				=>	'authorized',
+						'status'			=>	$response->status
+					);
+					return $result;
+				} else {
+					throw new Exception("Error Processing Request", 1);
+				}
+			} catch (\Throwable $ex) {
+				\Log::error($ex);
+				return array(
+					"success" 	=> false ,
+					'data' 		=> null,
+					'transaction_id' => '',
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+		}
+	}
+			
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    {
+		\Log::error('split_not_implemented');
+
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'split_not_implementd',
+			"transaction_id" 	=> $transaction->gateway_transaction_id
+		);
+	}
+
+	public function chargeAndCapture($amount, Payment $payment) {
 		try {
 			$response = CartoApi::capture($amount, $payment);
 
 			if ($response->success) {
-				\Log::debug("caiu no sucesso! " . $response->transaction_id);
+				\Log::debug("caiu no sucesso carto! " . $response->transaction_id);
 				$result = array (
 					'success' 		 => true,
 					'captured' 		 => true,
@@ -58,46 +108,10 @@ class CartoLib implements IPayment
 			);
 		}
 	}
-			
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
-    {
-		\Log::error('split_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_capture_error' ,
-            "code" 				=> 'api_capture_error',
-            "message" 			=> 'split_not_implementd',
-			"transaction_id" 	=> $transaction->gateway_transaction_id
-		);
-	}
 		  
 	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
-		try {
-			$response = CartoApi::capture($amount, $payment, $capture = true);
-
-			if ($response->success) {
-				$result = array (
-					'success' 		 => true,
-					'captured' 		 => $capture,
-					'paid' 			 => $capture,
-					'status' 		 => $capture ? 'paid' : 'authorized',
-					'transaction_id' => $response->transaction_id
-				);
-				return $result;
-			}
-		} catch (\Throwable $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
+		return $this->chargeAndCapture($amount, $payment);
 	}
           
     public function refundWithSplit(Transaction $transaction, Payment $payment)
