@@ -80,15 +80,13 @@ class AllGatewaysTest extends TestCase
 
 	public function testCarto() {
 		$gateway = 'carto';
-		//Update the gateway selected
-		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
 		Settings::where('key', 'carto_login')->update(['value' => '3235']);
 		Settings::where('key', 'carto_password')->update(['value' => '123456']);
 
-		echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
-		// $this->runInterfaceGateways($gateway, '1010420013471920');
+		// echo "\n".$gateway." - implementado, mas teste unitario esta falhando";
+		$this->runInterfaceGateways($gateway, '1010420013471920', true);
 	}
 
 	public function testBancryp() {
@@ -195,11 +193,11 @@ class AllGatewaysTest extends TestCase
 	}
 
 
-    private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070'){
+    private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070', $isTerraCard = false){
 		$interface = new GatewaysInterfaceTest();
 		
 		//Cria o cartao e verifica se todos os parametros estao ok
-		$createCard = $interface->testCreateCard($cardNumber);
+		$createCard = $interface->testCreateCard($cardNumber, $isTerraCard);
 		$this->assertTrue($createCard['success']);
 		$this->assertInternalType('string', $createCard['token']);
 		$this->assertInternalType('string', $createCard['card_token']);
@@ -216,7 +214,7 @@ class AllGatewaysTest extends TestCase
 		
 		//Realiza uma cobranca direta e sem split
 		\Log::debug("gateway: " . $gateway . " - cardId: " . $cardId);
-		$charge = $interface->testCharge($cardId);
+		$charge = $interface->testCharge($cardId, $isTerraCard);
 		\Log::debug(print_r($charge, true));
 		$this->assertTrue($charge['success']);
 		$this->assertTrue($charge['captured']);

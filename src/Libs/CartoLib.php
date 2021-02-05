@@ -32,21 +32,21 @@ class CartoLib implements IPayment
     public function charge(Payment $payment, $amount, $description, $capture = false, User $user = null)
 	{
 		try {
-			$response = CartoApi::checkCardBalance($payment, $amount, $user);
+			$response = CartoApi::capture($amount, $payment);
+
 			if ($response->success) {
-				$result = array(
-					'success'			=>	true,
-					'captured'			=>	$capture,
-					'transaction_id'	=>	$response->transaction_id,
-					'paid'				=>	$capture ? 'paid' : 'authorized',
-					'status'			=>	$response->status
+				\Log::debug("caiu no sucesso! " . $response->transaction_id);
+				$result = array (
+					'success' 		 => true,
+					'captured' 		 => true,
+					'paid' 			 => true,
+					'status' 		 => 'paid',
+					'transaction_id' => $response->transaction_id
 				);
 				return $result;
-			} else {
-				throw new Exception("Error Processing Request", 1);
 			}
-		} catch (\Throwable $ex) {
-			\Log::error($ex);
+		} catch (\Throwable $th) {
+			
 			return array(
 				"success" 	=> false ,
 				'data' 		=> null,

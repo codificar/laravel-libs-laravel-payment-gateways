@@ -8,6 +8,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use DOMDocument;
 
 class CartoApi  
 {
@@ -73,16 +74,14 @@ class CartoApi
     {
         // $url = "http://preproducao.carto.com.br:80/cartows1.2/VendaAVistaWS?wsdl";
 
-        // $url = sprintf('%s/VendaAVistaWS?wsd', self::URL);
-
-        $url = sprintf('%s/VendaParceladaWS?wsd', self::URL);
+        $url = sprintf('%s/VendaAVistaWS?wsd', self::URL);
 
         $function = self::INSTALLMENT_SALE;
         
-        $bodyFunction = self::INSTALLMENT_SALE_BODY;
+        $bodyFunction = self::SELLERBODY;
 
         $response = self::apiRequest($payment, $amount, $url, $function, $bodyFunction, $transaction = null);
-        
+
         $result = (object)array(
             'success'           =>  $response->success,
             'transaction_id'    =>  $response->data->transaction_id
@@ -137,9 +136,6 @@ class CartoApi
     {
         $cardNumber = $payment->getCardNumber();
         $cardPassword = $payment->getPassword();
-        // $cardNumber = '1010420013471920';1007  2800  1259  0261
-        $cardNumber = '1007280012590261';
-        $cardPassword = '123456';
         $cartoLogin = Settings::getCartoLogin();
         $cartoPassword = Settings::getCartoPassword();
         if($amount){
@@ -246,8 +242,11 @@ class CartoApi
     {
         $arguments = self::getBodyFunction($payment, $amount, $bodyFunction);
         try {
+            \Log::debug("carto 1");
             $response = self::curlApiRequest($url, $arguments, $bodyFunction);
+            \Log::debug("carto 2");
             if ($response->success) {
+                \Log::debug("carto 3");
                 return $response;
             }
         } catch (\Throwable $ex) {
@@ -255,7 +254,7 @@ class CartoApi
                 "success" 					=> false ,
                 "message" 					=> $ex->getMessage()
             );
-            
+
             \Log::error(($return));
 
             return $return;

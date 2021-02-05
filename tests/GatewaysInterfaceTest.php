@@ -8,22 +8,27 @@ use Grimzy\LaravelMysqlSpatial\Types\Point;
 
 class GatewaysInterfaceTest {
 
-    public function testCreateCard($cardNumber){
+    public function testCreateCard($cardNumber, $isCarto = false){
 		$cardExpirationMonth = 8;
 		$cardExpirationYear = 2026 ;
 		$cardCvv = "314";
 		$cardHolder = "cartao teste";	
 		$user = $this->userRandomForTest();
 
-		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv);
+		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
 		
 		return($response);
     }
 
-    public function testCharge($cardId)
+    public function testCharge($cardId, $isCarto = false)
     {
-		$value = 8.92;
-		$gateway = PaymentFactory::createGateway();
+		$value = 5.20;
+		if($isCarto) {
+			$gateway = PaymentFactory::cartoGateway();
+		} else {
+			$gateway = PaymentFactory::createGateway();
+		}
+		
 		$user = $this->userRandomForTest();
 		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$response = $gateway->charge($payment, $value, 'payment test', true);
