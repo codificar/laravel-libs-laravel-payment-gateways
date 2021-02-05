@@ -50,6 +50,7 @@ class CartoLib implements IPayment
 			return array(
 				"success" 	=> false ,
 				'data' 		=> null,
+				'transaction_id' => '',
 				'error' 	=> array(
 					"code" 		=> ApiErrors::CARD_ERROR,
 					"messages" 	=> array(trans('creditCard.customerCreationFail'))
