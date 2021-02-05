@@ -713,7 +713,7 @@ return array(
 
 	
 	//confs lib
-	,'gateways'													=> 'Configuración de pasarelas de pago'
+	,'gateways'													=> 'Formas de Pago'
 	, 'home'													=> 'Casa'
 	, 'save'													=> 'Ahorrar'
 	, 'edit_confirm'											=> "¿Está seguro de que desea actualizar la configuración de la puerta de enlace?"

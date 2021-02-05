@@ -713,7 +713,7 @@ return array(
 
 	
 	//confs lib
-	,'gateways'													=> 'Configuração de Gateways de Pagamento'
+	,'gateways'													=> 'Payment Methods'
 	, 'home'													=> 'Home'
 	, 'save'													=> 'Salvar'
 	, 'edit_confirm'											=> 'Tem certeza que deseja atualizar as configurações de gateway?'
