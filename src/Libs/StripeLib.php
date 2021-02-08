@@ -356,9 +356,19 @@ class StripeLib implements IPayment
 
 		try
 		{
+			//Recupera a transacao
 			$charge = \Stripe\Charge::retrieve($transaction->gateway_transaction_id);
 
-			$chargeResponse = $charge->capture();
+			//Valor a ser capturado (passado por parametro)
+			$amount = round($amount*100) ;
+
+			//Nao eh possivel cobrar um valor maior que o pre-autorizado, entao nesse caso, o valor a ser cobrado sera igual ao pre-autorizado. Quem devera tratar essa logica eh o codigo que usa essa lib e nao a lib.
+			if($amount > $charge->amount)
+				$amount = $charge->amount;
+
+			$chargeResponse = $charge->capture(array(
+				'amount' => $amount
+			));
 
 			if($charge->failure_code){
 				return array(
@@ -391,6 +401,16 @@ class StripeLib implements IPayment
 				"type" 				=> $error["type"] ,
 				"code" 				=> '' ,
 				"message" 			=> $error["message"] ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch (\Throwable $th) {
+			\Log::error($th);
+			return array(
+				"success" 			=> false ,
+				"type" 				=> '' ,
+				"code" 				=> '' ,
+				"message" 			=> 'Erro desconhecido (capture stripe)' ,
 				"transaction_id" 	=> ''
 			);
 		}
