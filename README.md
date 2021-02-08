@@ -11,12 +11,14 @@ laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gat
 | `Stripe` | &#10004; | &#10004; | &#10060; | &#10004; | &#10060; | &#10004; | &#10004; |  &#10004; | &#10060; |
 | `Gerencianet` |  &#10060; | &#10060; | &#10060; | &#10060; | &#10004; | &#10060; | &#10060; |  &#10004; | &#10060; |
 | `Bancard` | &#10004; | &#10004; | &#10060; | &#10004; | &#10060; | &#10004; | &#10060; |  &#10004; | &#10060; |
-| `Cielo` | &#10004; | &#10004; | &#10004; | &#10004; | &#10004; | &#10004; | &#10060; |  &#10060; | &#10060; |
+| `Cielo` | &#10004; | &#10004; | &#10004; | &#10004; | &#10004; | &#10004; | &#10060; |  &#10004; | &#10060; |
 | `Transbank` | &#10004; | &#10004; | &#10060; | &#10004; | &#10060; | &#10004; | &#10060; |  &#10060; | &#10060; |
+| `Carto *Obs` | &#10004; | &#10004; | &#10060; | &#10004; **Obs | &#10060; | &#10060; | &#10060; |  &#10060; | &#10060; |
 | `Zoop` | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; |  &#10060; | &#10060; |
 | `BrainTree` | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; | &#10060; |  &#10060; | &#10060; |
 ***
-
+<i>*Obs: Carto tem os mesmos métodos que os outros gateways, mas o restante do código precisa ser configurado individualmente em cada projeto.</i><br>
+<i>**Obs: Carto possuí pré-autorização "simulada", pois apenas verifica se o saldo do cartão é maior (ou igual) que o valor da corrida. Se sim, a pré autorização é "aceita".</i>
 # Teste unitário
 Todos os gateways podem ser testados ao mesmo tempo. Após a instalação dessa biblioteca, basta rodar o comando dentro do projeto em que foi instalado.
 ```
