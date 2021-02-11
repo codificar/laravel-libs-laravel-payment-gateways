@@ -2,7 +2,6 @@
 
 namespace Codificar\PaymentGateways\Commands;
 
-use App\Services\AudioProcessor;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,10 +27,9 @@ class GatewayUpdateCardsJob implements ShouldQueue
     /**
      * Execute the job.
      *
-     * @param  App\Services\AudioProcessor  $processor
      * @return void
      */
-    public function handle(AudioProcessor $processor)
+    public function handle()
     {
         \Artisan::call('db:seed', ['--class' => 'GatewayUpdateCards']);
     }
