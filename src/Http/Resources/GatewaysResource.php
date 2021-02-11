@@ -37,7 +37,9 @@ class GatewaysResource extends JsonResource
     {
 
         return [
-            'success' => true
+            'success' => true,
+            'is_updating_cards' => $this['is_updating_cards'],
+            'estimate_update_cards' => $this['estimate_update_cards']
         ];
     }
 }

@@ -7,8 +7,9 @@ use Codificar\PaymentGateways\Http\Requests\GatewaysFormRequest;
 use Codificar\PaymentGateways\Http\Resources\GatewaysResource;
 use Illuminate\Http\Request;
 
+use Codificar\PaymentGateways\Models\GatewaysLibModel;
+
 // Importar Resource
-use Codificar\PaymentGateways\Http\Resources\TesteResource;
 use Codificar\PaymentGateways\Commands\GatewayUpdateCardsJob;
 use Config;
 use Exception;
@@ -197,11 +198,17 @@ class GatewaysController extends Controller
         //Pega o novo gateway escolhido
         $newGateway = $request->gateways['default_payment'];
 
+        $isUpdatingCards = false;
+        $estimateUpdateCards = "";
         //Se o gateway antigo for diferante do atual, entao chama a seed para atualizar todos os cartoes
         
         if($oldGateway != $newGateway) {
             //Salva o gateway de cartao de credito escolhido no banco
             $this->updateOrCreateSettingKey('default_payment', $newGateway);
+
+            $isUpdatingCards = true;
+            $estimateUpdateCards = GatewaysLibModel::getUpdateCardsEstimateTime();
+
             //Call the job to update the cards
             GatewayUpdateCardsJob::dispatch();
         }
@@ -257,7 +264,10 @@ class GatewaysController extends Controller
         }
 
         // Return data
-        return new GatewaysResource([]);
+        return new GatewaysResource([
+            'is_updating_cards' => $isUpdatingCards,
+            'estimate_update_cards' => $estimateUpdateCards
+        ]);
     }
 
     private function updateOrCreateSettingKey($key, $value) {

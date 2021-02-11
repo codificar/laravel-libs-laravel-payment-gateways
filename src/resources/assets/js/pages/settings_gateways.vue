@@ -32,12 +32,18 @@ export default {
               })
               .then((response) => {
                 if (response.data.success) {
-                  console.log("prox is gate");
-                  console.log(this.gateways);
-                  this.$swal({
-                    title: this.trans("setting.success_set_gateway"),
-                    type: "success",
-                  }).then((result) => {});
+                  if(response.data.is_updating_cards && response.data.estimate_update_cards) {
+                    this.$swal({
+                      title: this.trans("setting.success_set_gateway"),
+                      text: this.trans("setting.gateway_has_change") + response.data.estimate_update_cards,
+                      type: "warning",
+                    }).then((result) => {});
+                  } else {
+                    this.$swal({
+                      title: this.trans("setting.success_set_gateway"),
+                      type: "success",
+                    }).then((result) => {});
+                  }
                 } else {
                   this.$swal({
                     title: this.trans("setting.failed_set_gateway"),
@@ -1439,6 +1445,11 @@ export default {
                   }}</label>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-lg-12">
+              <span>{{ trans("setting.obs_billet_gateway") }}</span>
             </div>
           </div>
         </div>

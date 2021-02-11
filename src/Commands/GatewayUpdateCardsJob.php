@@ -8,6 +8,8 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
+use Codificar\PaymentGateways\Models\GatewaysLibModel;
+
 class GatewayUpdateCardsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -31,6 +33,6 @@ class GatewayUpdateCardsJob implements ShouldQueue
      */
     public function handle()
     {
-        \Artisan::call('db:seed', ['--class' => 'GatewayUpdateCards']);
+        GatewaysLibModel::gatewayUpdateCards();
     }
 }
