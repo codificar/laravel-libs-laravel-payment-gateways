@@ -1,10 +1,5 @@
 <?php
 
-/**
- * WARNING: THIS SEED IS AUTO-GENERATE IN "laravel-payment-gateways" LIB. IF YOU WANT TO MAKE ANY CHANGE IN THIS FILE, DO IT DIRECTLY IN THE LIBRARY
- * PERIGO: ESSA SEED E AUTO GERADA PELA BIBLIOTECA "laravel-payment-gateways". SE QUISER FAZER QUALQUER MUDANÇA NESSE ARQUIVO, FACA DIRETAMENTE NA BIBLIOTECA
- */
-
 use Illuminate\Database\Seeder;
 
 class GatewayUpdateCards extends Seeder
@@ -56,7 +51,6 @@ class GatewayUpdateCards extends Seeder
                         $payment->save();
 
                         //Show message in terminal
-                        \Log::debug("Id do cartao: " . $payment->id . " - card token: " . $return['card_token']);
                         $this->command->info(sprintf('Cartão %s salvo no gateway %s com código %s', 
                                         $payment->id, 
                                         $newGatewayName,

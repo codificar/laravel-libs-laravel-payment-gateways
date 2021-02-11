@@ -33,8 +33,6 @@ class GatewayUpdateCardsJob implements ShouldQueue
      */
     public function handle(AudioProcessor $processor)
     {
-        \Log::debug("Comecou atualizar os cards");
         \Artisan::call('db:seed', ['--class' => 'GatewayUpdateCards']);
-        \Log::debug("Finalizou atualizacao dos cards");
     }
 }
