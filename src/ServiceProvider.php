@@ -39,6 +39,11 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->publishes([
             __DIR__ . '/../tests/' => base_path('tests/libs/gateways'),
         ], 'publishes_gateway_tests');
+
+        // Publish the seeds files 
+        $this->publishes([
+            __DIR__ . '/Database/seeds' => base_path('database/seeds'),
+        ], 'publishes_seeds');
     }
 
     /**

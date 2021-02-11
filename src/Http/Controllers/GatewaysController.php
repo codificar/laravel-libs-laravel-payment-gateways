@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 // Importar Resource
 use Codificar\PaymentGateways\Http\Resources\TesteResource;
+use Codificar\PaymentGateways\Commands\GatewayUpdateCardsJob;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
@@ -190,15 +191,29 @@ class GatewaysController extends Controller
             }
         }
 
+        //pega o gateway antigo (antes de salvar)
+        $oldGateway = Settings::findByKey('default_payment');
+
+        //Pega o novo gateway escolhido
+        $newGateway = $request->gateways['default_payment'];
+
+        //Se o gateway antigo for diferante do atual, entao chama a seed para atualizar todos os cartoes
+        
+        if($oldGateway != $newGateway) {
+            //Salva o gateway de cartao de credito escolhido no banco
+            $this->updateOrCreateSettingKey('default_payment', $newGateway);
+            //Call the job to update the cards
+            GatewayUpdateCardsJob::dispatch();
+        }
+
         //Salva o gateway de cartao de credito escolhido
-        $defaultPaymentCard = $request->gateways['default_payment'];
-        $this->updateOrCreateSettingKey('default_payment', $defaultPaymentCard);
+        $this->updateOrCreateSettingKey('default_payment', $newGateway);
 
         //salva as chaves do gateway escolhido
-        if($defaultPaymentCard) {
-            foreach ($request->gateways[$defaultPaymentCard] as $key => $value) {
+        if($newGateway) {
+            foreach ($request->gateways[$newGateway] as $key => $value) {
                 //Verifica se a key do gateway existe
-                if(in_array($key, $this->keys_gateways[$defaultPaymentCard])) {
+                if(in_array($key, $this->keys_gateways[$newGateway])) {
                     $this->updateOrCreateSettingKey($key, $value);
                 }
             }
