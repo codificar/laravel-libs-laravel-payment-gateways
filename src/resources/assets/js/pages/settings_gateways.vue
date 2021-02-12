@@ -1328,7 +1328,7 @@ export default {
                   <span class="required-field">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   class="form-control input-braspag"
                   v-model="prepaid.prepaid_min_billet_value"
                 />
@@ -1350,7 +1350,7 @@ export default {
                   <span class="required-field">*</span>
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   class="form-control input-braspag"
                   v-model="prepaid.prepaid_tax_billet"
                 />
