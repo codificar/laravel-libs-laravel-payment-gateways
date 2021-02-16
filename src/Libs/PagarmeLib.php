@@ -147,20 +147,32 @@ class PagarmeLib implements IPayment
 	 */
 	public function billetVerify ($request, $transaction_id = null)
 	{
-		$postbackTransaction = $request->transaction;
-        
-		if (!$postbackTransaction)
-			return [
-				'success' => false,
-				'status' => '',
-				'transaction_id' => ''
-			];
 
-		return [
-			'success' => true,
-			'status' => $postbackTransaction['status'],
-			'transaction_id' => $postbackTransaction['id']
-		];
+		//If has transaction id, retrieve and check the billet status
+		if($transaction_id) {
+			$transaction = Transaction::find($transaction_id);
+			$retrieve = $this->retrieve($transaction);
+			return [
+				'success' => true,
+				'status' => $retrieve['status'],
+				'transaction_id' => $retrieve['transaction_id']
+			];
+		} else {
+			$postbackTransaction = $request->transaction;
+        
+			if (!$postbackTransaction)
+				return [
+					'success' => false,
+					'status' => '',
+					'transaction_id' => ''
+				];
+	
+			return [
+				'success' => true,
+				'status' => $postbackTransaction['status'],
+				'transaction_id' => $postbackTransaction['id']
+			];
+		}
 	}
 
 	/**
