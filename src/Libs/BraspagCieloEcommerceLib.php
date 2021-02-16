@@ -168,7 +168,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     /**
 	 * Trata o postback retornado pelo gateway
 	 */
-	public function billetVerify ($request)
+	public function billetVerify ($request, $transaction_id = null)
 	{
 		$postbackTransaction = $request->PaymentId;
         

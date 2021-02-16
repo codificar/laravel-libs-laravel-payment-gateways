@@ -351,7 +351,7 @@ class CieloLib implements IPayment
      *                  'transaction_id',
      *               ]
 	 */
-	public function billetVerify ($request)
+	public function billetVerify ($request, $transaction_id = null)
 	{
 		$postbackTransaction = $request->PaymentId;
         

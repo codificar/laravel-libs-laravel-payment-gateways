@@ -451,7 +451,7 @@ Class BancrypLib implements IPayment
 		
 	}
 
-	public function billetVerify($request)
+	public function billetVerify($request, $transaction_id = null)
 	{
 		
 	}

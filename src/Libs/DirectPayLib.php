@@ -342,7 +342,7 @@ class DirectPayLib  implements IPayment
 		);
 	}
 
-	public function billetVerify($request)
+	public function billetVerify($request, $transaction_id = null)
 	{
 		\Log::error('billet_charge_not_implemented_in_stripe_gateway');
 

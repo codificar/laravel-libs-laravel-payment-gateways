@@ -59,7 +59,7 @@ interface IPayment
      * 
      * @return Array ['success', 'status', 'transaction_id']
      */      
-    public function billetVerify ($request);
+    public function billetVerify ($request, $transaction_id = null);
 
     /**
      * Capture the payment of an existing, uncaptured, charge with split rules

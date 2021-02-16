@@ -517,7 +517,7 @@ class GetNetLib implements IPayment
      *                      'transaction_id',
      *                     ]
      */
-    public function billetVerify($request)
+    public function billetVerify($request, $transaction_id = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])

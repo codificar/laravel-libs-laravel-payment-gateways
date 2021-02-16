@@ -145,7 +145,7 @@ class PagarmeLib implements IPayment
 	 * @param object $request
 	 * @return array
 	 */
-	public function billetVerify ($request)
+	public function billetVerify ($request, $transaction_id = null)
 	{
 		$postbackTransaction = $request->transaction;
         
