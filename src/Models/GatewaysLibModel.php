@@ -41,7 +41,7 @@ class GatewaysLibModel extends Eloquent
 		//Get the new gateway name
 		$newGatewayName = Settings::findByKey('default_payment');
 
-		\Log::info("Atualizando cartoes no gateway " . $newGatewayName . ". No final sera gerado 2 logs: um contendo os cartoes atualizados com sucesso e outro com cartoes recusados pelo novo gateway. Estimativa de " . GatewaysLibModel::getUpdateCardsEstimateTime());
+		\Log::alert("Atualizando cartoes no gateway " . $newGatewayName . ". No final sera gerado 2 logs: um contendo os cartoes atualizados com sucesso e outro com cartoes recusados pelo novo gateway. Estimativa de " . GatewaysLibModel::getUpdateCardsEstimateTime());
 
 		$errCards = array();
 		$sucCards = array();
@@ -90,15 +90,15 @@ class GatewaysLibModel extends Eloquent
                         array_push($errCards, sprintf('Erro ao salvar o cartão %s: %s', $payment->id, $errMsg));
                     }
                 }
-                catch (Exception $ex){
+                catch (\Throwable $ex) {
 					array_push($errCards, sprintf('Erro ao salvar o cartão %s: Erro desconhecido', $payment->id));
                     continue ;
                 }
             }
         }
-		\Log::info("Atualizacao de cartoes concluida!");
-		\Log::info(print_r($errCards, true));
-		\Log::info(print_r($sucCards, true));
+		\Log::alert("Atualizacao de cartoes concluida!");
+		\Log::alert(print_r($errCards, true));
+		\Log::alert(print_r($sucCards, true));
 	}
     
 }
