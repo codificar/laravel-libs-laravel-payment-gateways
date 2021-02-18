@@ -521,23 +521,30 @@ class GetNetLib implements IPayment
      */
     public function billetVerify($request, $transaction_id = null)
     {
-        $responseConf = $this->setApiKey();
-        if(isset($responseConf['success']) && !$responseConf['success'])
-            return $responseConf;
+        //If has transaction id, retrieve and check the billet status
+		if($transaction_id) {
+			$transaction = Transaction::find($transaction_id);
+			$retrieve = $this->retrieve($transaction);
+			return [
+				'success' => true,
+				'status' => $retrieve['status'],
+				'transaction_id' => $retrieve['transaction_id']
+			];
+		} else {
+            try {
+                $billetStatus   =   $request->status;
+                $paymentId      =   $request->payment_id;
 
-        try {
-            $billetStatus   =   $request->status;
-            $paymentId      =   $request->payment_id;
+                return array (
+                    'success' => true,
+                    'status' => $this->getStatusString($billetStatus),
+                    'transaction_id' => $paymentId,
+                );
 
-            return array (
-                'success' => true,
-                'status' => $this->getStatusString($billetStatus),
-                'transaction_id' => $paymentId,
-            );
-
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateway_getnet.billet_verify_fail');
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage());
+                return $this->responseApiError('gateway_getnet.billet_verify_fail');
+            }
         }
     }
 
