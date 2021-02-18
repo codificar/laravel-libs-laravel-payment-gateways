@@ -271,6 +271,7 @@ class AllGatewaysTest extends TestCase
 			$billet = $interface->testBilletCharge();
 			$this->assertTrue($billet['success']);
 			$this->assertInternalType('string', $billet['billet_url']);
+			$this->assertInternalType('string', $billet['digitable_line']);
 			echo "\n".$gateway." - billet: ok - url: " . $billet['billet_url'];
 		} else {
 			echo "\n".$gateway." - billet: nao possui boleto";

@@ -158,6 +158,7 @@ Class BrasPagLib implements IPayment
                     'status' => self::WAITING_PAYMENT,
                     'transaction_id' => $response->data->Payment->PaymentId,
                     'billet_url' => $response->data->Payment->Url,
+                    'digitable_line' => $response->data->Payment->DigitableLine,
                     'billet_expiration_date' => $response->data->Payment->ExpirationDate
                 );
             } else {

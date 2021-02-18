@@ -276,6 +276,7 @@ class CieloLib implements IPayment
 	 *			            'status',
      *			            'transaction_id',
      *                      'billet_url',
+     *                      'digitable_line',
      *                      'billet_expiration_date'
      *                     ]
      */
@@ -321,6 +322,7 @@ class CieloLib implements IPayment
             $chargeStatus   = $sale->getPayment()->getStatus();
             $billetURL      = $sale->getPayment()->getUrl();
             $expiration     = $sale->getPayment()->getExpirationDate();
+            $digitableLine = $sale->getPayment()->getDigitableLine();
 
             return array (
 				'success' => true,
@@ -329,6 +331,7 @@ class CieloLib implements IPayment
 				'status' => $this->getStatusString($chargeStatus),
 				'transaction_id' => $paymentId,
 				'billet_url' => $billetURL,
+                'digitable_line' => $digitableLine,
 				'billet_expiration_date' => $expiration
 			);
 

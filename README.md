@@ -128,6 +128,7 @@ Todos os gateways podem ser testados ao mesmo tempo. Após a instalação dessa 
 | `status` | String | status da transação. Como o boleto acabou de ser gerado, então provavelmente será `waiting_payment` |
 | `transaction_id` | String | Id da transação retornado pelo gateway |
 | `billet_url` | String | Url do boleto retornado pelo gateway |
+| `digitable_line` | String | Linha digitável do boleto |
 | `billet_expiration_date` | String | Data de expiração do boleto |
 
 ***

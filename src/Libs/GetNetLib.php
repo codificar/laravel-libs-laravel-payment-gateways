@@ -415,6 +415,7 @@ class GetNetLib implements IPayment
      *                      'status',
      *                      'transaction_id',
      *                      'billet_url',
+     *                      'digitable_line',
      *                      'billet_expiration_date'
      *                     ]
      */
@@ -497,6 +498,7 @@ class GetNetLib implements IPayment
                 'status' => self::GATEWAY_PENDING,
                 'transaction_id' => $paymentId,
                 'billet_url' => $request->getBaseUrl() . $links->boleto->_links[0]->href,
+                'digitable_line' => $links->boleto->typeful_line,
                 'billet_expiration_date' => $billetExpirationDate
             );
 

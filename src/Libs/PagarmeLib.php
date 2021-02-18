@@ -123,7 +123,7 @@ class PagarmeLib implements IPayment
 				'status' => $pagarMeTransaction->status,
 				'transaction_id' => $pagarMeTransaction->id,
 				'billet_url' => $pagarMeTransaction->boleto_url,
-				'billet_barcode' => $pagarMeTransaction->boleto_barcode,
+				'digitable_line' => $pagarMeTransaction->boleto_barcode,
 				'billet_expiration_date' => $pagarMeTransaction->boleto_expiration_date
 			);
 			
