@@ -188,7 +188,7 @@ class GatewaysController extends Controller
         foreach ($request->payment_methods as $key => $value) {
             //Verifica se a key do gateway existe
             if(in_array($key, $this->keys_payment_methods)) {
-                $this->updateOrCreateSettingKey($key, $value);
+                $this->updateOrCreateSettingKey($key, (bool)$value ? '1' : '0');
             }
         }
 
@@ -272,14 +272,15 @@ class GatewaysController extends Controller
 
     private function updateOrCreateSettingKey($key, $value) {
         $temp_setting = Settings::where('key', '=', $key)->first();
+        $newValue = ($value || $value == 0 || $value == '0')  ? $value : '';
         if ($temp_setting) {
-            $temp_setting->value = $value ? $value : '';
+            $temp_setting->value = $newValue;
             $temp_setting->save();
         } else {
             $first_setting = Settings::first();
             $new_setting = new Settings();
             $new_setting->key = $key;
-            $new_setting->value = $value ? $value : '';
+            $new_setting->value = $newValue;
             $new_setting->page = $first_setting->page;
             $new_setting->category = $first_setting->category;
             $new_setting->save();
