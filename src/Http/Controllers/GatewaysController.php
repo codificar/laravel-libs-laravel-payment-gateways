@@ -272,7 +272,16 @@ class GatewaysController extends Controller
 
     private function updateOrCreateSettingKey($key, $value) {
         $temp_setting = Settings::where('key', '=', $key)->first();
-        $newValue = ($value || $value == 0 || $value == '0')  ? $value : '';
+
+        if($value === 0 || $value === '0' || $value === false ) {
+            $newValue = '0';
+        }
+        else if($value) {
+            $newValue = $value;
+        } else {
+            $newValue = '';
+        }
+
         if ($temp_setting) {
             $temp_setting->value = $newValue;
             $temp_setting->save();
