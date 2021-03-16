@@ -17,7 +17,7 @@
 
 
 @section('content')
-	<div id="VueJs">
+	<div id="VueJs" class="col-sm-12">
 		
 		<settingsgateways 
 			payment-methods="{{ json_encode($payment_methods)}}"
