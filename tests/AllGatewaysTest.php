@@ -192,6 +192,19 @@ class AllGatewaysTest extends TestCase
 		// $this->runInterfaceGateways($gateway);
 	}
 
+	public function testAdiq() {
+		$gateway = 'adiq';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'adiq_client_id')->update(['value' => 'A1EF2F6F-8BA0-4C2F-91EA-8E1603D9FD7D']);
+		Settings::where('key', 'adiq_client_secret')->update(['value' => '93D46FF3-B98C-4BFF-92CD-3A3A58BDD371']);
+
+		$this->runInterfaceGateways($gateway);
+		$this->runSPlitGateways($gateway);
+	}
+
 
     private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070', $isTerraCard = false){
 		$interface = new GatewaysInterfaceTest();

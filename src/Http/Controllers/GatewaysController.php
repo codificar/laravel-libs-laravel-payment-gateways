@@ -45,6 +45,11 @@ class GatewaysController extends Controller
             'braspag_merchant_key',
             'braspag_token'
         ],
+        'adiq' => [
+            'adiq_client_id',
+            'adiq_client_secret',
+            'adiq_token'
+        ],
         'getnet' => [
             'getnet_client_id',
             'getnet_client_secret',
@@ -90,7 +95,8 @@ class GatewaysController extends Controller
         array('value' => 'getnet', 'name' => 'setting.getnet'),
         array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
-        array('value' => 'transbank', 'name' => 'setting.transbank')
+        array('value' => 'transbank', 'name' => 'setting.transbank'),
+        array('value' => 'adiq', 'name' => 'setting.adiq'),
     );
 
 
