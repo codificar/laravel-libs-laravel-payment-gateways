@@ -17,11 +17,11 @@ use Bank;
 class AdiqApi
 {
     
-    const URL_PROD = "https://ecommerce.adiq.io/v1";
+    const URL_PROD = "https://ecommerce.adiq.io";
     
     // const SUBORD_URL_PROD = "";
 
-    const URL_DEV = "https://ecommerce-hml.adiq.io/v1";
+    const URL_DEV = "https://ecommerce-hml.adiq.io";
 
     // const SUBORD_URL_DEV = "";
 
@@ -29,7 +29,7 @@ class AdiqApi
 
     const FEE = 0;
     const CREDIT_CARD = 'Credit';
-    const MASTER    ='Master';
+
     const INITIAL_INSTALLMENT_NUMBER = 1;
     const FINAL_INSTALLMENT_NUMBER = 1;
     // const MASTER_PERCENT = 2.36;
@@ -65,13 +65,16 @@ class AdiqApi
     {
         $time = Carbon::now()->toDateTimeString();
 
-        $orderId = self::getOrderId($time);
+        $cardExpirationMonth = $payment->getCardExpirationMonth();
+        $cardExpirationYear  = $payment->getCardExpirationYear();
+        $cardExpirationYear  = $cardExpirationYear % 100;
 
-        $expirationDate = self::getExpirationDate($payment);
+        $orderId = self::getOrderId();
 
-        $brand = self::getBrand($payment);
+        $brand = Payment::getBrand($payment);
+        $brand = strtolower($brand);
 
-        $url = sprintf('%s/payments/', self::apiUrl());
+        $url = sprintf('%s/v1/payments/', self::apiUrl());
 
         $phone = self::formatPhone($user->phone);
 
@@ -80,51 +83,54 @@ class AdiqApi
         $totalAmount = self::amountRound($amount);
 
         $fields = array (
-            'MerchantOrderId'   =>  $orderId,
-            'Customer'          =>  (object)array(
-                'Name'          =>  $user->first_name.' '.$user->last_name,
-                "email"         =>  $user->email,
-                "Identity"      =>  $user->document,
-                "identitytype"  =>  $docType,
-                "Mobile"        =>  $phone,
-                "Phone"         =>  $phone,
-            ),
-            'Payment'           =>  (object)array(
-                'Type'          =>  self::CREDIT_CARD,
-                'Amount'        =>  $totalAmount,
-                'Installments'  =>  1,
-                'Capture'       =>  $capture,
-                'SoftDescriptor'    =>  Settings::findByKey('website_title'),
-                'CreditCard'            =>  (object)array(
-                    'CardNumber'        =>  $payment->getCardNumber(),
-                    'Holder'            =>  $payment->getCardHolder(),
-                    'ExpirationDate'    =>  $expirationDate,
-                    'SecurityCode'      =>  $payment->getCardCvc(),
-                    'Brand'             =>  $brand,
-                    'SaveCard'          =>  false
-                ),
-                'fraudanalysis'     =>  (object)array(
-                    'provider'      =>  'cybersource',
-                    'Shipping'      =>  (object)array(
-                        'Addressee' =>  $user->first_name.' '.$user->last_name
-                    ),
-                    'browser'       =>  (object)array(
-                        // 'ipaddress'             =>  '179.221.103.151',
-                        'browserfingerprint'    =>  $orderId
-                    ),
-                    'totalorderamount'          =>  $totalAmount,
-                    'MerchantDefinedFields'     =>  array(
-                        (object)array(
-                            'id'    =>  1,
-                            'value' =>  'Guest'
-                        )
-                    ),
+            // 'MerchantOrderId'   =>  $orderId,
+            // 'Customer'          =>  (object)array(
+            //     'Name'          =>  $user->first_name.' '.$user->last_name,
+            //     "email"         =>  $user->email,
+            //     "Identity"      =>  $user->document,
+            //     "identitytype"  =>  $docType,
+            //     "Mobile"        =>  $phone,
+            //     "Phone"         =>  $phone,
+            // ),
+            'payment'               =>  (object)array(
+                'transactionType'   =>  self::CREDIT_CARD,
+                'amount'            =>  $totalAmount,
+                'currencyCode'      =>  strtolower(Settings::findByKey('generic_keywords_currency')),
+                'installments'      =>  1,
+                'captureType'       =>  'ac',
+                'recurrent'         =>  false,
+                
+                // 'SoftDescriptor'    =>  Settings::findByKey('website_title'),
+                
+                // 'fraudanalysis'     =>  (object)array(
+                //     'provider'      =>  'cybersource',
+                //     'Shipping'      =>  (object)array(
+                //         'Addressee' =>  $user->first_name.' '.$user->last_name
+                //     ),
+                //     'browser'       =>  (object)array(
+                //         // 'ipaddress'             =>  '179.221.103.151',
+                //         'browserfingerprint'    =>  $orderId
+                //     ),
+                //     'totalorderamount'          =>  $totalAmount,
+                //     'MerchantDefinedFields'     =>  array(
+                //         (object)array(
+                //             'id'    =>  1,
+                //             'value' =>  'Guest'
+                //         )
+                //     ),
                     
 
-                )
-            ),            
+                // )
+            ),
+            'cardInfo'              =>  (object)array(
+                // 'CardNumber'        =>  $payment->getCardNumber(),
+                'cardholderName'    =>  $payment->getCardHolder(),
+                'securityCode'      =>  $payment->getCardCvc(),
+                'brand'             =>  $brand,
+                'expirationMonth'   =>  str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+                'expirationYear'    =>  str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+            ),
         );
-
 
         $body = json_encode($fields);
 
@@ -141,15 +147,20 @@ class AdiqApi
     {
         $time = Carbon::now()->toDateTimeString();
 
-        $orderId = self::getOrderId($time);
+        $cardExpirationMonth = $payment->getCardExpirationMonth();
+        $cardExpirationYear  = $payment->getCardExpirationYear();
+        $cardExpirationYear  = $cardExpirationYear % 100;
 
-        $expirationDate = self::getExpirationDate($payment);
+        $orderId = self::getOrderId();
+
+        // $expirationDate = self::getExpirationDate($payment);
 
         $user = User::find($payment->user_id);
 
-        $brand = self::getBrand($payment);
+        $brand = Payment::getBrand($payment);
+        $brand = strtolower($brand);
 
-        $url = sprintf('%s/payments/', self::apiUrl());
+        $url = sprintf('%s/v1/payments/', self::apiUrl());
 
         // if ($provider) {
         //     $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $provider->id);
@@ -168,66 +179,119 @@ class AdiqApi
 
         $totalAmount = self::amountRound($totalAmount);
 
+        $cardToken = self::tokenizeCard($payment->getCardNumber());
+
+        if(!$cardToken)
+            return false;
+
         $fields = array (
-            'MerchantOrderId'   =>  $orderId,
-            'Customer'          =>  (object)array(
-                'Name'          =>  $user->first_name.' '.$user->last_name. ' ACCEPT',
-                "email"         =>  $user->email,
-                "Identity"      =>  $user->document,
-                "identitytype"  =>  $docType,
-                "Mobile"        =>  $phone,
-                "Phone"         =>  $phone,
+            // 'MerchantOrderId'   =>  $orderId,
+            // 'Customer'          =>  (object)array(
+            //     'Name'          =>  $user->first_name.' '.$user->last_name,
+            //     "email"         =>  $user->email,
+            //     "Identity"      =>  $user->document,
+            //     "identitytype"  =>  $docType,
+            //     "Mobile"        =>  $phone,
+            //     "Phone"         =>  $phone,
+            // ),
+            'sellerInfo'=>  (object)array( 
+                'orderNumber' => $orderId
             ),
-            'Payment'           =>  (object)array(
-                'Type'          =>  $type,
-                'Amount'        =>  $totalAmount,
-                'Installments'  =>  1,
-                'Capture'       =>  $capture,
-                'SoftDescriptor'    =>  Settings::findByKey('website_title'),
-                'CreditCard'            =>  (object)array(
-                    'CardNumber'        =>  $payment->getCardNumber(),
-                    'Holder'            =>  $payment->getCardHolder(),
-                    'ExpirationDate'    =>  $expirationDate,
-                    'SecurityCode'      =>  $payment->getCardCvc(),
-                    'Brand'             =>  $brand,
-                    'SaveCard'          =>  false
-                ),
-                'fraudanalysis'     =>  (object)array(
-                    'provider'      =>  'cybersource',
-                    'Shipping'      =>  (object)array(
-                        'Addressee' =>  $user->first_name.' '.$user->last_name. ' ACCEPT'
-                    ),
-                    'browser'       =>  (object)array(
-                        'ipaddress'             =>  getIp(),
-                        'browserfingerprint'    =>  $orderId
-                    ),
-                    'totalorderamount'          =>  $totalAmount,
-                    'MerchantDefinedFields'     =>  array(
-                        (object)array(
-                            'id'    =>  1,
-                            'value' =>  'Guest'
-                        )
-                    ),
+            'payment'               =>  (object)array(
+                'transactionType'   =>  self::CREDIT_CARD,
+                'amount'            =>  $totalAmount,
+                'currencyCode'      =>  strtolower(Settings::findByKey('generic_keywords_currency')),
+                'productType'       =>  "Avista",
+                'installments'      =>  1,
+                'captureType'       =>  'ac',
+                'recurrent'         =>  false,
+                
+                // 'SoftDescriptor'    =>  Settings::findByKey('website_title'),
+                
+                // 'fraudanalysis'     =>  (object)array(
+                //     'provider'      =>  'cybersource',
+                //     'Shipping'      =>  (object)array(
+                //         'Addressee' =>  $user->first_name.' '.$user->last_name
+                //     ),
+                //     'browser'       =>  (object)array(
+                //         // 'ipaddress'             =>  '179.221.103.151',
+                //         'browserfingerprint'    =>  $orderId
+                //     ),
+                //     'totalorderamount'          =>  $totalAmount,
+                //     'MerchantDefinedFields'     =>  array(
+                //         (object)array(
+                //             'id'    =>  1,
+                //             'value' =>  'Guest'
+                //         )
+                //     ),
                     
 
-                )
-            ),            
+                // )
+            ),
+            'cardInfo'              =>  (object)array(
+                'numberToken'       =>  $cardToken,
+                'cardholderName'    =>  $payment->getCardHolder(),
+                'securityCode'      =>  $payment->getCardCvc(),
+                'brand'             =>  $brand,
+                'expirationMonth'   =>  str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+                'expirationYear'    =>  str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+            ),
         );
 
-        if (App::environment() != 'production') {
-            $fields['Payment']->Provider = 'Simulado';
-        }
+        // $fields = array (
+        //     'MerchantOrderId'   =>  $orderId,
+        //     'Customer'          =>  (object)array(
+        //         'Name'          =>  $user->first_name.' '.$user->last_name. ' ACCEPT',
+        //         "email"         =>  $user->email,
+        //         "Identity"      =>  $user->document,
+        //         "identitytype"  =>  $docType,
+        //         "Mobile"        =>  $phone,
+        //         "Phone"         =>  $phone,
+        //     ),
+        //     'Payment'           =>  (object)array(
+        //         'Type'          =>  $type,
+        //         'Amount'        =>  $totalAmount,
+        //         'Installments'  =>  1,
+        //         'Capture'       =>  $capture,
+        //         'SoftDescriptor'    =>  Settings::findByKey('website_title'),
+        //         'CreditCard'            =>  (object)array(
+        //             'CardNumber'        =>  $payment->getCardNumber(),
+        //             'Holder'            =>  $payment->getCardHolder(),
+        //             // 'ExpirationDate'    =>  $expirationDate,
+        //             'SecurityCode'      =>  $payment->getCardCvc(),
+        //             'Brand'             =>  $brand,
+        //             'SaveCard'          =>  false
+        //         ),
+        //         'fraudanalysis'     =>  (object)array(
+        //             'provider'      =>  'cybersource',
+        //             'Shipping'      =>  (object)array(
+        //                 'Addressee' =>  $user->first_name.' '.$user->last_name. ' ACCEPT'
+        //             ),
+        //             'browser'       =>  (object)array(
+        //                 'ipaddress'             =>  getIp(),
+        //                 'browserfingerprint'    =>  $orderId
+        //             ),
+        //             'totalorderamount'          =>  $totalAmount,
+        //             'MerchantDefinedFields'     =>  array(
+        //                 (object)array(
+        //                     'id'    =>  1,
+        //                     'value' =>  'Guest'
+        //                 )
+        //             ),
+                    
+
+        //         )
+        //     ),            
+        // );
 
         // if ($capture && $provider) {
         //     $split = self::getSplitInfo($provider, $totalAmount);
         //     $fields['SplitPayments'] = $split['SplitPayments'];
         // }
 
-        $body = json_encode($fields);
-
         $requestType = self::POST_REQUEST;
 
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+        $apiRequest = self::apiRequest($url, json_encode($fields), $header, $requestType);
 
         return $apiRequest;
     }
@@ -237,7 +301,7 @@ class AdiqApi
 
     //     $transactionToken = $transaction->gateway_transaction_id;
 
-    //     $url = sprintf('%s/payments/%s/capture', self::apiUrl(), $transactionToken);
+    //     $url = sprintf('%s/v1/payments/%s/capture', self::apiUrl(), $transactionToken);
 
     //     $fields = self::getSplitInfo($provider, $transaction->gross_value);
 
@@ -261,7 +325,7 @@ class AdiqApi
 
         // $amount = 5;
 
-        $url = sprintf('%s/payments/%s/capture', self::apiUrl(), $transactionToken);
+        $url = sprintf('%s/v1/payments/%s/capture', self::apiUrl(), $transactionToken);
 
         // if ($transaction->gross_value > $amount) {
         //     $url = $url."?amount=".$amount;
@@ -282,7 +346,7 @@ class AdiqApi
     {
         $transactionToken = $transaction->gateway_transaction_id;
 
-        $url = sprintf('%s/payments/%s/cancel', self::apiUrl(), $transactionToken);
+        $url = sprintf('%s/v1/payments/%s/cancel', self::apiUrl(), $transactionToken);
 
         $body = null;
 
@@ -299,7 +363,7 @@ class AdiqApi
     {
         $transactionToken = $transaction->gateway_transaction_id;
 
-        $url = sprintf('%s/payments/%s', self::apiUrl(), $transactionToken);
+        $url = sprintf('%s/v1/payments/%s', self::apiUrl(), $transactionToken);
 
         $body = null;
 
@@ -412,13 +476,12 @@ class AdiqApi
     //     return $apiRequest;
     // }
 
-    private static function getOrderId($time)
+    private static function getOrderId()
     {
-        $value = str_replace(' ', '', $time);
-        $value = str_replace('-', '', $value);
-        $value = str_replace(':', '', $value);
+        list($microSeconds, $seconds) = explode(" ", microtime());
+        $orderId = substr($seconds,2).substr($microSeconds,2,-3);
 
-        return $value;
+        return $orderId;
     }
 
     private static function formatPhone($phone)
@@ -433,31 +496,18 @@ class AdiqApi
         return $phone;
     }
 
-    private static function getExpirationDate($payment)
-    {
-        $month = $payment->getCardExpirationMonth();
-        $year = $payment->getCardExpirationYear();
-        $x = strlen($month);
-        $retMonth = (strlen($month) < 2) ? '0'.$month : $month ;
-        $retYear = (strlen($year) < 4) ? '20'.$year : $year ;
-        $expDate = trim(sprintf("%s/%s", $retMonth, $retYear));
-        //$expDate = str_replace('\n', '', $expDate);
+    // private static function getExpirationDate($payment)
+    // {
+    //     $month = $payment->getCardExpirationMonth();
+    //     $year = $payment->getCardExpirationYear();
+    //     $x = strlen($month);
+    //     $retMonth = (strlen($month) < 2) ? '0'.$month : $month ;
+    //     $retYear = (strlen($year) < 4) ? '20'.$year : $year ;
+    //     $expDate = trim(sprintf("%s/%s", $retMonth, $retYear));
+    //     //$expDate = str_replace('\n', '', $expDate);
         
-        return $expDate;
-    }
-
-    private static function getBrand($payment)
-    {
-        $brand = Payment::getBrand($payment);
-        $brand = strtolower($brand);
-        $brand = ucfirst($brand);
-
-        if ($brand == 'Mastercard') {
-            $brand = self::MASTER;
-        }
-
-        return $brand;
-    }
+    //     return $expDate;
+    // }
 
     public static function getAdiqFee()
     {
@@ -556,10 +606,12 @@ class AdiqApi
     {
         $token      =   self::makeToken();
         $adiqToken  =   Settings::findObjectByKey('adiq_token');
+        $bearer     =   isset($adiqToken) && isset($adiqToken->value)  ? $adiqToken->value : "";
+
         $header = array (
             'Content-Type: application/json; charset=UTF-8',
             'Accept: application/json',
-            'Authorization: Bearer '.isset($adiqToken) && isset($adiqToken->token)  ? $adiqToken->value : ""
+            'Authorization: Bearer '.$bearer
         );
 
         return $header;
@@ -606,10 +658,10 @@ class AdiqApi
 
         $url = sprintf('%s/auth/oauth2/v1/token', self::apiUrl());
 
-        $body = "grant_type=client_credentials";
+        $body = ['grantType'=>'client_credentials'];
         
         $header = array (
-            'Content-Type: application/x-www-form-urlencoded',
+            'Content-Type: application/json-patch+json',
             'Authorization: Basic '.$concateString, 
         );
 
@@ -617,10 +669,9 @@ class AdiqApi
 
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
 
-
         try {
             $token = Settings::findObjectByKey('adiq_token');
-            $token->value = $apiRequest->data->access_token;
+            $token->value = $apiRequest->data->accessToken;
             $token->save();
         }
         catch (Exception $ex){
@@ -640,14 +691,8 @@ class AdiqApi
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($session, CURLOPT_CUSTOMREQUEST, $requestType );
-            
-            if ($fields) {
-                curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
-            }	else {
-                array_push($header, 'Content-Length: 0');
-                // curl_setopt($session, CURLOPT_POSTFIELDS, json_encode(array()));
-            }
-            \
+
+            curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
             
             curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
             curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
@@ -657,7 +702,7 @@ class AdiqApi
             $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);  
 
             $result = json_decode($msg_chk);
-            
+
             if ($httpcode == 200 ||$httpcode ==  201 ||$httpcode ==  202) {
                 return (object)array (
                     'success'           =>  true,
@@ -696,8 +741,8 @@ class AdiqApi
 	//  */
     // public static function billetCharge ($amount, $client, $postbackUrl, $boletoExpirationDate, $boletoInstructions)
     // {
-    //     $url = sprintf('%s/payments/', self::apiUrl());
-    //     $orderId = self::getOrderId(Carbon::now()->toDateTimeString());
+    //     $url = sprintf('%s/v1/payments/', self::apiUrl());
+    //     $orderId = self::getOrderId();
 
     //     $fields = [
     //         "MerchantOrderId" => $orderId,
@@ -735,6 +780,50 @@ class AdiqApi
     //     $apiRequest = self::apiRequest($url, $body, $header, $requestType);
     //     return $apiRequest;
     // }
+
+    // public static function createCard($payment)
+    // {
+    //     $cardNumber = $payment->getCardNumber();
+
+    //     $url = sprintf('%s/v1/tokens/cards', self::apiUrl());
+
+    //     $fields = [
+    //         "cardNumber" => $cardNumber
+    //     ];
+
+    //     $body = json_encode($fields);
+
+    //     $header = self::getHeader();
+
+    //     $requestType = self::POST_REQUEST;
+
+    //     $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+
+    //     return $apiRequest;
+    // }
+
+    private static function tokenizeCard($cardNumber)
+    {
+        $result = false;
+        $url = sprintf('%s/v1/tokens/cards', self::apiUrl());
+
+        $fields = [
+            "cardNumber" => $cardNumber
+        ];
+
+        $body = json_encode($fields);
+
+        $header = self::getHeader();
+
+        $requestType = self::POST_REQUEST;
+
+        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+
+        if(isset($apiRequest->data->numberToken))
+            $result = $apiRequest->data->numberToken;
+
+        return $result;
+    }
 
     private static function abbreviationState($state)
     {

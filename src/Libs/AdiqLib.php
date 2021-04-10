@@ -92,7 +92,7 @@ Class AdiqLib implements IPayment
 
         try {
             $response = AdiqApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
-            
+
             $responseChargeStatus = self::getChargeStatus(false, $capture);
 
             if($response && isset($response->data) && $response->data && isset($response->data->Payment) && $response->data->Payment) {
@@ -230,8 +230,7 @@ Class AdiqLib implements IPayment
      */         
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
-        // $user = User::find($payment->user_id);
-        
+
         try {
 			$response = AdiqApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
