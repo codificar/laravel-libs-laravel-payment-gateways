@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\AdiqApi;
 
 use ApiErrors;
+use Exception;
 //models do sistema
 use Payment;
 use Provider;
@@ -16,62 +17,20 @@ use Settings;
 
 Class AdiqLib implements IPayment
 {
-    const CHARGE_SUCCESS = 1;
-    const CAPTURE_SUCCESS = 2;
-    const REFUND_SUCCESS = 10;
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
-    const WAITING_PAYMENT = 'waiting_payment';
 
-    /**
-     * Charge a credit card with split rules
-     *
-     * @param Payment       $payment
-     * @param Provider      $provider 
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
-     * @param Decimal       $providerAmount 
-     * @param String        $description        An arbitrary string which you can attach to describe a Charge object
-     * @param Boolean       $capture            Whether to immediately capture the charge. When false, the charge issues an authorization (or pre-authorization), and will need to be captured later. 
-     * @param User          $user               The customer that will be charged in this request
-     * 
-     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
-        try {
-            $response = AdiqApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
-            
-            $responseChargeStatus = self::getChargeStatus(true, $capture);
+    //finish
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    {
+        \Log::error('chage_split_not_implemented_in_adiq_gateway');
 
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
-				$result = array (
-					'success' 		    => true,
-					'status' 		    => $capture,
-					'captured' 			=> $capture,
-					'paid' 		        => $capture ? 'paid' : 'authorized',
-					'transaction_id'    => $response->data->Payment->PaymentId
-				);
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (Exception $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'transaction_id'	=>	$response['transaction_id'],
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
     }
     
     /**
@@ -87,21 +46,24 @@ Class AdiqLib implements IPayment
      */      
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
-
         $paymentId = null ;
 
         try {
             $response = AdiqApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
 
-            $responseChargeStatus = self::getChargeStatus(false, $capture);
-
-            if($response && isset($response->data) && $response->data && isset($response->data->Payment) && $response->data->Payment) {
-                $paymentId = $response->data->Payment->PaymentId;
+            if($response && isset($response->data) && $response->data && isset($response->data->paymentAuthorization)) {
+                $paymentId = $response->data->paymentAuthorization->paymentId;
             } else {
                 $paymentId = -1;
             }
 
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
+			if (
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                $response->data->paymentAuthorization->description == 'Sucesso'
+            )
+            {
 				$result = array (
                     'success' => true,
                     'captured' => $capture,
@@ -126,7 +88,7 @@ Class AdiqLib implements IPayment
 			return array(
 				"success" 	=> false ,
 				'data' 		=> null,
-				'transaction_id'	=> $response->data->Payment->PaymentId,
+				'transaction_id'	=> $paymentId,
 				'error' 	=> array(
 					"code" 		=> ApiErrors::CARD_ERROR,
 					"messages" 	=> array(trans('creditCard.customerCreationFail'))
@@ -136,85 +98,34 @@ Class AdiqLib implements IPayment
 		}
     }
 
-    /**
-	 * Função para gerar boletos de pagamentos
-	 * @param int $amount valor do boleto
-	 * @param User/Provider $client instância do usuário ou prestador
-	 * @param string $postbackUrl url para receber notificações do status do pagamento
-	 * @param string $billetExpirationDate data de expiração do boleto
-	 * @param string $billetInstructions descrição no boleto
-	 * @return array
-	 */
+    //finish
     public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
     {
-        try {
-            $response = AdiqApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
+        \Log::error('billet_charge_not_implemented_in_adiq_gateway');
 
-            if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
-                return array (
-                    'success' => true,
-                    'captured' => true,
-                    'paid' => false,
-                    'status' => self::WAITING_PAYMENT,
-                    'transaction_id' => $response->data->Payment->PaymentId,
-                    'billet_url' => $response->data->Payment->Url,
-                    'digitable_line' => $response->data->Payment->DigitableLine,
-                    'billet_expiration_date' => $response->data->Payment->ExpirationDate
-                );
-            } else {
-                return array(
-                    "success" 				=> false ,
-                    "type" 					=> 'api_charge_error' ,
-                    "code" 					=> '',
-                    "message" 				=> '',
-                    "transaction_id"		=> ''
-                );
-            }
-        } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
-
-			return array(
-				"success" 				=> false ,
-				"type" 					=> 'api_charge_error' ,
-				"code" 					=> '',
-				"message" 				=> $th->getMessage(),
-				"transaction_id"		=> ''
-			);
-        }
+        return array(
+            "success" 				=> false,
+            "type" 					=> 'api_charge_error',
+            "code" 					=> '',
+            "message" 				=> 'api_charge_error',
+            "transaction_id"		=> ''
+        );
     }
 
-    /**
-	 * Trata o postback retornado pelo gateway
-	 */
+    //finish
 	public function billetVerify ($request, $transaction_id = null)
 	{
-        if($transaction_id) {
-			$transaction = Transaction::find($transaction_id);
-			$retrieve = $this->retrieve($transaction);
-			return [
-				'success' => true,
-				'status' => $retrieve['status'],
-				'transaction_id' => $retrieve['transaction_id']
-			];
-		} else {
-            $postbackTransaction = $request->PaymentId;
-        
-            if (!$postbackTransaction)
-                return [
-                    'success' => false,
-                    'status' => '',
-                    'transaction_id' => ''
-                ];
-            
-            $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
-            $retrieve = $this->retrieve($transaction);
-    
-            return [
-                'success' => true,
-                'status' => $retrieve['status'],
-                'transaction_id' => $retrieve['transaction_id']
-            ];
-        }
+        \Log::error('billet_verify_not_implemented_in_adiq_gateway');
+
+		return array (
+			'success' => false,
+			'captured' => false,
+			'paid' => false,
+			'status' => false,
+			'transaction_id' => null,
+			'billet_url' => '',
+			'billet_expiration_date' => ''
+		);
 	}
 
     /**
@@ -230,40 +141,15 @@ Class AdiqLib implements IPayment
      */         
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
+        \Log::error('capture_split_not_implemented_in_adiq_gateway');
 
-        try {
-			$response = AdiqApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
-
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
-				$result = array (
-					'success' 		 => true,
-					'captured' 		 => true,
-					'paid' 			 => true,
-					'status' 		 => 'paid',
-					'transaction_id' => $transaction->gateway_transaction_id
-				);
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (\Throwable $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
     }
     
     /**
@@ -275,11 +161,18 @@ Class AdiqLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
+    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    {
         try {
 			$response = AdiqApi::capture($transaction, $amount);
 
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
+			if (
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                $response->data->captureAuthorization->description == 'Sucesso'
+            )
+            {
 				$result = array (
 					'success' 		 => true,
 					'captured' 		 => true,
@@ -299,7 +192,6 @@ Class AdiqLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-			
 			return array(
 				"success" 	=> false ,
 				'data' 		=> null,
@@ -311,41 +203,18 @@ Class AdiqLib implements IPayment
 		}
     }
 
-    /**
-     * Refund a charge that has previously been created with split rules
-     *
-     * @param Transaction   $transaction
-     * @param Payment       $payment 
-     * 
-     * @return Array ['success', 'status', 'transaction_id']
-     */       
+    //finish  
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
-        try {
-			$response = AdiqApi::refund($transaction);
-			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
-            {
-                $result = array(
-                    "success" 					=> true ,
-                    "status" 					=> 'refunded',
-                    "transaction_id"			=> $transaction->gateway_transaction_id                    
-                );
-                
-                return $result;
-            }
-		
-		} catch (\Throwable $ex) {
-			\Log::error($ex->__toString());
+        \Log::error('refund_split_not_implemented_in_adiq_gateway');
 
-            return array(
-                "success" 			=> false ,
-                "type" 				=> 'api_refund_error' ,
-                "code" 				=> 'api_refund_error',
-                "message" 			=> $ex->getMessage(),
-				"transaction_id" 	=> $transaction->gateway_transaction_id
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
     }
 
     /**
@@ -358,11 +227,14 @@ Class AdiqLib implements IPayment
      */      
     public function refund(Transaction $transaction, Payment $payment)
     {
-        
 		try {
 			$response = AdiqApi::refund($transaction);
 			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
+			if(
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                $response->data->cancelAuthorization->description == 'Sucesso')
             {
                 $result = array(
                     "success" 					=> true ,
@@ -395,9 +267,6 @@ Class AdiqLib implements IPayment
      */       
     public function retrieve(Transaction $transaction, Payment $payment = null)
     {
-        $transactionId = $transaction->gateway_transaction_id;
-
-		
         $response = AdiqApi::retrieve($transaction);
 		if(!$response->success)
 		{
@@ -411,12 +280,24 @@ Class AdiqLib implements IPayment
 			);            
 		}
 
+        if(isset($response->data) && isset($response->data->paymentAuthorization))
+            $status = 'authorized';
+        else if(isset($response->data) && isset($response->data->captureAuthorization))
+            $status = 'paid';
+        else if(isset($response->data) && isset($response->data->cancelAuthorization))
+            $status = 'refunded';
+        else{
+            \Log::debug('Adiq real retrieve data: ' . print_r($response,true));
+
+            $status = 'refused';
+        }
+
 		return array(
 			'success' 			=> true,
-			'transaction_id' 	=> $response->data->Payment->PaymentId,
-			'amount' 			=> $response->data->Payment->Amount,
+			'transaction_id' 	=> $transaction->gateway_transaction_id,
+			'amount' 			=> $transaction->gross_value,
 			'destination' 		=> '',	
-			'status' 			=> $response->data->Payment->Status == 2 ? 'paid' : strval($response->data->Payment->Status),
+			'status' 			=> $status,
 			'card_last_digits' 	=> $payment ? $payment->last_four : '',
 		);
     }
@@ -479,48 +360,12 @@ Class AdiqLib implements IPayment
      */      
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        try {
-            $response = AdiqApi::getAdiqAccount($ledgerBankAccount->recipient_id);
+        \Log::error('create_account_not_implemented_in_adiq_gateway');
 
-            if ($response->success) {
-                $result = array(
-                    'success'       => true,
-                    'recipient_id'   => $ledgerBankAccount->recipient_id
-                );
-                $ledgerBankAccount->recipient_id = $response->data->MerchantId;
-                $ledgerBankAccount->save();
-            } else {
-                $newAccount = AdiqApi::createOrUpdateAccount($ledgerBankAccount);
-                if ($newAccount->success) {
-                    $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
-                    $ledgerBankAccount->save();
-                    $result = array(
-                        'success'       => true,
-                        'recipient_id'   => $ledgerBankAccount->recipient_id
-                    );
-                } else {
-                    $result = array(
-                        'success'       => false,
-                        'recipient_id'   => ""
-                    );
-                }
-            }
-    
-            return $result;
-           
-        } catch (\Throwable $ex) {
-            \Log::error($ex->__toString());
-
-			$result = array(
-				"success" 					=> false ,
-				"recipient_id"				=> 'empty',
-				"type" 						=> 'api_bankaccount_error' ,
-				"code" 						=> 500 ,
-				"message" 					=> trans("empty.".$ex->getMessage())
-			);
-
-			return $result;
-        }
+        return array(
+			'success' => true,
+			'recipient_id' => '',
+		);
     }
 
     /**
@@ -569,7 +414,7 @@ Class AdiqLib implements IPayment
             else
                 return(false);
         }
-        catch(Exception$ex)
+        catch(Exception $ex)
         {
             \Log::error($ex);
 
@@ -577,24 +422,60 @@ Class AdiqLib implements IPayment
         }
     }
 
-    //finish
     public function debit(Payment $payment, $amount, $description)
     {
-        \Log::error('debit_not_implemented');
+        $paymentId = null ;
 
-        return array(
-            "success" 			=> false,
-            "type" 				=> 'api_debit_error',
-            "code" 				=> 'api_debit_error',
-            "message" 			=> 'debit_not_implemented',
-            "transaction_id" 	=> ''
-        );
+        try
+        {
+            $response = AdiqApi::debit($payment, null, $amount, null, $description);
+
+            if($response && isset($response->data) && isset($response->data->captureAuthorization)) {
+                $paymentId = $response->data->captureAuthorization->paymentId;
+            } else {
+                $paymentId = -1;
+            }
+
+			if (
+                $response->success && 
+                isset($response->data) && 
+                isset($response->data->captureAuthorization) && 
+                $response->data->captureAuthorization->description == 'Sucesso'
+            )
+            {
+				$result = array (
+                    'success'       => true,
+                    'captured'      => true,
+                    'paid'          => true,
+                    'status'        => 'paid',
+                    'transaction_id'=> $paymentId
+                );
+				return $result;
+			} else {
+                return array(
+                    "success"       => false,
+                    "captured"      => false,
+                    "message"       => trans('gateway_cielo.debit_fail'),
+                    "transaction_id"=> $paymentId,
+                    "paid"          => 'denied'
+                );
+            }
+		} catch (Exception $th) {
+			\Log::error('Debit Adiq error: '.$th->getMessage());
+			return array(
+				"success"       => false,
+                "captured"      => false,
+                "message"       => trans('gateway_cielo.debit_fail'),
+                'transaction_id'=> $paymentId,
+                "paid"          => 'not_finished'
+            );
+		}
     }
 
     //finish
     public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
     {
-        \Log::error('debit_split_not_implemented');
+        \Log::error('debit_split_not_implemented_in_adiq_gateway');
 
         return array(
             "success" 			=> false,
@@ -605,46 +486,4 @@ Class AdiqLib implements IPayment
         );
     }
 
-    /**
-     *  Return a date for the next compensation
-     * 
-     * @return Token
-     */
-
-    private static function getChargeStatus($split, $capture)
-    {
-        switch ($split) {
-            case false:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
-            case true:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
-            default:
-                # code...
-                break;
-        }
-    }
 }

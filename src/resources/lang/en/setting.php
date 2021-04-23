@@ -131,5 +131,5 @@ return array(
 	'directpay_name'			=> 'Directpay',
 	'adiq_client_id'			=> 'Adiq Client Id',
 	'adiq_client_secret'		=> 'Adiq Client Secret',
-	'adiq_token'				=> 'Adiq Token',
+	'adiq_token'				=> 'Adiq Transaction Token',
 );

@@ -129,7 +129,7 @@ return array(
 	'directpay_requester_token'	=> 'Directpay Requester Token',
 	'directpay_unique_trx_id'	=> 'Directpay trx id unico',
 	'directpay_name'			=> 'Directpay',
-	'adiq_client_id'			=> 'Adiq Client Id',
-	'adiq_client_secret'		=> 'Adiq Client Secret',
-	'adiq_token'				=> 'Adiq Token',
+	'adiq_client_id'			=> 'ID de cliente de Adiq',
+	'adiq_client_secret'		=> 'Secreto de cliente de Adiq',
+	'adiq_token'				=> 'Token de transacción Adiq',
 );
