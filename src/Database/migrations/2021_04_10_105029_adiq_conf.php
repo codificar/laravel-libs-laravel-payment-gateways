@@ -80,7 +80,6 @@ class AdiqConf extends Migration
         //     ));    
         // }
 
-        $this->command->info('Adiq Settings updated!');
     }
 
     /**
