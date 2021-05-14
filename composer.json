@@ -11,23 +11,8 @@
             "email": "libs@codificar.com.br"
         }
     ],
-    "repositories": [
-        {
-          "type": "package",
-          "package": {
-            "name": "codificar/pagarapido-php",
-            "version": "dev-master",
-            "source": {
-              "url": "https://libs:ofImhksJ@git.codificar.com.br/laravel-libs/pagarapido-php.git",
-              "type": "git",
-              "reference": "master"
-            }
-          }
-        }
-    ],
     "require": {
-        "league/omnipay": "~3.0",
-        "codificar/pagarapido-php": "dev-master#66b247ec"
+        "league/omnipay": "~3.0"
     },
     "autoload": {
         "psr-4": {
