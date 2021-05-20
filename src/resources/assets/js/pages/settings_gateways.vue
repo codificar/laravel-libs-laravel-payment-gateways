@@ -249,6 +249,33 @@ export default {
                 </select>
               </div>
             </div>
+
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.compensate_provider_days") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="
+                      trans('setting.compensate_provider_msg')
+                    "
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="form-control input-compensate_provider_days"
+                  v-model="gateways.compensate_provider_days"
+                />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
           </div>
 
           <!--Configurações do Pagar.Me-->

@@ -141,6 +141,7 @@ class GatewaysController extends Controller
         $gateways = array();
         $gateways['default_payment'] = Settings::findByKey('default_payment');
         $gateways['default_payment_boleto'] = Settings::findByKey('default_payment_boleto');
+        $gateways['compensate_provider_days'] = Settings::findByKey('compensate_provider_days');
         $gateways['list_gateways'] = $this->payment_gateways;
 
         //recupera as chaves de todos os gateways
@@ -223,6 +224,11 @@ class GatewaysController extends Controller
         //Salva o gateway de cartao de credito escolhido
         $this->updateOrCreateSettingKey('default_payment', $newGateway);
 
+        //salva os dias de compensacao futura
+        if(isset($request->gateways['compensate_provider_days']) ) {
+            $this->updateOrCreateSettingKey('compensate_provider_days', $request->gateways['compensate_provider_days']);
+        }
+       
         //salva as chaves do gateway escolhido
         if($newGateway) {
             foreach ($request->gateways[$newGateway] as $key => $value) {

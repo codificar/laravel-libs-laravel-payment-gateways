@@ -415,12 +415,14 @@ Class PagarapidoLib implements IPayment
         return 0;
     }
 
-    public function getNextCompensationDate()
-    {
-        $carbon = Carbon::now();
-		$carbon->addDays(31);
-		return $carbon ;
-    }
+    public function getNextCompensationDate(){
+		$carbon = Carbon::now();
+		$compDays = Settings::findByKey('compensate_provider_days');
+		$addDays = ($compDays || (string)$compDays == '0') ? (int)$compDays : 31;
+		$carbon->addDays($addDays);
+		
+		return $carbon;
+	}
   
     public function checkAutoTransferProvider()
     {

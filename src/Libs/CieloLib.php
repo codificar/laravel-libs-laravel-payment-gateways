@@ -634,12 +634,14 @@ class CieloLib implements IPayment
     /**
      * Returns next compensation date
      */
-    public function getNextCompensationDate()
-    {
+    public function getNextCompensationDate(){
 		$carbon = Carbon::now();
-		$carbon->addDays(31);
-		return $carbon ;
-    }
+		$compDays = Settings::findByKey('compensate_provider_days');
+		$addDays = ($compDays || (string)$compDays == '0') ? (int)$compDays : 31;
+		$carbon->addDays($addDays);
+		
+		return $carbon;
+	}
     
     /**
      * Returns translated fails response on lib

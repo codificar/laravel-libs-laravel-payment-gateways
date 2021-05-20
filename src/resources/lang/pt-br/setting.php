@@ -32,7 +32,8 @@ return array(
 	'default_pay_gate'			=> 'Intermediador Padrão de Pagamento',
 	'save_data'					=> 'Salvar Dados',
 	'default_pay_gate_boleto'	=> 'Intermediador Padrão de Pagamento por Boleto',
-	
+	'compensate_provider_days'	=> 'Dias para compensar o prestador',
+	'compensate_provider_msg'	=> 'Defina em quantos dias o prestador receberá o saldo em seu extrato de conta quando o pagamento é feito com cartão. Para o prestador receber no momento que for finalizado a solicitação, coloque 0. Se nenhum valor for selecionado, será considerado o tempo de compensação do gateway (geralmente 31 dias)',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pagar.me',
