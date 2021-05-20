@@ -78,6 +78,12 @@ class GatewaysController extends Controller
             'braspag_client_secret'
 
         ],
+        'pagarapido' => [
+            'pagarapido_login',
+            'pagarapido_password',
+            'pagarapido_gateway_key'
+
+        ],
     ];
 
     public $payment_gateways =  array(
@@ -90,7 +96,8 @@ class GatewaysController extends Controller
         array('value' => 'getnet', 'name' => 'setting.getnet'),
         array('value' => 'directpay', 'name' => 'setting.directpay'),
         array('value' => 'bancard', 'name' => 'setting.bancard'),
-        array('value' => 'transbank', 'name' => 'setting.transbank')
+        array('value' => 'transbank', 'name' => 'setting.transbank'),
+        array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
     );
 
 

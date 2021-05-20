@@ -1162,6 +1162,97 @@ export default {
             </div>
           </div>
           <!-- / Configurações do Transbank-->
+
+          <!--Configurações do Pagarapido-->
+          <div
+            class="panel panel-default pagarapido"
+            v-if="gateways.default_payment == 'pagarapido'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.pagarapido_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarapido_login") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pagarapido_login')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-pagarapido"
+                      v-model="gateways.pagarapido.pagarapido_login"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarapido_password") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pagarapido_password')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      class="form-control input-pagarapido"
+                      v-model="gateways.pagarapido.pagarapido_password"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarapido_gateway_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.pagarapido_gateway_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-pagarapido"
+                      v-model="gateways.pagarapido.pagarapido_gateway_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Pagarapido-->
+
         </div>
       </div>
     </div>

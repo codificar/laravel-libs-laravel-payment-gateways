@@ -45,8 +45,9 @@ return array(
 	'directpay'					=> 'Directpay',
 	'bancard'					=> 'Bancard',
 	'transbank'					=> 'Transbank',
-
+	'pagarapido'				=> 'Paga Rapido',
 	
+
 	
 	//Chaves dos gateways
 	'pagarme_settings'			=> 'Pagar.me Settings',
@@ -57,6 +58,7 @@ return array(
 	'zoop_settings'				=> 'Zoop Settings',
 	'bancard_settings'			=> 'Bancard Settings',
 	'mercadopago_settings'		=> 'Market Paid Settings',
+	'pagarapido_settings'		=> 'Paga Rapido Settings',
 	'advanced_settings'			=> 'Advanced Settings',
 	'pay_encryption_key_me'		=> 'Pagar.me Encryption Key',
 	'pagarme_recipient_id'		=> 'Pagar.me Recipient Id',
@@ -127,6 +129,9 @@ return array(
 	'directpay_requester_password'	=> 'Directpay Requester Password',
 	'directpay_requester_token'	=> 'Directpay Requester Token',
 	'directpay_unique_trx_id'	=> 'Directpay trx unique id',
-	'directpay_name'			=> 'Directpay'
+	'directpay_name'			=> 'Directpay',
+	'pagarapido_login'			=> 'Login',
+	'pagarapido_password'		=> 'Password',
+	'pagarapido_gateway_key'	=> 'Gateway Key'
 
 );

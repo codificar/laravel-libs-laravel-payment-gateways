@@ -45,6 +45,7 @@ return array(
 	'directpay'					=> 'Directpay',
 	'bancard'					=> 'Bancard',
 	'transbank'					=> 'Transbank',
+	'pagarapido'				=> 'Paga Rapido',
 
 	
 	
@@ -57,6 +58,7 @@ return array(
 	'zoop_settings'				=> 'Configuración de Zoop',
 	'bancard_settings'			=> 'Configuración de tarjeta bancaria',
 	'mercadopago_settings'		=> 'Configuración de pago del mercado',
+	'pagarapido_settings'		=> 'Configuración de Paga Rapido',
 	'advanced_settings'			=> 'Configuraciones avanzadas',
 	'pay_encryption_key_me'		=> 'Clave de cifrado de Pagar.me',
 	'pagarme_recipient_id'		=> 'Identificación del destinatario de Pagar.me',
@@ -127,6 +129,9 @@ return array(
 	'directpay_requester_password'	=> 'Contraseña de solicitante de Directpay',
 	'directpay_requester_token'	=> 'Token de solicitante de Directpay',
 	'directpay_unique_trx_id'	=> 'Identificación única de Directpay trx',
-	'directpay_name'			=> 'Directpay'
+	'directpay_name'			=> 'Directpay',
+	'pagarapido_login'			=> 'Login',
+	'pagarapido_password'		=> 'Contrasena',
+	'pagarapido_gateway_key'	=> 'Gateway Key'
 
 );
