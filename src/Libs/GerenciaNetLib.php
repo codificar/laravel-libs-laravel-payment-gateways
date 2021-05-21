@@ -98,6 +98,7 @@ class GerenciaNetLib implements IPayment
 		// 	'until_date' => '2019-08-30' // data máxima para aplicação do desconto
 		// ];
 		$valid = $this->validateData($user->document, $expire);
+		
 		if ($valid['success']) {
 			try {
 				$data = [
@@ -118,8 +119,9 @@ class GerenciaNetLib implements IPayment
 			} catch (GerencianetException $e) {
 				return [
 					"code" => $e->code,
-					"error" => $e->error,
-					"description" => $e->description
+					"error_code" => $e->error,
+					"error" => $e->message,
+					"description" => $e->message
 				];
 			} catch (Exception $e) {
 				return ['error' => $e->getMessage()];
