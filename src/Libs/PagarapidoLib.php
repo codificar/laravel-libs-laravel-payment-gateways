@@ -74,6 +74,7 @@ Class PagarapidoLib implements IPayment
                     ]
                 ]
             ));
+            \Log::info("Pagarapido charge response: " . print_r($transaction, true));
 			if ($transaction['success'] && $transaction['data']->_id && $transaction['data']->status == 'payment_accepted') {
 				$result = array (
                     'success' => true,
@@ -84,7 +85,7 @@ Class PagarapidoLib implements IPayment
                 );
 				return $result;
 			} else {
-                \Log::error('Error message 2');
+                \Log::error('Error Pagarapido charge 1');
                 return array(
                     "success" 					=> false ,
                     "type" 						=> 'api_charge_error' ,
@@ -94,7 +95,7 @@ Class PagarapidoLib implements IPayment
                 );
             }
 		} catch (Exception $th) {
-			\Log::error('Error message: number One '.$th);
+			\Log::error('Error Pagarapido charge 2');
 			return array(
                 "success" 					=> false ,
 				"type" 						=> 'api_charge_error' ,
@@ -135,11 +136,11 @@ Class PagarapidoLib implements IPayment
                     ]
                 ]
             ));
-            \Log::debug(print_r($transaction, true));
+            \Log::info("Pagarapido billetCharge response: " . print_r($transaction, true));
+
             if ($transaction['success'] && $transaction['data']->_id && 
                 ($transaction['data']->status == 'awaiting_payment' || $transaction['data']->status == 'awaiting_confirmation_payment')
             ) {
-                \Log::debug(print_r($transaction, true));
 				return array (                    
                     'success' => true,
                     'captured' => true,
@@ -151,7 +152,7 @@ Class PagarapidoLib implements IPayment
                     'billet_expiration_date' => $billetExpirationDate
                 );
 			} else {
-                \Log::error('Error billet message 2');
+                \Log::error('Error Pagarapido billet 1');
                 return array(
                     "success" 				=> false ,
                     "type" 					=> 'api_charge_error' ,
@@ -162,7 +163,7 @@ Class PagarapidoLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
+            \Log::error('Error Pagarapido billet 2');
 			return array(
 				"success" 				=> false ,
 				"type" 					=> 'api_charge_error' ,
@@ -178,33 +179,7 @@ Class PagarapidoLib implements IPayment
 	 */
 	public function billetVerify ($request, $transaction_id = null)
 	{
-        if($transaction_id) {
-			$transaction = Transaction::find($transaction_id);
-			$retrieve = $this->retrieve($transaction);
-			return [
-				'success' => true,
-				'status' => $retrieve['status'],
-				'transaction_id' => $retrieve['transaction_id']
-			];
-		} else {
-            $postbackTransaction = $request->PaymentId;
-        
-            if (!$postbackTransaction)
-                return [
-                    'success' => false,
-                    'status' => '',
-                    'transaction_id' => ''
-                ];
-            
-            $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
-            $retrieve = $this->retrieve($transaction);
-    
-            return [
-                'success' => true,
-                'status' => $retrieve['status'],
-                'transaction_id' => $retrieve['transaction_id']
-            ];
-        }
+        // #todo
 	}
 
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
@@ -265,8 +240,7 @@ Class PagarapidoLib implements IPayment
                 $refund = $pagarapido->cancelTransaction($transaction->gateway_transaction_id);
             }
             
-            \Log::debug("next is refund");
-            \Log::debug(print_r($refund, true));
+            \Log::info("Pagarapido refund response: " . print_r($refund, true));
 			if ($refund['success']) {
 				return array(
 					"success" 			=> true ,
@@ -274,7 +248,7 @@ Class PagarapidoLib implements IPayment
 					"transaction_id" 	=> $transaction->gateway_transaction_id,
 				);
 			} else {
-                \Log::error('Error refund 1');
+                \Log::error('Error Pagarapido refund 1');
                 return array(
                     "success" 			=> false ,
                     "type" 				=> 'api_refund_error' ,
@@ -284,8 +258,7 @@ Class PagarapidoLib implements IPayment
                 );
             }
 		} catch (Exception $th) {
-			\Log::error('Error refund 2 ');
-            \Log::error($th->getMessage());
+			\Log::error('Error Pagarapido refund 2 ');
 			return array(
                 "success" 					=> false ,
 				"type" 						=> 'api_refund_error' ,
@@ -303,8 +276,7 @@ Class PagarapidoLib implements IPayment
             $gatewayKey = Settings::findByKey('pagarapido_gateway_key');
             $pagarapido = new PagarapidoApi($gatewayKey, false);
             $getTransaction = $pagarapido->getTransactionCard($transaction->gateway_transaction_id);
-            \Log::debug("next is get transaction");
-            \Log::debug(print_r($getTransaction, true));
+            \Log::info("Pagarapido retrieve response: " . print_r($getTransaction, true));
             if($getTransaction['success'] && $getTransaction['data'] && $getTransaction['data']->status){
                 switch ($getTransaction['data']->status) {
                     case 'payment_accepted':
@@ -335,7 +307,7 @@ Class PagarapidoLib implements IPayment
                     'card_last_digits' 	=> $payment ? $payment->last_four : ''
                 );
             } else {
-                \Log::error('error in pagarapido retrieve');
+                \Log::error('Error Pagarapido retrieve 1');
                 return array(
                     "success" 			=> false ,
                     "type" 				=> 'api_retrieve_error' ,
@@ -345,7 +317,7 @@ Class PagarapidoLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
+            \Log::error('Error Pagarapido retrieve 2');
             return array(
                 "success" 				=> false ,
                 "type" 					=> 'api_retrieve_error' ,

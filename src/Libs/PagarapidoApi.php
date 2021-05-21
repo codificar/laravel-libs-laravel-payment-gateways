@@ -87,8 +87,6 @@ class PagarapidoApi {
             $cityId = "3106200"; //default
         }
 
-        \Log::debug("state id: ". $stateId);
-        \Log::debug("city id: ". $cityId);
         $formparams = array(
             'installments' => $params['installments'] ? $params['installments'] : 1,
             'cardNumber' => $params['cardNumber'],
@@ -127,8 +125,6 @@ class PagarapidoApi {
                 ]
             ]
         );
-        \Log::debug("parametros:");
-        \Log::debug(print_r($formparams, true));
         try {
             $response =  $this->guzzle->request('POST', '/transaction', [
                 'form_params' => $formparams
@@ -159,9 +155,6 @@ class PagarapidoApi {
         } else {
             $cityId = "3106200"; //default
         }
-
-        \Log::debug("state id (billet): ". $stateId);
-        \Log::debug("city id (billet): ". $cityId);
 
         $formparams = array(
             'paymentType' => "boleto",
@@ -202,9 +195,6 @@ class PagarapidoApi {
                 'lateFee' => []
             ]
         );
-
-        \Log::debug("prox params");
-        \Log::debug(json_encode($formparams));
 
         try {
             $response =  $this->guzzle->request('POST', '/transaction', [

@@ -192,6 +192,19 @@ class AllGatewaysTest extends TestCase
 		// $this->runInterfaceGateways($gateway);
 	}
 
+	public function testPagarapido() {
+		$gateway = 'pagarapido';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'pagarapido_gateway_key')->update(['value' => '8353b77a-0d11-4a81-8b34-ac334bed7287']);
+		Settings::where('key', 'pagarapido_password')->update(['value' => '123456']);
+		Settings::where('key', 'pagarapido_login')->update(['value' => 'hml@aquisi.com.br']);
+
+		$this->runInterfaceGateways($gateway);
+	}
+
 
     private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070', $isTerraCard = false){
 		$interface = new GatewaysInterfaceTest();
@@ -225,24 +238,28 @@ class AllGatewaysTest extends TestCase
 		echo "\n".$gateway." - charge sem split: ok";
 
 		//Realiza uma pre-autorizacao (chargeNoCapture) sem split
-		$chargeNoCapture = $interface->testChargeNoCapture($cardId, $isTerraCard);
-		$this->assertTrue($chargeNoCapture['success']);
-		$this->assertFalse($chargeNoCapture['captured']);
-		$this->assertFalse($chargeNoCapture['paid']);
-		$this->assertEquals($chargeNoCapture['status'], 'authorized');
-		$this->assertInternalType('string', $chargeNoCapture['transaction_id']);
-		$this->assertNotEmpty($chargeNoCapture['transaction_id']);
-		echo "\n".$gateway." - chargeNoCapture sem split: ok";
-
-		//Faz o capture da pre-autorizacao anterior. Passa como parametro a transaction_id da pre-autorizacao.
-		$capture = $interface->testCapture($chargeNoCapture['transaction_id'], $cardId);
-		$this->assertTrue($capture['success']);
-		$this->assertEquals($capture['status'], 'paid');
-		$this->assertTrue($capture['captured']);
-		$this->assertTrue($capture['paid']);
-		$this->assertInternalType('string', $capture['transaction_id']);
-		$this->assertNotEmpty($capture['transaction_id']);
-		echo "\n".$gateway." - capture sem split: ok";
+		if($gateway != 'pagarapido') { //nao testa chargeNoCapture no gateway pagarapido, pois ele nao tem essa funcionalidade
+			$chargeNoCapture = $interface->testChargeNoCapture($cardId, $isTerraCard);
+			$this->assertTrue($chargeNoCapture['success']);
+			$this->assertFalse($chargeNoCapture['captured']);
+			$this->assertFalse($chargeNoCapture['paid']);
+			$this->assertEquals($chargeNoCapture['status'], 'authorized');
+			$this->assertInternalType('string', $chargeNoCapture['transaction_id']);
+			$this->assertNotEmpty($chargeNoCapture['transaction_id']);
+			echo "\n".$gateway." - chargeNoCapture sem split: ok";
+		
+			//Faz o capture da pre-autorizacao anterior. Passa como parametro a transaction_id da pre-autorizacao.
+			$capture = $interface->testCapture($chargeNoCapture['transaction_id'], $cardId);
+			$this->assertTrue($capture['success']);
+			$this->assertEquals($capture['status'], 'paid');
+			$this->assertTrue($capture['captured']);
+			$this->assertTrue($capture['paid']);
+			$this->assertInternalType('string', $capture['transaction_id']);
+			$this->assertNotEmpty($capture['transaction_id']);
+			echo "\n".$gateway." - capture sem split: ok";
+		} else {
+			$chargeNoCapture['transaction_id'] = $charge['transaction_id'];
+		}
 
 		//Faz o cancelamento da transacao
 		$refund = $interface->testRefund($chargeNoCapture['transaction_id'], $cardId);
