@@ -49,7 +49,11 @@ Class PagarapidoLib implements IPayment
             $docType = strlen($userDoc) <= 11 ? 'private' : 'legal';
 
             $gatewayKey = Settings::findByKey('pagarapido_gateway_key');
-            $pagarapido = new PagarapidoApi($gatewayKey, false);
+
+            $isProd = Settings::findByKey('pagarapido_production');
+            $isProd = (int)$isProd ? true : false;
+            $pagarapido = new PagarapidoApi($gatewayKey, $isProd);
+
             $transaction = $pagarapido->transactionCard(array(
                 'installments' => 1, //optional, default 1
                 'cardNumber' => $payment->getCardNumber(),
@@ -111,7 +115,9 @@ Class PagarapidoLib implements IPayment
     {
         try {
             $gatewayKey = Settings::findByKey('pagarapido_gateway_key');
-            $pagarapido = new PagarapidoApi($gatewayKey, false);
+            $isProd = Settings::findByKey('pagarapido_production');
+            $isProd = (int)$isProd ? true : false;
+            $pagarapido = new PagarapidoApi($gatewayKey, $isProd);
 
             $clientDoc = trim($this->cleanWord($client->getDocument()));
             $docType = strlen($clientDoc) <= 11 ? 'private' : 'legal';
@@ -228,7 +234,9 @@ Class PagarapidoLib implements IPayment
             $gatewayLogin = Settings::findByKey('pagarapido_login');
             $gatewayPassword = Settings::findByKey('pagarapido_password');
 
-            $pagarapido = new PagarapidoApi($gatewayKey, false);
+            $isProd = Settings::findByKey('pagarapido_production');
+            $isProd = (int)$isProd ? true : false;
+            $pagarapido = new PagarapidoApi($gatewayKey, $isProd);
 
             //For this request the token is required. It can be obtained at login
             $login = $pagarapido->login($gatewayLogin, $gatewayPassword);
@@ -274,7 +282,9 @@ Class PagarapidoLib implements IPayment
     {
         try {
             $gatewayKey = Settings::findByKey('pagarapido_gateway_key');
-            $pagarapido = new PagarapidoApi($gatewayKey, false);
+            $isProd = Settings::findByKey('pagarapido_production');
+            $isProd = (int)$isProd ? true : false;
+            $pagarapido = new PagarapidoApi($gatewayKey, $isProd);
             $getTransaction = $pagarapido->getTransactionCard($transaction->gateway_transaction_id);
             \Log::info("Pagarapido retrieve response: " . print_r($getTransaction, true));
             if($getTransaction['success'] && $getTransaction['data'] && $getTransaction['data']->status){

@@ -1275,6 +1275,29 @@ export default {
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.operation_mode") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.operation_mode')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <select
+                      v-model="gateways.pagarapido.pagarapido_production"
+                      class="select form-control"
+                      required
+                    >
+                      <option value="0"> {{ trans("setting.Sandbox") }} </option>
+                      <option value="1">{{ trans("setting.production") }}</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -81,7 +81,8 @@ class GatewaysController extends Controller
         'pagarapido' => [
             'pagarapido_login',
             'pagarapido_password',
-            'pagarapido_gateway_key'
+            'pagarapido_gateway_key',
+            'pagarapido_production'
 
         ],
     ];
