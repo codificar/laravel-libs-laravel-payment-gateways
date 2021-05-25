@@ -16,6 +16,8 @@ return array(
 	'failed_set_gateway'		=> 'There was a failure to update your gateway settings. Try again!',
 	'gateway_has_change'		=> 'The card gateway has been changed. Updating the cards to the new gateway can take time. Do not change the gateway again for at least ',
 	'obs_billet_gateway'		=> 'Note: the boleto gateway will be the same as the credit card gateway.',
+	'obs_billet_gateway2'		=> 'Important: the "Payments" and "Balance" menu are dynamic',
+	'obs_billet_gateway2_msg'	=> 'If at least one prepaid payment method is enabled for the user (boleto and / or card) the "Balance" menu will appear in the app and the "Payments" menu on the users panel. The same happens with the provider and corp.',
 	'payment_methods'			=> 'Payment methods',
 	'choose_payment_methods'	=> 'Choose Payment Methods',
 	'money'						=> 'Cash',
@@ -133,6 +135,18 @@ return array(
 	'directpay_name'			=> 'Directpay',
 	'pagarapido_login'			=> 'Login',
 	'pagarapido_password'		=> 'Password',
-	'pagarapido_gateway_key'	=> 'Gateway Key'
+	'pagarapido_gateway_key'	=> 'Gateway Key',
+	'general_settings'			=> 'General Settings',
+	'earnings_report_weekday'	=> 'First day of the week on the earnings report',
+	'earnings_report_weekday_msg'=> 'Define the first day of the week (weekday) that will start counting in the earnings report',
+	'show_user_account_statement'=> 'Show Account Statement menu to the user',
+	'show_user_account_statement_msg'=> 'Show Account Statement menu to the user in the app and on the user panel',
+	'sunday'					=> 'Sunday',
+	'monday'					=> 'Monday',
+    'tuesday'					=> 'Tuesday',
+    'wednesday'					=> 'Wednesday',
+    'thursday'					=> 'Thursday',
+    'friday'					=> 'Friday',
+	'saturday'					=> 'Saturday'
 
 );

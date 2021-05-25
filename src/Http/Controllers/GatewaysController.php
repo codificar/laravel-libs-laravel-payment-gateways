@@ -19,6 +19,16 @@ use stdClass;
 
 class GatewaysController extends Controller
 {
+    const WEEK_DAYS = array(
+        array('value' => '1', 'name' => 'setting.sunday')
+       ,array('value' => '2', 'name' => 'setting.monday')
+       ,array('value' => '3', 'name' => 'setting.tuesday')
+       ,array('value' => '4', 'name' => 'setting.wednesday')
+       ,array('value' => '5', 'name' => 'setting.thursday')
+       ,array('value' => '6', 'name' => 'setting.friday')
+       ,array('value' => '7', 'name' => 'setting.saturday')
+    );
+    
     public $keys_gateways = [
         'pagarme' => [
             'pagarme_encryption_key',
@@ -125,6 +135,11 @@ class GatewaysController extends Controller
         'prepaid_card_corp'
     );
 
+    public $keys_settings = array(
+        'earnings_report_weekday',
+        'show_user_account_statement'
+    );
+
     /**
      * Recupera settings e acessa view
      * @return View
@@ -172,7 +187,15 @@ class GatewaysController extends Controller
                 $prepaid[$key] = (bool)Settings::findByKey($key);
             }
         }   
+        $settings = array();
+        $earnings_report_weekday = Settings::findByKey('earnings_report_weekday');
+        $settings['earnings_report_weekday'] = $earnings_report_weekday ? $earnings_report_weekday : '1'; //default 1 = sunday 
+
+        $settings['show_user_account_statement'] = Settings::findByKey('show_user_account_statement');
         
+        $settings['enum'] = array(
+            'week_days' => self::WEEK_DAYS
+        );
         //retorna view
         return View::make('gateways::settings')
             ->with([
@@ -180,7 +203,8 @@ class GatewaysController extends Controller
                 'gateways' => $gateways,
                 'carto' => $carto,
                 'bancryp' => $bancryp,
-                'prepaid' => $prepaid
+                'prepaid' => $prepaid,
+                'settings' => $settings
             ]);
     }
 
@@ -192,6 +216,16 @@ class GatewaysController extends Controller
 
     public function saveSettings(GatewaysFormRequest $request)
     {
+
+        //Salva as configuracoes gerais
+        if($request->settings) {
+            foreach ($request->settings as $key => $value) {
+                //Verifica se a key existe
+                if(in_array($key, $this->keys_settings)) {
+                    $this->updateOrCreateSettingKey($key, $value);
+                }
+            }
+        }
 
         //Salva as formas de pagamento escolhidas
         foreach ($request->payment_methods as $key => $value) {

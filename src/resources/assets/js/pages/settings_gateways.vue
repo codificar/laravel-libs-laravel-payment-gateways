@@ -2,7 +2,7 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid"],
+  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings"],
   data() {
     return {
       gateways: {},
@@ -28,7 +28,8 @@ export default {
                 gateways: this.gateways,
 								carto: this.carto,
 								bancryp: this.bancryp,
-								prepaid: this.prepaid
+								prepaid: this.prepaid,
+                settings: this.settings
               })
               .then((response) => {
                 if (response.data.success) {
@@ -71,6 +72,7 @@ export default {
 		this.Carto ? (this.carto = JSON.parse(this.Carto)) : null;
 		this.Bancryp ? (this.bancryp = JSON.parse(this.Bancryp)) : null;
 		this.Prepaid ? (this.prepaid = JSON.parse(this.Prepaid)) : null;
+    this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
   },
 };
 </script>
@@ -207,6 +209,59 @@ export default {
       </div>
     </div>
     <!-- / formas de pagamento -->
+
+
+    <!-- general settings -->
+    <div class="card-margin-top">
+      <div class="card-outline-info">
+        <div class="card-header">
+          <h4 class="m-b-0 text-white">{{ trans("setting.general_settings") }}</h4>
+        </div>
+        <div class="card-block">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{trans('setting.earnings_report_weekday')}}
+                  <a href="" class="question-field" data-toggle="tooltip" :title="trans('setting.earnings_report_weekday_msg')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field"></span> 
+                </label>
+                <select
+                  v-model="settings.earnings_report_weekday"
+                  name="earnings_report_weekday"
+                  class="select form-control"
+                >
+                  <option
+                    v-for="day in settings.enum.week_days"
+                    v-bind:value="day.value"
+                    v-bind:key="day.value"
+                  >
+                    {{ trans(day.name) }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{trans('setting.show_user_account_statement')}}
+                  <a href="" class="question-field" data-toggle="tooltip" :title="trans('setting.show_user_account_statement_msg')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field"></span> 
+                </label>
+                <select
+                  v-model="settings.show_user_account_statement"
+                  name="show_user_account_statement"
+                  class="select form-control"
+                >
+                  <option value="1"> {{ trans('setting.yes') }} </option>
+                  <option value="0"> {{ trans('setting.no') }} </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- / general settings -->
 
     <!--Payment Gateway-->
     <div
@@ -1591,6 +1646,17 @@ export default {
           <div class="row">
             <div class="col-lg-12">
               <span>{{ trans("setting.obs_billet_gateway") }}</span>
+            </div>
+            <div class="col-lg-12">
+              <span>{{ trans("setting.obs_billet_gateway2") }}
+                 <a
+                    href=""
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('setting.obs_billet_gateway2_msg')"
+                    ><span class="mdi mdi-comment-question-outline"></span
+                  ></a>
+              </span>
             </div>
           </div>
         </div>

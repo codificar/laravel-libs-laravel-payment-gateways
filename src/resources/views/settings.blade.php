@@ -25,6 +25,7 @@
 			carto="{{ json_encode($carto)}}"
 			bancryp="{{ json_encode($bancryp)}}"
 			prepaid="{{ json_encode($prepaid)}}"
+			settings="{{ json_encode($settings)}}"
 		>
 		</settingsgateways>
 		

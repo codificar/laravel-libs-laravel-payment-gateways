@@ -16,6 +16,8 @@ return array(
 	'failed_set_gateway'		=> 'No se pudo actualizar la configuración de la puerta de enlace. ¡Inténtalo de nuevo!',
 	'gateway_has_change'		=> 'Se ha cambiado la puerta de enlace de la tarjeta. Actualizar las tarjetas a la nueva puerta de enlace puede llevar tiempo. No vuelva a cambiar la puerta de enlace durante al menos ',
 	'obs_billet_gateway'		=> 'Nota: la puerta de enlace de boleto será la misma que la puerta de enlace de la tarjeta de crédito.',
+	'obs_billet_gateway2'		=> 'Importante: los menús "Pagos" y "Saldo" son dinámicos',
+	'obs_billet_gateway2_msg'	=> 'Si al menos un método de pago prepago está habilitado para el usuario (boleto y / o tarjeta), aparecerá el menú "Saldo" en la aplicación y el menú "Pagos" en el panel del usuario. Lo mismo ocurre con el proveedor y corp.',
 	'payment_methods'			=> 'Formas de pago',
 	'choose_payment_methods'	=> 'Elija métodos de pago',
 	'money'						=> 'Dinero en efectivo',
@@ -133,6 +135,17 @@ return array(
 	'directpay_name'			=> 'Directpay',
 	'pagarapido_login'			=> 'Login',
 	'pagarapido_password'		=> 'Contrasena',
-	'pagarapido_gateway_key'	=> 'Gateway Key'
-
+	'pagarapido_gateway_key'	=> 'Gateway Key',
+	'general_settings'			=> 'Configuración general',
+	'earnings_report_weekday'	=> 'Primer día de la semana en el informe de ganancias',
+	'earnings_report_weekday_msg'=> 'Defina el primer día de la semana (día de la semana) que comenzará a contarse en el informe de ganancias',
+	'show_user_account_statement'=> 'Mostrar el menú Estado de cuenta al usuario',
+	'show_user_account_statement_msg'=> 'Mostrar el menú Estado de cuenta al usuario en la aplicación y en el panel de usuario',
+	'sunday'					=> 'Domingo',
+	'monday'					=> 'Lunes',
+    'tuesday'					=> 'Martes',
+    'wednesday'					=> 'Miércoles',
+    'thursday'					=> 'Jueves',
+    'friday'					=> 'Viernes',
+	'saturday'					=> 'Sábado'
 );

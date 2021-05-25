@@ -16,6 +16,8 @@ return array(
 	'failed_set_gateway'		=> 'Houve uma falha ao atualizar suas configurações de gateway. Tente novamente!',
 	'gateway_has_change'		=> 'O gateway de cartão foi trocado. A atualização dos cartões para o novo gateway pode demorar. Não troque de gateway novamente por pelo menos ',
 	'obs_billet_gateway'		=> 'Obs: o gateway de boleto será o mesmo gateway do cartão de crédito.',
+	'obs_billet_gateway2'		=> 'Importante: o menu "Pagamentos" e "Saldo" são dinâmicos',
+	'obs_billet_gateway2_msg'	=> 'Caso esteja habilitado pelo menos uma forma de pagamento pré-pago para o usuário (boleto e/ou cartão) o menu "Saldo" irá aparecer no app e o menu "Pagamentos" no painel do usuário. O mesmo acontece com o prestador e corp.',
 	'payment_methods'			=> 'Formas de Pagamento',
 	'choose_payment_methods'	=> 'Escolha as Formas de Pagamento',
 	'money'						=> 'Dinheiro',
@@ -133,6 +135,18 @@ return array(
 	'directpay_name'			=> 'Directpay',
 	'pagarapido_login'			=> 'Login',
 	'pagarapido_password'		=> 'Senha',
-	'pagarapido_gateway_key'	=> 'Gateway Key'
+	'pagarapido_gateway_key'	=> 'Gateway Key',
+	'general_settings'			=> 'Configurações Gerais',
+	'earnings_report_weekday'	=> 'Primeiro dia da semana do relatório de ganhos',
+	'earnings_report_weekday_msg'=> 'Defina qual o primeiro dia da semana (weekday) que começará a ser contabilizado no relatório de ganhos',
+	'show_user_account_statement'=> 'Mostrar menu "Extrato de Conta" para o usuário',
+	'show_user_account_statement_msg'=> 'Mostrar menu "Extrato de Conta" para o usuário no app e no painel do usuário',
+	'sunday'					=> 'Domingo',
+	'monday'					=> 'Segunda-feira',
+    'tuesday'					=> 'Terça-feira',
+    'wednesday'					=> 'Quarta-feira',
+    'thursday'					=> 'Quinta-feira',
+    'friday'					=> 'Sexta-feira',
+	'saturday'					=> 'Sábado'
 
 );
