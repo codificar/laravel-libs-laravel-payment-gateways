@@ -49,6 +49,7 @@ return array(
 	'bancard'					=> 'Bancard',
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rapido',
+	'adiq'						=> 'Adiq',
 
 	
 	
@@ -147,5 +148,8 @@ return array(
     'wednesday'					=> 'Miércoles',
     'thursday'					=> 'Jueves',
     'friday'					=> 'Viernes',
-	'saturday'					=> 'Sábado'
+	'saturday'					=> 'Sábado',
+	'adiq_client_id'			=> 'ID de cliente de Adiq',
+	'adiq_client_secret'		=> 'Secreto de cliente de Adiq',
+	'adiq_token'				=> 'Token de transacción Adiq',
 );

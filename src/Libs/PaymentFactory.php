@@ -54,8 +54,12 @@ class PaymentFactory
 
             case PaymentFacade::PAYMENT_GATEWAY_CARTO:
                 return (new CartoLib());
+
             case PaymentFacade::PAYMENT_GATEWAY_PAGARAPIDO:
                 return (new PagarapidoLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_ADIQ:
+                return (new AdiqLib());
         }
     }
 

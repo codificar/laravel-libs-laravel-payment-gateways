@@ -333,6 +333,72 @@ export default {
             </div>
           </div>
 
+          <!--Configurações do Adiq-->
+          <div
+            class="panel panel-default adiq"
+            v-if="gateways.default_payment == 'adiq'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.adiq") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.adiq_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.adiq_client_id')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-adiq"
+                      v-model="
+                        gateways.adiq.adiq_client_id
+                      "
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.adiq_client_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.adiq_client_secret')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-adiq"
+                      v-model="
+                        gateways.adiq.adiq_client_secret
+                      "
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Config. Adiq-->
+
           <!--Configurações do Pagar.Me-->
           <div
             class="panel panel-default pagarme"

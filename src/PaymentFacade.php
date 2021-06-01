@@ -24,6 +24,7 @@ class PaymentFacade extends \Illuminate\Support\Facades\Facade
     const PAYMENT_GATEWAY_BRASPAG_CIELO_ECOMMERCE = 'braspag_cielo_ecommerce';
     const PAYMENT_GATEWAY_BANCRYP = 'bancryp';
     const PAYMENT_GATEWAY_PAGARAPIDO = 'pagarapido';
+    const PAYMENT_GATEWAY_ADIQ = 'adiq';
 
     /**
      * @param  array  $parameters
