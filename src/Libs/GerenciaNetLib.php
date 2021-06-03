@@ -198,12 +198,12 @@ class GerenciaNetLib implements IPayment
 		$item = [
 			'name' => $description,
 			'amount' => 1,
-			'value' => intval($amount * 100)
+			'value' => round($amount * 100)
 		];
 		if ($percentage != 0) {
 			$item['marketplace'] = ['repasses' => [[
 				'payee_code' => $payeeCode,
-				'percentage' => intval($percentage * 10000)
+				'percentage' => round($percentage * 10000)
 			]]];
 		}
 		return [$item];
@@ -360,7 +360,7 @@ class GerenciaNetLib implements IPayment
 			$items[] = [
 				'name' => $finance->description,
 				'amount' => 1,
-				'value' => intval($finance->value * 100) * -1
+				'value' => round($finance->value * 100) * -1
 			];
 		}
 		return $items;
