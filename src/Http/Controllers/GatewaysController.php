@@ -100,6 +100,9 @@ class GatewaysController extends Controller
             'pagarapido_production'
 
         ],
+        'bancoInter' => [
+            'banco_inter_account_id'
+        ],
     ];
 
     public $payment_gateways =  array(
