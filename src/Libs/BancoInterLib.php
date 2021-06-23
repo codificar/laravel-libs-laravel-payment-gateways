@@ -42,6 +42,11 @@ interface BancoInterLib
     const CAPTURE_SUCCESS = 2;
     const REFUND_SUCCESS = 10;
     const WAITING_PAYMENT = 'waiting_payment';
+
+    /**
+     *  Settings:
+     *      banco_inter_account
+     */
     
     private $environment;
 
@@ -131,10 +136,10 @@ interface BancoInterLib
                     'captured' => true,
                     'paid' => false,
                     'status' => self::WAITING_PAYMENT,
-                    'transaction_id' => $response->data->Payment->PaymentId,
-                    'billet_url' => $response->data->Payment->Url,
-                    'digitable_line' => $response->data->Payment->DigitableLine,
-                    'billet_expiration_date' => $response->data->Payment->ExpirationDate
+                    'transaction_id' => $response->nossoNumero,
+                    'billet_url' => $response->url,
+                    'digitable_line' => $response->linhaDigitavel,
+                    'billet_expiration_date' => $response->expirationDate
                 );
             } else {
                 return array(
@@ -172,8 +177,8 @@ interface BancoInterLib
 			$retrieve = $this->retrieve($transaction);
 			return [
 				'success' => true,
-				'status' => $retrieve['status'],
-				'transaction_id' => $retrieve['transaction_id']
+				'status' => $retrieve->situacao,
+				'transaction_id' => $retrieve->transaction_id
 			];
 		} else {
             $postbackTransaction = $request->PaymentId;
@@ -190,8 +195,8 @@ interface BancoInterLib
     
             return [
                 'success' => true,
-                'status' => $retrieve['status'],
-                'transaction_id' => $retrieve['transaction_id']
+                'status' => $retrieve->situacao,
+                'transaction_id' => $retrieve->transaction_id
             ];
         }
     }

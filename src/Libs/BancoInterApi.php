@@ -1,6 +1,8 @@
 <?php
 namespace Codificar\PaymentGateways\Libs;
+
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class BancoInterApi{
 
@@ -28,11 +30,10 @@ class BancoInterApi{
             
             if ($fields) {
                 curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
-            }	else {
+            } else {
                 array_push($header, 'Content-Length: 0');
                 // curl_setopt($session, CURLOPT_POSTFIELDS, json_encode(array()));
             }
-            \
             
             curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
             curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
@@ -84,84 +85,95 @@ class BancoInterApi{
         $url = self::URL_BILLET;
         $orderId = self::getOrderId(Carbon::now()->toDateTimeString());
 
-        $discont = array(
+        $discount = array(
             "codigoDesconto"    => "NAOTEMDESCONTO",
             "taxa"              => 0,
             "valor"             => 0,
             "data"              => ""
         );
 
+        $cnpj= Settings::findObjectByKey('cnpj_for_banco_inter');
+
+        $seuNumero = date('Y').date('W').sprintf('%05d', $client->id);
+
+        $expirationDate = date('Y-m-d', strtotime($boletoExpirationDate));
+        $oneDayAfter = new DateTime($expirationDate)->add(new DateInterval('P1D'))->format('Y-m-d');
+
         $fields = array(
             "pagador"           => $this->getBilletPagador($client),
-
-            "dataEmissao"       => date('Y-m-d'),
-            "seuNumero"         => "1234567810",
-            "dataLimite"        => "SESSENTA",
-            "dataVencimento"    => date('Y-m-d', strtotime($boletoExpirationDate)),
+            
+            "cnpjCPFBeneficiario"   => $cnpj->value,
+            "seuNumero"             => $seuNumero,
+            "dataEmissao"           => date('Y-m-d'),
+            "dataVencimento"        => $expirationDate,
+            "numDiasAgenda"         => "SESSENTA",
 
             "mensagem"          => array(
                 "linha1"        => $boletoInstructions
             ),
 
-            "desconto1"         => $discont,
-            "desconto2"         => $discont,
-            "desconto3"         => $discont,
-
             "valorNominal"      => self::amountRound($amount),
             "valorAbatimento"   => 0,
 
+            "desconto1"         => $discount,
+            "desconto2"         => $discount,
+            "desconto3"         => $discount,
+
             "multa"             => array(
                 "codigoMulta"   => "PERCENTUAL",
-                "data"          => "2020-08-31",
-                "valor"         => 0,
-                "taxa"          => 5
+                "taxa"          => 2,
+                "data"          => $oneDayAfter
             ),
                
             "mora"              => array(
                 "codigoMora"    => "TAXAMENSAL",
-                "data"          => "2020-08-31",
-                "valor"         => 0,
-                "taxa"          => 1
-            ),
-                
-            "cnpjCPFBeneficiario"   => "23130935000198",
-            "numDiasAgenda"         => "SESSENTA"
+                "taxa"          => 1,
+                "data"          => $oneDayAfter
+            ),  
         );
         
         $body = json_encode($fields);
 
-        $account_id = Settings::findObjectByKey('banco_inter_account_id');
+        $account = Settings::findObjectByKey('banco_inter_account');
         $header = [
             'accept: application/json',
             'content-type: application/json',
-            'x-inter-conta-corrente: '.$account_id->value,
+            'x-inter-conta-corrente: '.$account->value,
         ];
 
         $requestType = self::POST_REQUEST;
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
 
-        return $apiRequest;
+        $response = $apiRequest;
+
+        $response->expirationDate = $expirationDate;
+        $response->url = self::createBilletPdf($apiRequest->nossoNumero);
+
+        return $response;
     }
 
     public static function retrieve($transaction)
     {
         $transactionToken = $transaction->gateway_transaction_id;
 
-        $url = sprintf('%s/%s', self::apiGetUrl(), $transactionToken);
+        $url = sprintf('%s/%s', self::URL_BILLET, $transactionToken);
 
         $body = null;
 
-        $account_id = Settings::findObjectByKey('banco_inter_account_id');
+        $account = Settings::findObjectByKey('banco_inter_account');
         $header = [
             'accept: application/json',
             'content-type: application/json',
-            'x-inter-conta-corrente: '.$account_id->value,
+            'x-inter-conta-corrente: '.$account->value,
         ];
 
         $requestType = self::GET_REQUEST;
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
 
-        return $apiRequest;
+        $response = $apiRequest;
+        $response->transaction_id = $transactionToken;
+
+        return $response;
     }
 
     /**
@@ -222,5 +234,27 @@ class BancoInterApi{
         $amount = (int)$amount;
 
         return $amount;
+    }
+
+    private static function createBilletPdf($nossoNumero)
+    {
+        $url = self::URL_BILLET . $nossoNumero . self::URL_PDF;
+
+        $body = null;
+
+        $account = Settings::findObjectByKey('banco_inter_account');
+        $header = [
+            'accept: application/json',
+            'content-type: application/json',
+            'x-inter-conta-corrente: '.$account->value,
+        ];
+
+        $requestType = self::GET_REQUEST;
+        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+
+        $pdf_decoded = base64_decode ($apiRequest);
+        Storage::put('storage/billets/'.$nossoNumero.'.pdf', $pdf_decoded);
+
+        return route("billetPdf", $nossoNumero);
     }
 }

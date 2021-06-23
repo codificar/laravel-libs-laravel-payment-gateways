@@ -101,7 +101,8 @@ class GatewaysController extends Controller
 
         ],
         'bancoInter' => [
-            'banco_inter_account_id'
+            'banco_inter_account',
+            'cnpj_for_banco_inter'
         ],
     ];
 

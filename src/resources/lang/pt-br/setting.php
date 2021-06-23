@@ -97,6 +97,8 @@ return array(
 	'gerencianet_settings'		=> 'Gerencianet Configurações',
 	'gerencianet_client_id'		=> 'Gerencianet Client ID',
 	'gerencianet_client_secret'	=> 'Gerencianet Client Secret',
+	'banco_inter_account'		=> 'Numero da conta do Banco Inter',
+	'cnpj_for_banco_inter'		=> 'CNPJ',
 	'operation_mode'			=> 'Modo de operação',
 	'choose_payment_methods'	=> 'Escolha as Formas de Pagamento',
 	'prepaid_billet'			=> 'Inserção de saldo no boleto',

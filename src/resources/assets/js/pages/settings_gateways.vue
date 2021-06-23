@@ -1759,6 +1759,7 @@ export default {
                   class="select form-control"
                 >
                   <option value="gerencianet">Gerencianet</option>
+                  <option value="bancoInter">Banco Inter</option>
                 </select>
               </div>
             </div>
@@ -1789,7 +1790,7 @@ export default {
             </div>
           </div>
           <!--Configurações de boleto do gerencianet-->
-          <div class="panel panel-default gerencianet">
+          <div class="panel panel-default gerencianet" v-if="gateways.default_payment_boleto == 'gerencianet'">
             <div class="panel-heading">
               <h3 class="panel-title">
                 {{ trans("setting.gerencianet_settings") }}
@@ -1845,7 +1846,66 @@ export default {
               </div>
             </div>
           </div>
-          <!-- / Configurações de boleto do Gerencianet-->
+          <!-- / Configurações de boleto do gerencianet-->
+
+          <!-- Configurações de boleto do banco Inter-->
+          <div class="panel panel-default gerencianet" v-if="gateways.default_payment_boleto == 'bancoInter'">
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.banco_inter_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.banco_inter_account") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.banco_inter_account')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.bancoInter.banco_inter_account"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.cnpj_for_banco_inter") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.cnpj_for_banco_inter')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      v-model="gateways.bancoInter.cnpj_for_banco_inter"
+                      type="text"
+                      class="form-control input-gerencianet"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações de boleto do banco Inter-->
         </div>
       </div>
     </div>
