@@ -10,7 +10,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 
-interface BancoInterLib
+class BancoInterLib implements IPayment
 {
     /**
      * Payment status code
@@ -42,26 +42,6 @@ interface BancoInterLib
     const CAPTURE_SUCCESS = 2;
     const REFUND_SUCCESS = 10;
     const WAITING_PAYMENT = 'waiting_payment';
-
-    /**
-     *  Settings:
-     *      banco_inter_account
-     */
-    
-    private $environment;
-
-    /**
-     * Defined environment
-     */
-    public function __construct()
-    {
-        // Configure o ambiente
-        if (App::environment() == 'production') {
-            $this->environment = Environment::production();
-        } else {
-            $this->environment = Environment::sandbox();
-        }
-    }
 
     /**
      * Charge a credit card with split rules
@@ -130,7 +110,7 @@ interface BancoInterLib
         try {
             $response = BancoInterApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
 
-            if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
+            if ($response) {
                 return array (
                     'success' => true,
                     'captured' => true,
@@ -162,6 +142,53 @@ interface BancoInterLib
 			);
         }
     }
+
+    /**
+	 * Método para realizar cobrança via boleto
+	 * @param $payment Payment - instância do pagamento com dados do cartão
+	 * @param $items - Itens do boleto (formato dos itens ['name' => , 'amount' => 1, 'value' => (inteiro representando centavos)])
+	 * @param $user User - usuário da transação
+	 * @param $expire - data de vencimento da fatura
+	 * @param $message - mensagem opcional a ser apresentada no boleto
+	 * @return array
+	 */
+	public function invoiceBilletCharge(Payment $payment = null, $items, User $user = null, $expire, $message = '', $invoice_id)
+	{
+        try {
+            $response = BancoInterApi::billetCharge($items['amount'], $user, null, $expire, $message);
+
+            if ($response) {
+                return array (
+                    'success' => true,
+                    'captured' => true,
+                    'paid' => false,
+                    'status' => self::WAITING_PAYMENT,
+                    'transaction_id' => $response->nossoNumero,
+                    'billet_url' => $response->url,
+                    'digitable_line' => $response->linhaDigitavel,
+                    'billet_expiration_date' => $response->expirationDate
+                );
+            } else {
+                return array(
+                    "success" 				=> false ,
+                    "type" 					=> 'api_charge_error',
+                    "code" 					=> '',
+                    "message" 				=> '',
+                    "transaction_id"		=> ''
+                );
+            }
+        } catch (\Throwable $th) {
+            \Log::error($th->getMessage());
+
+			return array(
+				"success" 				=> false ,
+				"type" 					=> 'api_charge_error',
+				"code" 					=> '',
+				"message" 				=> $th->getMessage(),
+				"transaction_id"		=> ''
+			);
+        }
+	}
 
     /**
      * Check the notification from gateway webhook
@@ -490,4 +517,30 @@ interface BancoInterLib
             "transaction_id" 	=> ''
         );
     }
+    
+    private function formatBillet($user, $payment, $expire, $message)
+	{
+		//Recupera user
+		$user = ($user) ? $user : $payment->User;
+		return [
+			'banking_billet' => [
+				'expire_at' => $expire, // data de vencimento do titulo (aaaa-mm-dd)
+				'message' => $message, // mensagem a ser exibida no boleto
+				'customer' => $this->formatCustomer($user, false),
+				// 'discount' =>$discount,
+				// 'conditional_discount' => $conditional_discount
+			]
+		];
+	}
+
+    public function formatItemsFromFinance($finances)
+	{
+		$items = [];
+        $amount = 0;
+		foreach ($finances as $finance) {
+            $amount += round($finance->value) * -1;
+		}
+        $items['amount'] = $amount;
+		return $items;
+	}
 }

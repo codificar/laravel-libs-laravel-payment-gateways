@@ -1,3 +1,6 @@
 <?php
-    Route::get('/billet/{pdfName}', array('as' => 'billetPdf', 'uses' => 'BancoInterController@showBilletPdf'));
-    Route::get('/billet/get/{pdfName}', array('as' => 'getbilletPdf', 'uses' => 'BancoInterController@getBilletPdf'));
+Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
+    Route::group(['prefix' => 'libs/gateways', 'middleware' => 'auth.admin_api:api'], function (){
+        Route::get('/billet/{pdfName}', array('as' => 'billetPdf', 'uses' => 'BancoInterController@showBilletPdf'));
+    });
+});

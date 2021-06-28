@@ -6,33 +6,18 @@ use App\Http\Controllers\Controller;
 
 use Storage;
 use Response;
+use Document;
+use Log;
 
-class BancardController extends Controller
+use Codificar\PaymentGateways\Libs\BancoInterApi;
+
+class BancoInterController extends Controller
 {
 
-    public function showBilletPdf($pdfName){
-        return view('bancoInter.billet_pdf')->with(array('pdfName' => $pdfName));
-    }
+    public function showBilletPdf($pdfName){     
 
-    public function getBilletPdf($pdfName){
-        $pdf = Document::findOrFail($pdfName);
+        $filePath = getcwd() .'/..'. Storage::url('app/storage/billets/'.$pdfName.'.pdf');
 
-        $filePath = $pdf->file_path;
-    
-        // file not found
-        if( ! Storage::exists($filePath) ) {
-          abort(404);
-        }
-    
-        $pdfContent = Storage::get($filePath);
-    
-        // for pdf, it will be 'application/pdf'
-        $type       = Storage::mimeType($filePath);
-        $fileName   = Storage::name($filePath);
-    
-        return Response::make($pdfContent, 200, [
-          'Content-Type'        => $type,
-          'Content-Disposition' => 'inline; filename="'.$fileName.'"'
-        ]);
+        return response()->file($filePath);
     }
 }
