@@ -2,12 +2,13 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings"],
+  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates"],
   data() {
     return {
       gateways: {},
       payment_methods: {},
-			carto: {}
+			carto: {},
+      certificates: {}
     };
   },
   methods: {
@@ -33,6 +34,16 @@ export default {
               })
               .then((response) => {
                 if (response.data.success) {
+                  if(this.gateways.default_payment_boleto == 'bancointer' && (this.certificates.crt || this.certificates.key)){
+                    var formData = new FormData();
+                    formData.append("crt", this.certificates.crt);
+                    formData.append("key", this.certificates.key);
+                    axios.post("/libs/gateways/banco_inter/save_certificates",formData,{
+                      headers: {
+                        'Content-Type': 'multipart/form-data'
+                      }
+                    });
+                  }
                   if(response.data.is_updating_cards && response.data.estimate_update_cards) {
                     this.$swal({
                       title: this.trans("setting.success_set_gateway"),
@@ -65,6 +76,16 @@ export default {
         }
       });
     },
+
+    processFile(event, type) {
+      if(type == 'crt'){
+        this.gateways.bancointer.banco_inter_crt = event.target.files[0].name
+        this.certificates.crt = event.target.files[0]
+      }else if(type == 'key'){
+        this.gateways.bancointer.banco_inter_key = event.target.files[0].name
+        this.certificates.key = event.target.files[0]
+      }
+    }
   },
   created() {
     this.PaymentMethods ? (this.payment_methods = JSON.parse(this.PaymentMethods)) : null;
@@ -73,6 +94,7 @@ export default {
 		this.Bancryp ? (this.bancryp = JSON.parse(this.Bancryp)) : null;
 		this.Prepaid ? (this.prepaid = JSON.parse(this.Prepaid)) : null;
     this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
+    this.Certificates ? (this.certificates = JSON.parse(this.Certificates)) : null;
   },
 };
 </script>
@@ -1759,7 +1781,7 @@ export default {
                   class="select form-control"
                 >
                   <option value="gerencianet">Gerencianet</option>
-                  <option value="bancoInter">Banco Inter</option>
+                  <option value="bancointer">Banco Inter</option>
                 </select>
               </div>
             </div>
@@ -1849,7 +1871,7 @@ export default {
           <!-- / Configurações de boleto do gerencianet-->
 
           <!-- Configurações de boleto do banco Inter-->
-          <div class="panel panel-default gerencianet" v-if="gateways.default_payment_boleto == 'bancoInter'">
+          <div class="panel panel-default gerencianet" v-if="gateways.default_payment_boleto == 'bancointer'">
             <div class="panel-heading">
               <h3 class="panel-title">
                 {{ trans("setting.banco_inter_settings") }}
@@ -1872,9 +1894,9 @@ export default {
                       <span class="required-field">*</span>
                     </label>
                     <input
-                      v-model="gateways.bancoInter.banco_inter_account"
+                      v-model="gateways.bancointer.banco_inter_account"
                       type="text"
-                      class="form-control input-gerencianet"
+                      class="form-control"
                       :data-error="trans('setting.field')"
                     />
                     <div class="help-block with-errors"></div>
@@ -1894,9 +1916,57 @@ export default {
                       <span class="required-field">*</span>
                     </label>
                     <input
-                      v-model="gateways.bancoInter.cnpj_for_banco_inter"
+                      v-model="gateways.bancointer.cnpj_for_banco_inter"
                       type="text"
-                      class="form-control input-gerencianet"
+                      class="form-control"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.banco_inter_crt") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.banco_inter_crt')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">{{certificates.crt ? trans('setting.uploaded') : "*"}}</span>
+                    </label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      accept=".crt"
+                      @change="processFile($event,'crt')"
+                      :data-error="trans('setting.field')"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.banco_inter_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.banco_inter_key')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">{{certificates.key ? trans('setting.uploaded') : "*"}}</span>
+                    </label>
+                    <input
+                      type="file"
+                      class="form-control"
+                      accept=".key"
+                      @change="processFile($event,'key')"
                       :data-error="trans('setting.field')"
                     />
                     <div class="help-block with-errors"></div>

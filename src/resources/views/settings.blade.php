@@ -26,6 +26,7 @@
 			bancryp="{{ json_encode($bancryp)}}"
 			prepaid="{{ json_encode($prepaid)}}"
 			settings="{{ json_encode($settings)}}"
+			certificates="{{ json_encode($certificates)}}"
 		>
 		</settingsgateways>
 		

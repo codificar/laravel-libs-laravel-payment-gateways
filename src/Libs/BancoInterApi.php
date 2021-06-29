@@ -19,14 +19,13 @@ class BancoInterApi{
     const URL_PDF           = '/pdf';
 
     const APP_TIMEOUT = 200;
-    const ROUND_VALUE = 100;
 
     public static function apiRequest($url, $fields, $header, $requestType, $isPdf = false)
     {
         try
         {
-            $key_file = getcwd() .'/..'. Storage::url('Inter_API_Chave.pem');
-            $crt_file = getcwd() .'/..'. Storage::url('Inter_API_Certificado.pem');
+            $crt_file = getcwd() .'/..'. Storage::url('app/certificates/BancoInterCertificate.pem');
+            $key_file = getcwd() .'/..'. Storage::url('app/certificates/BancoInterKey.pem');
 
             $session = curl_init();
 
@@ -129,7 +128,7 @@ class BancoInterApi{
                 "linha1"        => $boletoInstructions
             ),
 
-            "valorNominal"      => self::amountRound($amount),
+            "valorNominal"      => $amount,
             "valorAbatimento"   => 0,
 
             "desconto1"         => $discount,
@@ -240,15 +239,6 @@ class BancoInterApi{
         return $phone;
     }
 
-    private static function amountRound($amount)
-    {
-        $amount = $amount * self::ROUND_VALUE;
-        $type = gettype($amount);
-        $amount = (int)$amount;
-
-        return $amount;
-    }
-
     public static function createBilletPdf($nossoNumero)
     {
         $url = self::URL_BILLET .'/'. $nossoNumero . self::URL_PDF;
@@ -260,12 +250,9 @@ class BancoInterApi{
         $requestType = self::GET_REQUEST;
         $apiRequest = self::apiRequest($url, $body, $header, $requestType, true);
 
-        \Log::info($apiRequest->data);
-
         $pdf_decoded = base64_decode($apiRequest->data);
-        \Log::info($pdf_decoded);
         
-        Storage::put('storage/billets/'.$nossoNumero.'.pdf', $pdf_decoded);
+        Storage::put('billets/'.$nossoNumero.'.pdf', $pdf_decoded);
 
         return route("billetPdf", $nossoNumero);
     }

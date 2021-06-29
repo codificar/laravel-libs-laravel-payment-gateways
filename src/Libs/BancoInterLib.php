@@ -159,14 +159,12 @@ class BancoInterLib implements IPayment
 
             if ($response) {
                 return array (
-                    'success' => true,
-                    'captured' => true,
-                    'paid' => false,
-                    'status' => self::WAITING_PAYMENT,
-                    'transaction_id' => $response->nossoNumero,
-                    'billet_url' => $response->url,
-                    'digitable_line' => $response->linhaDigitavel,
-                    'billet_expiration_date' => $response->expirationDate
+                    'success'           => true,
+                    'data'              => array(
+                        'pdf'           => array(
+                            'charge'    => $response->url
+                        )
+                    )
                 );
             } else {
                 return array(
