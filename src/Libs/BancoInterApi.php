@@ -182,8 +182,10 @@ class BancoInterApi{
         $requestType = self::GET_REQUEST;
         $apiRequest = self::apiRequest($url, $body, $header, $requestType);
 
-        $response = $apiRequest;
-        $response->transaction_id = $transactionToken;
+        if($apiRequest->success == true){
+            $response = $apiRequest->data;
+            $response->transaction_id = $transactionToken;
+        }
 
         return $response;
     }

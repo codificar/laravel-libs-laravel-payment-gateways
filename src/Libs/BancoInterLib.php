@@ -162,7 +162,7 @@ class BancoInterLib implements IPayment
                     'success'           => true,
                     'data'              => array(
                         'pdf'           => array(
-                            'charge'    => $response->url
+                            'charge'    => $response->url // Projetos que usam essa função buscam o link para o boleto dessa forma ['data']['pdf']['charge']
                         )
                     )
                 );
@@ -202,7 +202,7 @@ class BancoInterLib implements IPayment
 			$retrieve = $this->retrieve($transaction);
 			return [
 				'success' => true,
-				'status' => $retrieve->situacao,
+				'status' => $retrieve->situacao == "PAGO" ? 'paid' : $retrieve->situacao,
 				'transaction_id' => $retrieve->transaction_id
 			];
 		} else {
