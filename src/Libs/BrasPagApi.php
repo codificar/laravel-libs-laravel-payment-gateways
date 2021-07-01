@@ -191,7 +191,7 @@ class BraspagApi
             $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);  
 
             $result = json_decode($msg_chk);
-
+            \Log::debug("result_braspag: ".print_r($result,1));
             if ($httpcode == 200 ||$httpcode ==  201 ||$httpcode ==  202) {
                 return (object)array (
                     'success'           =>  true,
