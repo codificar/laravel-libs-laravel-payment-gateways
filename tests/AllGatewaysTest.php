@@ -295,7 +295,7 @@ class AllGatewaysTest extends TestCase
 
 
 		//billetCharge (boleto bancario)
-		if($gateway != 'stripe' && $gateway != 'adiq') { //stripe nao possui boleto, entao nao eh verificado no teste
+		if($gateway != 'stripe' && $gateway != 'adiq' && $gateway != 'braspag') { //stripe nao possui boleto, entao nao eh verificado no teste
 			$billet = $interface->testBilletCharge();
 			$this->assertTrue($billet['success']);
 			$this->assertInternalType('string', $billet['billet_url']);
