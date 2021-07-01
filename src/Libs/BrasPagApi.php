@@ -124,14 +124,6 @@ class BraspagApi
         return $brand;
     }
 
-    private function amountRound($amount)
-    {
-        $amount = $amount * self::ROUND_VALUE;
-        $amount = (int)$amount;
-
-        return $amount;
-    }
-
     private function setHeader()
     {
         try
@@ -164,20 +156,17 @@ class BraspagApi
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($session, CURLOPT_CUSTOMREQUEST, $requestType );
 
-            if (isset($fields))
-            {
-                $indexHeader = array_search('Content-Length: 0', $this->header);
-                if($indexHeader !== false){
-                    unset($this->header[$indexHeader]);
-                }
-
-                curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
+            $indexHeader = array_search('Content-Length: 0', $this->header);
+            if($indexHeader !== false){
+                unset($this->header[$indexHeader]);
             }
-            else
-            {
+
+            if ($fields) {
+                curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
+            }   else {
                 array_push($this->header, 'Content-Length: 0');
             }
-            
+
             \Log::debug('fields:'.print_r($fields,1));
             \Log::debug("header:".print_r($this->header,1));
             
@@ -251,7 +240,7 @@ class BraspagApi
         //     "Payment" => [
         //         "Provider" => "Simulado",
         //         "Type" => "Boleto",
-        //         "Amount" => $this->amountRound($amount),
+        //         "Amount" => $amount,
         //         "ExpirationDate" => date('Y-m-d', strtotime($boletoExpirationDate)),
         //         "Instructions" => $boletoInstructions
         //     ]
@@ -283,7 +272,7 @@ class BraspagApi
 
         $orderId = $this->getOrderId();
 
-        $totalAmount = $this->amountRound($amount);
+        $totalAmount = $amount;
 
         $softDescriptor = strlen(Settings::findByKey('website_title')) >= 13 ? substr(Settings::findByKey('website_title'),0,12)."." : Settings::findByKey('website_title');
 

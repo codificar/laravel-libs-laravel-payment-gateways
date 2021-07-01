@@ -278,7 +278,7 @@ class BraspagLib implements IPayment
 
             $refund = $this->api->refund($transaction);
 
-            if(!$refund->success)
+            if(!isset($refund->success) || !$refund->success)
                 return $this->responseApiError('gateways.refund_fail');
 
             return array(
