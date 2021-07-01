@@ -1,531 +1,484 @@
-<?php
+<?php 
 
-namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
-use Codificar\PaymentGateways\Libs\BrasPagApi;
-
-use Ramsey\Uuid\Uuid;
-use ApiErrors;
-//models do sistema
-use Payment;
-use Provider;
-use Transaction;
-use User;
-use LedgerBankAccount;
-use Settings;
-
-class BraspagLib implements IPayment
+class ByeBankLib implements IPayment
 {
-    /**
-     * Payment status code
-     */
-    const CODE_NOTFINISHED  =   0;
-    const CODE_AUTHORIZED   =   1;
-    const CODE_CONFIRMED    =   2;
-    const CODE_DENIED       =   3;
-    const CODE_VOIDED       =   10;
-    const CODE_REFUNDED     =   11;
-    const CODE_PENDING      =   12;
-    const CODE_ABORTED      =   13;
-    const CODE_SCHEDULED    =   20;
 
-    /**
-     * Payment status string
-     */
-    const PAYMENT_NOTFINISHED  =   'not_finished';
-    const PAYMENT_AUTHORIZED   =   'authorized';
-    const PAYMENT_CONFIRMED    =   'paid';
-    const PAYMENT_DENIED       =   'denied';
-    const PAYMENT_VOIDED       =   'voided';
-    const PAYMENT_REFUNDED     =   'refunded';
-    const PAYMENT_PENDING      =   'pending';
-    const PAYMENT_ABORTED      =   'aborted';
-    const PAYMENT_SCHEDULED    =   'scheduled';
+    const PAYMENT_TYPE_CARD  = 'card';
 
-    /**
-     * Braspag object
-     */
-    private $api;
+    const BYEBNK_API_KEY = 'byebnk_api_key';
+    const BYEBNK_API_USER = 'byebnk_api_user';
 
-    /**
-     * Defined environment
-     */
+    const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
+
+    private $token;
+    private $clientId;
+
     public function __construct()
     {
-        $this->api = new BraspagApi();
+        $this->setApiKey();
     }
 
-    /**
-     * Returns tokenized card on Gateway Braspag Pagador
-     *
-     * @param Object        $payment        Object that represents requester card.
-     * @param Object        $user           Object that represents user on system.
-     *
-     * @return Array       [
-     *                      'success',
-     *                      'token',
-     *                      'customer_id',
-     *                      'last_four',
-     *                      'card_type',
-     *                      'card_token',
-     *                      'gateway'
-     *                     ]
-     */
-    public function createCard(Payment $payment, User $user = null)
+    private function setApiKey()
     {
-        try {
-
-            $cardNumber 			= $payment->getCardNumber();
-
-            return array(
-                'success'		=>	true,
-                'token'         =>	'',
-                'customer_id'	=>	'',
-                'last_four'		=>	substr($cardNumber, -4),
-                'card_type'		=>	detectCardType($cardNumber),
-                'card_token'	=>	'',
-                "gateway"       =>  "braspag"
-            );
-
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateways.new_card_fail');
-        }
+        $this->token = Settings::findByKey(self::BYEBNK_API_KEY);
+        $this->clientId = Settings::findByKey(self::BYEBNK_API_USER);
     }
 
-    //finish
-    public function deleteCard(Payment $payment, User $user = null)
-    {
-        return array(
-			'success' => true
-		);
-    }
-
-    /**
-     * Returns authorized transaction information on Geteway Braspag Pagador
-     *
-     * @param Object        $payment        Object that represents requester card.
-     * @param Integer       $amount         Integer that represents amount authorized on credit card.
-     * @param String        $description    String that represents details of transaction.
-     * @param Boolean       $capture        Boolean that represents config to capture on charge.
-     * @param Object        $user           Object that represents user on system.
-     *
-     * @return Array       [
-     *                      'success',
-	 *			            'captured',
-	 *			            'paid',
-	 *			            'status',
-	 *			            'transaction_id'
-     *                     ]
-     */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
-    {
-        $amount = floor($amount * 100);
-
-        if($amount <= 0)
-            return $this->responseApiError('gateways.amount_negative');
-
-        try {
-            // Paliativo pois precisa alterar todas as charges do sistema para ledger
-            $client = $payment->user_id ? \User::find($payment->user_id) : \Provider::find($payment->provide_id);
-
-            if($user)
-                $client = $user;
-
-            $charge = $this->api->charge($payment, $client, $amount, $capture, BraspagApi::CREDIT_CARD, $description);
-
-            $awaitedStatus = $capture ? self::CODE_CONFIRMED : self::CODE_AUTHORIZED;
-
-            $chargeStatus = $charge->data->Payment->Status;
-            $paymentId = $charge->data->Payment->PaymentId;
-
-            if($awaitedStatus != $chargeStatus)
-			{
-                return $this->responseApiError('paymentError.refused');
-			}
-
-			return array (
-				'success'        => true,
-				'captured'       => $capture,
-				'paid'           => $capture,
-				'status'         => $capture ? self::PAYMENT_CONFIRMED : self::PAYMENT_AUTHORIZED,
-				'transaction_id' => $paymentId
-            );
-
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateways.charge_fail');
-        }
-    }
-
-    /**
-     * Returns confirmed transaction information on Geteway Braspag Pagador
-     *
-     * @param Object        $transaction    Object that represents system transaction.
-     * @param Integer       $amount         Integer that represents amount to caṕture on credit card.
-     * @param Object        $payment        Object that represents requester card.
-     *
-     * @return Array       [
-     *                      'success',
-	 *			            'status',
-	 *			            'captured',
-	 *			            'paid',
-	 *			            'transaction_id'
-     *                     ]
-     */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
-	{
-        $amount = floor($amount * 100);
-
-        if($amount <= 0)
-            return $this->responseApiError('gateways.amount_negative');
-
+    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null)
+    {   
         try
         {
-            $capture = $this->api->capture($transaction);
-            $captureStatus = $capture->data->Status;
+            $amount = floor($amount * 100);
 
-            if($captureStatus != self::CODE_CONFIRMED)
-			{
-                return $this->responseApiError('paymentError.refused');
-            }
+            $response = ByeBankApi::pay($this->clientId, $this->token, $payment->customer_id, $amount, $description, self::PAYMENT_TYPE_CARD, $payment->card_token, null, $capture);
 
-            return array(
-                'success'        => true,
-				'status'         => self::PAYMENT_CONFIRMED,
-				'captured'       => true,
-				'paid'           => true,
-				'transaction_id' => $transaction->gateway_transaction_id
-            );
-        }
-        catch (\Exception $e)
-        {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateways.capture_fail');
-        }
-    }
-
-    /**
-     * Returns transaction information on Geteway Braspag Pagador
-     *
-     * @param Object        $transaction    Object that represents system transaction.
-     * @param Object        $payment        Object that represents requester card.
-     *
-     * @return Array       [
-     *                      'success',
-     *                      'transaction_id',
-     *                      'amount',
-     *                      'destination',
-     *                      'status',
-     *                      'card_last_digits'
-     *                     ]
-     */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
-    {
-        try{
-            $retrieve = $this->api->retrieve($transaction);
-
-            if(!isset($retrieve->success) || (isset($retrieve->success) && !$retrieve->success))
+            if(!$response['success'])
             {
-                return $this->responseApiError('gateways.retrieve_fail');
+                \Log::error($response['message']);
+
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_charge_error',
+                    "code" 						=> 'api_charge_error',
+                    "message" 					=> $response['message'],
+                    "transaction_id"			=> ''
+                );                
             }
 
-            return array(
-                'success' 			=> true,
-                'transaction_id' 	=> $retrieve->data->Payment->PaymentId,
-                'amount' 			=> $retrieve->data->Payment->Amount,
-                'destination' 		=> '',	
-                'status' 			=> $this->getStatusString($retrieve->data->Payment->Status),
-                'card_last_digits' 	=> $payment->last_four,
-            );
+			return array (
+				'success' => true,
+				'captured' => $capture,
+				'paid' => $capture,
+				'status' => $capture ? 'paid' : 'authorized',
+				'transaction_id' => $response['paymentId']
+			);
         }
-        catch (\Exception $e)
+        catch(Exception $ex)
         {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateways.retrieve_fail');
-        }
+            \Log::error($ex->getMessage());
+
+            return array(
+                "success" 					=> false ,
+                "type" 						=> 'api_charge_error' ,
+                "code" 						=> 'api_charge_error' ,
+                "message" 					=> trans("paymentError.".$ex->getMessage()),
+                "transaction_id"			=> ''
+            );		
+        }        
     }
 
-    /**
-     * Cancel and returns transaction information on Geteway Braspag Pagador
-     *
-     * @param Object        $transaction    Object that represents system transaction.
-     * @param Object        $payment        Object that represents requester card.
-     *
-     * @return Array       [
-     *                      'success',
-     *                      'status',
-     *                      'transaction_id'
-     *                     ]
-     */
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    {
+        $response = $this->charge($payment, $totalAmount, $description, $capture, $user);
+        
+        return $response;
+    }
+   
+    public function capture(Transaction $transaction, $amount, Payment $payment)
+    {
+        try
+        {
+            $amount = floor($amount * 100);
+
+            $response = ByeBankApi::capture($this->clientId, $this->token, $payment->customer_id, $transaction->gateway_transaction_id, $amount);
+
+            if(!$response['success'])
+            {
+                \Log::error($response['message']);
+
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_capture_error',
+                    "code" 						=> 'api_capture_error',
+                    "message" 					=> $response['message'],
+                    "transaction_id"			=> $transaction->gateway_transaction_id
+                );                
+            }            
+
+            return array(
+                "success" 			=> true ,
+                "status" 			=> 'paid',
+				"captured"          => true,
+				"paid"              => true,                
+                "transaction_id" 	=> $transaction->gateway_transaction_id
+            );
+            
+        } 
+        catch (Exception $ex) {
+  
+            \Log::error($ex->__toString());
+
+            return array(
+                "success" 			=> false ,
+                "type" 				=> 'api_capture_error' ,
+                "code" 				=> 'api_capture_error',
+                "message" 			=> $ex->getMessage(),
+                "transaction_id" 	=> $transaction->gateway_transaction_id
+            );
+       }        
+    }
+
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment)
+    {
+        \Log::error('split_not_implemented');
+
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
+    }
+
     public function refund(Transaction $transaction, Payment $payment)
     {
-        try {
-            $retrieve = $this->api->retrieve($transaction);
+        try
+        {
+            $response = ByeBankApi::payback($this->clientId, $this->token, $payment->customer_id, $transaction->gateway_transaction_id);
 
-            $refundStatus = $this->getStatusString($retrieve->data->Payment->Status);
+            if(!$response['success'])
+            {
+                \Log::error($response['message']);
 
-            if(
-                ($refundStatus != self::CODE_NOTFINISHED && 
-                $refundStatus != self::CODE_AUTHORIZED && 
-                $refundStatus != self::CODE_CONFIRMED && 
-                $refundStatus != self::CODE_PENDING && 
-                $refundStatus != self::CODE_SCHEDULED) || 
-                !$retrieve->success
-            )
-                return $this->responseApiError('gateways.refund_retrieve_fail');
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_refund_error',
+                    "code" 						=> 'api_refund_error',
+                    "message" 					=> $response['message']
+                );                
+            }            
 
-            $refund = $this->api->refund($transaction);
+            return array(
+                "success" 			=> true ,
+                "status" 			=> 'refunded' ,
+                "transaction_id" 	=> $transaction->gateway_transaction_id ,
+            );
+            
+        } 
+        catch (Exception $ex) {
+  
+            \Log::error($ex->__toString());
 
-            if(!$refund->success)
-                return $this->responseApiError('gateways.refund_fail');
+            return array(
+                "success" 			=> false ,
+                "type" 				=> 'api_refund_error' ,
+                "code" 				=> 'api_refund_error',
+                "message" 			=> $ex->getMessage(),
+                "transaction_id" 	=> $transaction->gateway_transaction_id
+            );
+       }            
+    }
+
+    public function refundWithSplit(Transaction $transaction, Payment $payment)
+    {
+        \Log::error('split_not_implemented');
+        
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_refund_error' ,
+            "code" 				=> 'api_refund_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
+    }
+
+    /*
+     * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
+     */       
+    public function retrieve(Transaction $transaction, Payment $payment){
+
+        $response = ByeBankApi::retrieve($this->clientId, $this->token, $payment->customer_id, $transaction->gateway_transaction_id);
+
+        if(!$response['success'])
+        {
+            \Log::error($response['message']);
+
+            return array(
+                "success" 			=> false ,
+                "type" 				=> 'api_retrieve_error' ,
+                "code" 				=> 'api_retrieve_error',
+                "message" 			=> $response['message']
+            );            
+        }
+
+		return array(
+			'success' => true,
+			'transaction_id' => $response['id'],
+			'amount' => $response['amount_cents'],
+			'destination' => '',
+			'status' => $this->getStatus($response),
+			'card_last_digits' => $payment->last_four,
+		);
+
+    }
+
+    /*
+     * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
+     */      
+    public function createCard(Payment $payment, $user = null)
+    {
+        try
+        {
+            $cardNumber 			= $payment->getCardNumber();
+            $cardExpirationMonth 	= $payment->getCardExpirationMonth();
+            $cardExpirationYear 	= $payment->getCardExpirationYear();
+            $cardCvv 				= $payment->getCardCvc();
+            $cardHolder 			= $payment->getCardHolder();   
+            
+            if(!$user)
+                $user = $payment->User;
+
+			$response = $this->listUser($user);
+			
+			\Log::debug('[createCard]responselistUser:'. json_encode($response));
+
+            if(!$response['success'] || $response['userId'] == null)
+                $customer_id = $this->createUser($user);    
+            else
+                $customer_id = $response["userId"]; 
+                
+            if($cardExpirationYear / 100 < 1)
+                $cardExpirationYear += 2000;
+
+            $cardHolder = $this->removeSpecialCharacter($cardHolder);
+                
+            if(!$customer_id)
+            {
+                \Log::error('[createCard]customer_id is null');
+
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_create_card_error',
+                    "code" 						=> 'api_create_card_error',
+                    "message" 					=> 'customer_id is null'
+                );                 
+            }
+
+            $response = ByeBankApi::createCard($this->clientId, $this->token, $customer_id, $cardNumber, $cardHolder, $cardExpirationMonth,$cardExpirationYear, $cardCvv);
+
+            if(!$response['success'])
+            {
+                \Log::error($response['message']);
+
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_create_card_error',
+                    "code" 						=> 'api_create_card_error',
+                    "message" 					=> $response['message']
+                );                
+            } 
 
             return array(
                 "success" 					=> true ,
-                "status" 					=> self::PAYMENT_REFUNDED,
-                "transaction_id"			=> $transaction->gateway_transaction_id                    
+                "token" 					=> $response['card_id'] ,
+                "card_token" 				=> $response['card_id'] ,
+                "customer_id" 				=> $customer_id ,
+                "card_type" 				=> $this->getCreditCardType($cardNumber),
+                "last_four" 				=> $response['last_digit'] 
             );
-        }
-        catch (\Exception $e)
-        {
-            \Log::error($e->getMessage());
-            return $this->responseApiError('gateways.refund_fail');
-        }
-    }
 
-   /**
-	 * Função para gerar boletos de pagamentos
-	 * @param int $amount valor do boleto
-	 * @param User/Provider $client instância do usuário ou prestador
-	 * @param string $postbackUrl url para receber notificações do status do pagamento
-	 * @param string $billetExpirationDate data de expiração do boleto
-	 * @param string $billetInstructions descrição no boleto
-	 * @return array
-	 */
-    public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
-    {
-        try {
-            $response = $this->api->billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
-
-
-            return array(
-                "success" 				=> false ,
-                "type" 					=> 'api_billet_error' ,
-                "code" 					=> '',
-                "message" 				=> '',
-                "transaction_id"		=> ''
-            );
-        } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
+		}
+		catch(Exception  $ex){
+			
+			\Log::error($ex->getMessage());
 
 			return array(
-				"success" 				=> false ,
-				"type" 					=> 'api_billet_error' ,
-				"code" 					=> '',
-				"message" 				=> $th->getMessage(),
-				"transaction_id"		=> ''
+				"success" 					=> false ,
+				"type" 						=> 'api_create_card_error' ,
+				"code" 						=> 'api_create_card_error' ,
+				"message" 					=> trans("paymentError.api_create_card_error") ,
 			);
+		}            
+    }
+
+    public function deleteCard(Payment $payment, User $user)
+    {
+        try
+        {
+            $response = ByeBankApi::deleteCard($this->clientId, $this->token, $payment->customer_id, $payment->card_token);
+
+            if(!$response['success'])
+            {
+                \Log::error($response['message']);
+
+                return array(
+                    "success"   => false ,
+                    "error"     => array(
+                        "code" 		=> 'api_deleteCard_error',
+                        "messages" 	=> $response['message']
+                    )                
+                );           
+            }
+
+            return array(
+                "success" 					=> true 
+            );  
         }
+		catch(Exception  $ex){
+			
+			\Log::error($ex->getMessage());
+
+			return array(
+                "success"   => false ,
+				"error"     => array(
+                    "code" 		=> 'api_deleteCard_error',
+                    "messages" 	=> $ex->getMessage()
+				)                
+			);
+		}             
     }
 
-    /**
-     * Verifies billet status returned from postback by Gateway Braspag Pagador
-     *
-     * @param Object        $request                 Object that represents postback returned by gateway.
-     *
-     * @return Array       [
-     *                      'success',
-     *                      'status',
-     *                      'transaction_id',
-     *                     ]
-     */
-	public function billetVerify ($request, $transaction_id = null)
+	/*
+		* @return Array ['success', 'recipient_id']
+		*/      
+	public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
 	{
-		$postbackTransaction = $request->PaymentId;
-        
-		if (!$postbackTransaction)
-			return [
-				'success' => false,
-				'status' => '',
-				'transaction_id' => ''
-            ];
-        
-        $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
-        $retrieve = $this->retrieve($transaction);
-
-		return [
-			'success' => true,
-			'status' => $retrieve['status'],
-			'transaction_id' => $retrieve['transaction_id']
-		];
-	}
-
-    //finish
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
-    {
-        \Log::error('chage_split_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_chargesplit_error' ,
-            "code" 				=> 'api_chargesplit_error',
-            "message" 			=> 'split_not_implementd',
-            "transaction_id" 	=> ''
-        );
-    }
-
-    //finish
-    public function refundWithSplit(Transaction $transaction, Payment $payment)
-    {
-        \Log::error('refund_split_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_refundsplit_error' ,
-            "code" 				=> 'api_refundsplit_error',
-            "message" 			=> 'split_not_implementd',
-            "transaction_id" 	=> $transaction->gateway_transaction_id
-        );
-    }
-
-    //finish
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
-    {
-        \Log::error('capture_split_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_capturesplit_error' ,
-            "code" 				=> 'api_capturesplit_error',
-            "message" 			=> 'split_not_implementd',
-            "transaction_id" 	=> $transaction->gateway_transaction_id
-        );
-    }
-
-    //finish
-    public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
-    {
-        return array(
+		return array(
 			'success' => true,
 			'recipient_id' => '',
 		);
-    }
+	}    
 
-    /**
-     * Tax used on system transaction
-     */
-    public function getGatewayTax()
-	{
-		return 0.0399;
+	private function getUserAddress($user){
+
+		$zipCode = str_replace('.', '', str_replace('-', '', $user->getZipcode()));
+		$zipCode = trim(preg_replace('/\s\s+/', '', $zipCode));
+
+		return array(
+            "street_address" 	=> $user->getStreet(),
+            "complement"        => $user->getStreetNumber(),
+            "additional_info"   => null,
+            "neighborhood" 	    => $user->getNeighborhood(),
+            "city" 	            => $user->address_city,
+            "state"             => $user->state,
+            "postal_code" 		=> $zipCode,
+            "country_code" 		=> "BR"
+            
+        );
 	}
 
-    /**
-     * Fee used on system transaction
-     */
-	public function getGatewayFee()
+	private function createUser($user)
 	{
-		return 0.5 ;
-    }
+		$document = str_replace('.', '', str_replace('-', '', $user->document));
+		$document = trim(preg_replace('/\s\s+/', '', $document));
+
+		$address =$this->getUserAddress($user);
+
+		$result = ByeBankApi::createUser($this->clientId, $this->token, $user->first_name, $user->last_name, $document, $user->email, $user->phone, $user->id, $address);
+
+		if(!$result['success'])
+			return(null);
+
+		return($result['userId']);
+	}
+
+    private function listUser($user)
+    {
+        $document = str_replace('.', '', str_replace('-', '', $user->document));
+        $document = trim(preg_replace('/\s\s+/', '', $document));
+
+        $result = ByeBankApi::listUser($this->clientId, $this->token, $document, $user->email);
+
+        return($result);
+    }   
     
-    /**
-     * Boolean used on split config
-     */
-    public function checkAutoTransferProvider()
-    {
-        return false;
-    }
+	private function getStatus($byebnkTransaction)
+	{
 
-    /**
-     * Returns next compensation date
-     */
-    public function getNextCompensationDate()
-    {
-		$carbon = Carbon::now();
-		$carbon->addDays(31);
-		return $carbon ;
-    }
-    
-    /**
-     * Returns translated fails response on lib
-     *
-     * @param String        $message    String to translate.
-     *
-     * @return Array       [
-     *                      'success',
-     *                      'message'
-     *                     ]
-     */
-    private function responseApiError($message)
-    {
-        \Log::error($message);
+        switch($byebnkTransaction['status'])
+        {
+            case ByeBankApi::STATUS_PENDING:
+                return('processing');
 
-        return array(
-            "success" 			=> false,
-            "message" 			=> trans($message),
-            "transaction_id"    => ''
-        );
-    }
+            case ByeBankApi::STATUS_FINISHED:
+            case ByeBankApi::STATUS_SUCCEEDED:
+                if($byebnkTransaction['capture'])
+                    return('paid');
+                else
+                    return('authorized');
 
-    /**
-     * Returns status string based on status code
-     *
-     * @param Integer        $statusCode    Payment status code captured on gateway.
-     *
-     * @return String                       String related to the payment status code.
-     *
-     */
-    private function getStatusString($statusCode)
-    {
-        switch ($statusCode) {
-            case self::CODE_NOTFINISHED:
-                return self::PAYMENT_NOTFINISHED;
-            case self::CODE_AUTHORIZED:
-                return self::PAYMENT_AUTHORIZED;
-            case self::CODE_CONFIRMED:
-                return self::PAYMENT_CONFIRMED;
-            case self::CODE_DENIED:
-                return self::PAYMENT_DENIED;
-            case self::CODE_VOIDED:
-                return self::PAYMENT_VOIDED;
-            case self::CODE_REFUNDED:
-                return self::PAYMENT_REFUNDED;
-            case self::CODE_PENDING:
-                return self::PAYMENT_PENDING;
-            case self::CODE_ABORTED:
-                return self::PAYMENT_ABORTED;
-            case self::CODE_SCHEDULED:
-                return self::PAYMENT_SCHEDULED;
+            case ByeBankApi::STATUS_CANCELED:
+                return('refunded');
+
             default:
-                return 'not_geted';
+                return('error');
+        }
+    }   
+    
+    private function getCreditCardType($str, $format = 'string')
+    {
+        if (empty($str)) {
+            return false;
+        }
+
+        $matchingPatterns = [
+            'visa' => '/^4[0-9]{12}(?:[0-9]{3})?$/',
+            'mastercard' => '/^5[1-5][0-9]{14}$/',
+            'amex' => '/^3[47][0-9]{13}$/',
+            'diners' => '/^3(?:0[0-5]|[68][0-9])[0-9]{11}$/',
+            'discover' => '/^6(?:011|5[0-9]{2})[0-9]{12}$/',
+            'jcb' => '/^(?:2131|1800|35\d{3})\d{11}$/',
+            'elo' => '/^((((636368)|(438935)|(504175)|(451416)|(636297))\d{0,10})|((5067)|(4576)|(4011))\d{0,12})$/',
+            'any' => '/^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/'
+        ];
+
+        $ctr = 1;
+        foreach ($matchingPatterns as $key=>$pattern) {
+            if (preg_match($pattern, $str)) {
+                return $format == 'string' ? $key : $ctr;
+            }
+            $ctr++;
         }
     }
 
-    //finish
-    public function debit(Payment $payment, $amount, $description)
+    private function removeSpecialCharacter($val)
     {
-        \Log::error('debit_not_implemented');
-
-        return array(
-            "success" 			=> false,
-            "type" 				=> 'api_debit_error',
-            "code" 				=> 'api_debit_error',
-            "message" 			=> 'debit_not_implemented',
-            "transaction_id" 	=> ''
-        );
+        $val = json_decode('"'.str_replace('"', '\"',$val).'"');
+        $val = preg_replace(array("/(á|à|ã|â|ä)/","/(Á|À|Ã|Â|Ä)/","/(é|è|ê|ë)/","/(É|È|Ê|Ë)/","/(í|ì|î|ï)/","/(Í|Ì|Î|Ï)/","/(ó|ò|õ|ô|ö)/","/(Ó|Ò|Õ|Ô|Ö)/","/(ú|ù|û|ü)/","/(Ú|Ù|Û|Ü)/","/(ñ)/","/(Ñ)/","/(ç)/","/(Ç)/"),explode(" ","a A e E i I o O u U n N c C"),$val);
+    
+        return($val);
     }
 
-    //finish
-    public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
+    public function getGatewayFee()
     {
-        \Log::error('debit_split_not_implemented');
-
-        return array(
-            "success" 			=> false,
-            "type" 				=> 'api_debit_error',
-            "code" 				=> 'api_debit_error',
-            "message" 			=> 'split_not_implementd',
-            "transaction_id" 	=> ''
-        );
+        return 0.5;
     }
+
+    public function getGatewayTax()
+    {
+        return 0.0399 ;
+    }  
+
+	public function getNextCompensationDate(){
+		$carbon = Carbon::now();
+		$compDays = Settings::findByKey('compensate_provider_days');
+		$addDays = ($compDays || (string)$compDays == '0') ? (int)$compDays : 31;
+		$carbon->addDays($addDays);
+		
+		return $carbon;
+	} 
+    
+    public function checkAutoTransferProvider()
+    {
+        try
+        {
+            if(Settings::findByKey(self::AUTO_TRANSFER_PROVIDER) == "1")
+                
+                return(true);
+            else
+                return(false);
+        }
+        catch(Exception$ex)
+        {
+            \Log::error($ex);
+
+            return(false);
+        }
+    }
+
 }
+
+?>

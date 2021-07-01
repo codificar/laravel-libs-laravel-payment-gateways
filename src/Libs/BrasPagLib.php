@@ -5,6 +5,7 @@ use Carbon\Carbon;
 
 use Codificar\PaymentGateways\Libs\BrasPagApi;
 
+use Ramsey\Uuid\Uuid;
 use ApiErrors;
 //models do sistema
 use Payment;
@@ -14,129 +15,286 @@ use User;
 use LedgerBankAccount;
 use Settings;
 
-Class BrasPagLib implements IPayment
+class BraspagLib implements IPayment
 {
-    const CHARGE_SUCCESS = 1;
-    const CAPTURE_SUCCESS = 2;
-    const REFUND_SUCCESS = 10;
-    const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
-    const WAITING_PAYMENT = 'waiting_payment';
+    /**
+     * Payment status code
+     */
+    const CODE_NOTFINISHED  =   0;
+    const CODE_AUTHORIZED   =   1;
+    const CODE_CONFIRMED    =   2;
+    const CODE_DENIED       =   3;
+    const CODE_VOIDED       =   10;
+    const CODE_REFUNDED     =   11;
+    const CODE_PENDING      =   12;
+    const CODE_ABORTED      =   13;
+    const CODE_SCHEDULED    =   20;
 
     /**
-     * Charge a credit card with split rules
-     *
-     * @param Payment       $payment
-     * @param Provider      $provider 
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
-     * @param Decimal       $providerAmount 
-     * @param String        $description        An arbitrary string which you can attach to describe a Charge object
-     * @param Boolean       $capture            Whether to immediately capture the charge. When false, the charge issues an authorization (or pre-authorization), and will need to be captured later. 
-     * @param User          $user               The customer that will be charged in this request
-     * 
-     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
-        try {
-            $response = BrasPagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
-            
-            $responseChargeStatus = self::getChargeStatus(true, $capture);
+     * Payment status string
+     */
+    const PAYMENT_NOTFINISHED  =   'not_finished';
+    const PAYMENT_AUTHORIZED   =   'authorized';
+    const PAYMENT_CONFIRMED    =   'paid';
+    const PAYMENT_DENIED       =   'denied';
+    const PAYMENT_VOIDED       =   'voided';
+    const PAYMENT_REFUNDED     =   'refunded';
+    const PAYMENT_PENDING      =   'pending';
+    const PAYMENT_ABORTED      =   'aborted';
+    const PAYMENT_SCHEDULED    =   'scheduled';
 
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
-				$result = array (
-					'success' 		    => true,
-					'status' 		    => $capture,
-					'captured' 			=> $capture,
-					'paid' 		        => $capture ? 'paid' : 'authorized',
-					'transaction_id'    => $response->data->Payment->PaymentId
-				);
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (Exception $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'transaction_id'	=>	$response['transaction_id'],
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
+    /**
+     * Braspag object
+     */
+    private $api;
+
+    /**
+     * Defined environment
+     */
+    public function __construct()
+    {
+        $this->api = new BraspagApi();
     }
-    
+
     /**
-     * Charge a credit card
+     * Returns tokenized card on Gateway Braspag Pagador
      *
-     * @param Payment       $payment
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
-     * @param String        $description        An arbitrary string which you can attach to describe a Charge object
-     * @param Boolean       $capture            Whether to immediately capture the charge. When false, the charge issues an authorization (or pre-authorization), and will need to be captured later. 
-     * @param User          $user               The customer that will be charged in this request
-     * 
-     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */      
+     * @param Object        $payment        Object that represents requester card.
+     * @param Object        $user           Object that represents user on system.
+     *
+     * @return Array       [
+     *                      'success',
+     *                      'token',
+     *                      'customer_id',
+     *                      'last_four',
+     *                      'card_type',
+     *                      'card_token',
+     *                      'gateway'
+     *                     ]
+     */
+    public function createCard(Payment $payment, User $user = null)
+    {
+        try {
+
+            $cardNumber 			= $payment->getCardNumber();
+
+            return array(
+                'success'		=>	true,
+                'token'         =>	'',
+                'customer_id'	=>	'',
+                'last_four'		=>	substr($cardNumber, -4),
+                'card_type'		=>	detectCardType($cardNumber),
+                'card_token'	=>	'',
+                "gateway"       =>  "braspag"
+            );
+
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+            return $this->responseApiError('gateways.new_card_fail');
+        }
+    }
+
+    //finish
+    public function deleteCard(Payment $payment, User $user = null)
+    {
+        return array(
+			'success' => true
+		);
+    }
+
+    /**
+     * Returns authorized transaction information on Geteway Braspag Pagador
+     *
+     * @param Object        $payment        Object that represents requester card.
+     * @param Integer       $amount         Integer that represents amount authorized on credit card.
+     * @param String        $description    String that represents details of transaction.
+     * @param Boolean       $capture        Boolean that represents config to capture on charge.
+     * @param Object        $user           Object that represents user on system.
+     *
+     * @return Array       [
+     *                      'success',
+	 *			            'captured',
+	 *			            'paid',
+	 *			            'status',
+	 *			            'transaction_id'
+     *                     ]
+     */
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
+        $amount = floor($amount * 100);
 
-        $paymentId = null ;
+        if($amount <= 0)
+            return $this->responseApiError('gateways.amount_negative');
 
         try {
-            $response = BrasPagApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
-            
-            $responseChargeStatus = self::getChargeStatus(false, $capture);
+            // Paliativo pois precisa alterar todas as charges do sistema para ledger
+            $client = $payment->user_id ? \User::find($payment->user_id) : \Provider::find($payment->provide_id);
 
-            if($response && isset($response->data) && $response->data && isset($response->data->Payment) && $response->data->Payment) {
-                $paymentId = $response->data->Payment->PaymentId;
-            } else {
-                $paymentId = -1;
-            }
+            if($user)
+                $client = $user;
 
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
-				$result = array (
-                    'success' => true,
-                    'captured' => $capture,
-                    'paid' => $capture,
-                    'status' => $capture ? 'paid' : 'authorized',
-                    'transaction_id' => $paymentId
-                );
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'transaction_id'    => $paymentId,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (Exception $th) {
-			\Log::error('Error message: number One '.$th);
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'transaction_id'	=> $response->data->Payment->PaymentId,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
+            $charge = $this->api->charge($payment, $client, $amount, $capture, BraspagApi::CREDIT_CARD, $description);
+
+            $awaitedStatus = $capture ? self::CODE_CONFIRMED : self::CODE_AUTHORIZED;
+
+            $chargeStatus = $charge->data->Payment->Status;
+            $paymentId = $charge->data->Payment->PaymentId;
+
+            if($awaitedStatus != $chargeStatus)
+			{
+                return $this->responseApiError('paymentError.refused');
+			}
+
+			return array (
+				'success'        => true,
+				'captured'       => $capture,
+				'paid'           => $capture,
+				'status'         => $capture ? self::PAYMENT_CONFIRMED : self::PAYMENT_AUTHORIZED,
+				'transaction_id' => $paymentId
             );
-            
-		}
+
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage());
+            return $this->responseApiError('gateways.charge_fail');
+        }
     }
 
     /**
+     * Returns confirmed transaction information on Geteway Braspag Pagador
+     *
+     * @param Object        $transaction    Object that represents system transaction.
+     * @param Integer       $amount         Integer that represents amount to caṕture on credit card.
+     * @param Object        $payment        Object that represents requester card.
+     *
+     * @return Array       [
+     *                      'success',
+	 *			            'status',
+	 *			            'captured',
+	 *			            'paid',
+	 *			            'transaction_id'
+     *                     ]
+     */
+    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+	{
+        $amount = floor($amount * 100);
+
+        if($amount <= 0)
+            return $this->responseApiError('gateways.amount_negative');
+
+        try
+        {
+            $capture = $this->api->capture($transaction);
+            $captureStatus = $capture->data->Status;
+
+            if($captureStatus != self::CODE_CONFIRMED)
+			{
+                return $this->responseApiError('paymentError.refused');
+            }
+
+            return array(
+                'success'        => true,
+				'status'         => self::PAYMENT_CONFIRMED,
+				'captured'       => true,
+				'paid'           => true,
+				'transaction_id' => $transaction->gateway_transaction_id
+            );
+        }
+        catch (\Exception $e)
+        {
+            \Log::error($e->getMessage());
+            return $this->responseApiError('gateways.capture_fail');
+        }
+    }
+
+    /**
+     * Returns transaction information on Geteway Braspag Pagador
+     *
+     * @param Object        $transaction    Object that represents system transaction.
+     * @param Object        $payment        Object that represents requester card.
+     *
+     * @return Array       [
+     *                      'success',
+     *                      'transaction_id',
+     *                      'amount',
+     *                      'destination',
+     *                      'status',
+     *                      'card_last_digits'
+     *                     ]
+     */
+    public function retrieve(Transaction $transaction, Payment $payment = null)
+    {
+        try{
+            $retrieve = $this->api->retrieve($transaction);
+
+            if(!isset($retrieve->success) || (isset($retrieve->success) && !$retrieve->success))
+            {
+                return $this->responseApiError('gateways.retrieve_fail');
+            }
+
+            return array(
+                'success' 			=> true,
+                'transaction_id' 	=> $retrieve->data->Payment->PaymentId,
+                'amount' 			=> $retrieve->data->Payment->Amount,
+                'destination' 		=> '',	
+                'status' 			=> $this->getStatusString($retrieve->data->Payment->Status),
+                'card_last_digits' 	=> $payment->last_four,
+            );
+        }
+        catch (\Exception $e)
+        {
+            \Log::error($e->getMessage());
+            return $this->responseApiError('gateways.retrieve_fail');
+        }
+    }
+
+    /**
+     * Cancel and returns transaction information on Geteway Braspag Pagador
+     *
+     * @param Object        $transaction    Object that represents system transaction.
+     * @param Object        $payment        Object that represents requester card.
+     *
+     * @return Array       [
+     *                      'success',
+     *                      'status',
+     *                      'transaction_id'
+     *                     ]
+     */
+    public function refund(Transaction $transaction, Payment $payment)
+    {
+        try {
+            $retrieve = $this->api->retrieve($transaction);
+
+            $refundStatus = $this->getStatusString($retrieve->data->Payment->Status);
+
+            if(
+                ($refundStatus != self::CODE_NOTFINISHED && 
+                $refundStatus != self::CODE_AUTHORIZED && 
+                $refundStatus != self::CODE_CONFIRMED && 
+                $refundStatus != self::CODE_PENDING && 
+                $refundStatus != self::CODE_SCHEDULED) || 
+                !$retrieve->success
+            )
+                return $this->responseApiError('gateways.refund_retrieve_fail');
+
+            $refund = $this->api->refund($transaction);
+
+            if(!$refund->success)
+                return $this->responseApiError('gateways.refund_fail');
+
+            return array(
+                "success" 					=> true ,
+                "status" 					=> self::PAYMENT_REFUNDED,
+                "transaction_id"			=> $transaction->gateway_transaction_id                    
+            );
+        }
+        catch (\Exception $e)
+        {
+            \Log::error($e->getMessage());
+            return $this->responseApiError('gateways.refund_fail');
+        }
+    }
+
+   /**
 	 * Função para gerar boletos de pagamentos
 	 * @param int $amount valor do boleto
 	 * @param User/Provider $client instância do usuário ou prestador
@@ -148,34 +306,22 @@ Class BrasPagLib implements IPayment
     public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
     {
         try {
-            $response = BrasPagApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
+            $response = $this->api->billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
 
-            if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
-                return array (
-                    'success' => true,
-                    'captured' => true,
-                    'paid' => false,
-                    'status' => self::WAITING_PAYMENT,
-                    'transaction_id' => $response->data->Payment->PaymentId,
-                    'billet_url' => $response->data->Payment->Url,
-                    'digitable_line' => $response->data->Payment->DigitableLine,
-                    'billet_expiration_date' => $response->data->Payment->ExpirationDate
-                );
-            } else {
-                return array(
-                    "success" 				=> false ,
-                    "type" 					=> 'api_charge_error' ,
-                    "code" 					=> '',
-                    "message" 				=> '',
-                    "transaction_id"		=> ''
-                );
-            }
+
+            return array(
+                "success" 				=> false ,
+                "type" 					=> 'api_billet_error' ,
+                "code" 					=> '',
+                "message" 				=> '',
+                "transaction_id"		=> ''
+            );
         } catch (\Throwable $th) {
             \Log::error($th->getMessage());
 
 			return array(
 				"success" 				=> false ,
-				"type" 					=> 'api_charge_error' ,
+				"type" 					=> 'api_billet_error' ,
 				"code" 					=> '',
 				"message" 				=> $th->getMessage(),
 				"transaction_id"		=> ''
@@ -184,399 +330,174 @@ Class BrasPagLib implements IPayment
     }
 
     /**
-	 * Trata o postback retornado pelo gateway
-	 */
+     * Verifies billet status returned from postback by Gateway Braspag Pagador
+     *
+     * @param Object        $request                 Object that represents postback returned by gateway.
+     *
+     * @return Array       [
+     *                      'success',
+     *                      'status',
+     *                      'transaction_id',
+     *                     ]
+     */
 	public function billetVerify ($request, $transaction_id = null)
 	{
-        if($transaction_id) {
-			$transaction = Transaction::find($transaction_id);
-			$retrieve = $this->retrieve($transaction);
-			return [
-				'success' => true,
-				'status' => $retrieve['status'],
-				'transaction_id' => $retrieve['transaction_id']
-			];
-		} else {
-            $postbackTransaction = $request->PaymentId;
+		$postbackTransaction = $request->PaymentId;
         
-            if (!$postbackTransaction)
-                return [
-                    'success' => false,
-                    'status' => '',
-                    'transaction_id' => ''
-                ];
-            
-            $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
-            $retrieve = $this->retrieve($transaction);
-    
-            return [
-                'success' => true,
-                'status' => $retrieve['status'],
-                'transaction_id' => $retrieve['transaction_id']
+		if (!$postbackTransaction)
+			return [
+				'success' => false,
+				'status' => '',
+				'transaction_id' => ''
             ];
-        }
+        
+        $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
+        $retrieve = $this->retrieve($transaction);
+
+		return [
+			'success' => true,
+			'status' => $retrieve['status'],
+			'transaction_id' => $retrieve['transaction_id']
+		];
 	}
 
-    /**
-     * Capture the payment of an existing, uncaptured, charge with split rules
-     *
-     * @param Transaction   $transaction
-     * @param Provider      $provider
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
-     * @param Decimal       $providerAmount 
-     * @param Payment       $payment               
-     * 
-     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */         
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    //finish
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
     {
-        // $user = User::find($payment->user_id);
-        
-        try {
-			$response = BrasPagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
+        \Log::error('chage_split_not_implemented');
 
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
-				$result = array (
-					'success' 		 => true,
-					'captured' 		 => true,
-					'paid' 			 => true,
-					'status' 		 => 'paid',
-					'transaction_id' => $transaction->gateway_transaction_id
-				);
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (\Throwable $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
-    }
-    
-    /**
-     * Capture the payment of an existing, uncaptured, charge
-     *
-     * @param Transaction   $transaction
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
-     * @param Payment       $payment     
-     * 
-     * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
-     */    
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
-        try {
-			$response = BrasPagApi::capture($transaction, $amount);
-
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
-				$result = array (
-					'success' 		 => true,
-					'captured' 		 => true,
-					'paid' 			 => true,
-					'status' 		 => 'paid',
-					'transaction_id' => $transaction->gateway_transaction_id
-				);
-				return $result;
-			} else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                    )
-                );
-            }
-		} catch (\Throwable $th) {
-			
-			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
-				)
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_chargesplit_error' ,
+            "code" 				=> 'api_chargesplit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> ''
+        );
     }
 
-    /**
-     * Refund a charge that has previously been created with split rules
-     *
-     * @param Transaction   $transaction
-     * @param Payment       $payment 
-     * 
-     * @return Array ['success', 'status', 'transaction_id']
-     */       
+    //finish
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
-        try {
-			$response = BrasPagApi::refund($transaction);
-			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
-            {
-                $result = array(
-                    "success" 					=> true ,
-                    "status" 					=> 'refunded',
-                    "transaction_id"			=> $transaction->gateway_transaction_id                    
-                );
-                
-                return $result;
-            }
-		
-		} catch (\Throwable $ex) {
-			\Log::error($ex->__toString());
+        \Log::error('refund_split_not_implemented');
 
-            return array(
-                "success" 			=> false ,
-                "type" 				=> 'api_refund_error' ,
-                "code" 				=> 'api_refund_error',
-                "message" 			=> $ex->getMessage(),
-				"transaction_id" 	=> $transaction->gateway_transaction_id
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_refundsplit_error' ,
+            "code" 				=> 'api_refundsplit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
     }
 
-    /**
-     * Refund a charge that has previously been created
-     *
-     * @param Transaction   $transaction
-     * @param Payment       $payment 
-     * 
-     * @return Array ['success', 'status', 'transaction_id']
-     */      
-    public function refund(Transaction $transaction, Payment $payment)
+    //finish
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
-        
-		try {
-			$response = BrasPagApi::refund($transaction);
-			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
-            {
-                $result = array(
-                    "success" 					=> true ,
-                    "status" 					=> 'refunded',
-                    "transaction_id"			=> $transaction->gateway_transaction_id                    
-                );
-                
-                return $result;
-            }
-		
-		} catch (\Throwable $ex) {
-			\Log::error($ex->__toString());
+        \Log::error('capture_split_not_implemented');
 
-            return array(
-                "success" 			=> false ,
-                "type" 				=> 'api_refund_error' ,
-                "code" 				=> 'api_refund_error',
-                "message" 			=> $ex->getMessage(),
-				"transaction_id" 	=> $transaction->gateway_transaction_id
-			);
-		}
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capturesplit_error' ,
+            "code" 				=> 'api_capturesplit_error',
+            "message" 			=> 'split_not_implementd',
+            "transaction_id" 	=> $transaction->gateway_transaction_id
+        );
     }
 
-    /**
-     * Retrieves the details of a charge that has previously been created
-     *
-     * @param Transaction   $transaction
-     * 
-     * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
-     */       
-    public function retrieve(Transaction $transaction, Payment $payment = null)
-    {
-        $transactionId = $transaction->gateway_transaction_id;
-
-		
-        $response = BrasPagApi::retrieve($transaction);
-		if(!$response->success)
-		{
-			\Log::error($response->message);
-
-			return array(
-				"success" 			=> false ,
-				"type" 				=> 'api_retrieve_error' ,
-				"code" 				=> 'api_retrieve_error',
-				"message" 			=> $response['message']
-			);            
-		}
-
-		return array(
-			'success' 			=> true,
-			'transaction_id' 	=> $response->data->Payment->PaymentId,
-			'amount' 			=> $response->data->Payment->Amount,
-			'destination' 		=> '',	
-			'status' 			=> $response->data->Payment->Status == 2 ? 'paid' : strval($response->data->Payment->Status),
-			'card_last_digits' 	=> $payment ? $payment->last_four : '',
-		);
-    }
-
-    /**
-     *  Create a new credit card
-     *
-     * @param Payment       $payment
-     * @param User          $user               The customer that this card belongs to
-     * 
-     * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
-     */      
-    public function createCard(Payment $payment, User $user = null)
-    {
-        $cardNumber 			= $payment->getCardNumber();
-		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-		$cardExpirationYear 	= $payment->getCardExpirationYear();
-		$cardCvc 				= $payment->getCardCvc();
-		$cardHolder 			= $payment->getCardHolder();
-		$userName				= $user->first_name." ".$user->last_name;
-		$userDocument				= str_replace(".", "", $user->document);
-
-		// $cpf = $this->cleanCpf($user->document);
-
-		$result = array(
-			'success'		=>	true,
-			'customer_id'	=>	'',
-			'last_four'		=>	substr($cardNumber, -4),
-			'card_type'		=>	detectCardType($cardNumber),
-            'card_token'	=>	'',
-            'token'	        =>	'',
-            'gateway'       => 'braspag'
-		);
-
-		return $result;
-    }
-
-    /**
-     *  Delete a existing credit card
-     *
-     * @param Payment       $payment
-     * @param User          $user               The customer that this card belongs to
-     * 
-     * @return Array ['success']
-     */      
-    public function deleteCard(Payment $payment, User $user = null){
-        $result = array (
-			'success'	=>	true
-		);
-		return $result;
-    }    
-
-
-    /**
-     *  Create accounts for users
-     *
-     * @param LedgerBankAccount       $ledgerBankAccount
-     * 
-     * @return Array ['success', 'recipient_id']
-     */      
+    //finish
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        try {
-            $response = BrasPagApi::getBrasPagAccount($ledgerBankAccount->recipient_id);
-
-            if ($response->success) {
-                $result = array(
-                    'success'       => true,
-                    'recipient_id'   => $ledgerBankAccount->recipient_id
-                );
-                $ledgerBankAccount->recipient_id = $response->data->MerchantId;
-                $ledgerBankAccount->save();
-            } else {
-                $newAccount = BrasPagApi::createOrUpdateAccount($ledgerBankAccount);
-                if ($newAccount->success) {
-                    $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
-                    $ledgerBankAccount->save();
-                    $result = array(
-                        'success'       => true,
-                        'recipient_id'   => $ledgerBankAccount->recipient_id
-                    );
-                } else {
-                    $result = array(
-                        'success'       => false,
-                        'recipient_id'   => ""
-                    );
-                }
-            }
-    
-            return $result;
-           
-        } catch (\Throwable $ex) {
-            \Log::error($ex->__toString());
-
-			$result = array(
-				"success" 					=> false ,
-				"recipient_id"				=> 'empty',
-				"type" 						=> 'api_bankaccount_error' ,
-				"code" 						=> 500 ,
-				"message" 					=> trans("empty.".$ex->getMessage())
-			);
-
-			return $result;
-        }
+        return array(
+			'success' => true,
+			'recipient_id' => '',
+		);
     }
 
     /**
-     *  Return a gateway fee
-     * 
-     * @return Decimal
-     */        
-    public function getGatewayFee()
-    {
-        return BrasPagApi::getBrasPagFee();
-    }
-
-    /**
-     *  Return a gateway tax
-     * 
-     * @return Decimal
-     */      
+     * Tax used on system transaction
+     */
     public function getGatewayTax()
-    {
-
-    }
-
-    /**
-     *  Return a date for the next compensation
-     * 
-     * @return Carbon
-     */      
-    public function getNextCompensationDate(){
-		$carbon = Carbon::now();
-		$compDays = Settings::findByKey('compensate_provider_days');
-		$addDays = ($compDays || (string)$compDays == '0') ? (int)$compDays : 31;
-		$carbon->addDays($addDays);
-		
-		return $carbon;
+	{
+		return 0.0399;
 	}
 
     /**
-     *  Return a bool value that determine if auto transfer to provider is enabled
-     * 
-     * @return bool
-     */     
+     * Fee used on system transaction
+     */
+	public function getGatewayFee()
+	{
+		return 0.5 ;
+    }
+    
+    /**
+     * Boolean used on split config
+     */
     public function checkAutoTransferProvider()
     {
-        try
-        {
-            if(Settings::findByKey(self::AUTO_TRANSFER_PROVIDER) == "1")
-                return(true);
-            else
-                return(false);
-        }
-        catch(Exception$ex)
-        {
-            \Log::error($ex);
+        return false;
+    }
 
-            return(false);
+    /**
+     * Returns next compensation date
+     */
+    public function getNextCompensationDate()
+    {
+		$carbon = Carbon::now();
+		$carbon->addDays(31);
+		return $carbon ;
+    }
+    
+    /**
+     * Returns translated fails response on lib
+     *
+     * @param String        $message    String to translate.
+     *
+     * @return Array       [
+     *                      'success',
+     *                      'message'
+     *                     ]
+     */
+    private function responseApiError($message)
+    {
+        \Log::error($message);
+
+        return array(
+            "success" 			=> false,
+            "message" 			=> trans($message),
+            "transaction_id"    => ''
+        );
+    }
+
+    /**
+     * Returns status string based on status code
+     *
+     * @param Integer        $statusCode    Payment status code captured on gateway.
+     *
+     * @return String                       String related to the payment status code.
+     *
+     */
+    private function getStatusString($statusCode)
+    {
+        switch ($statusCode) {
+            case self::CODE_NOTFINISHED:
+                return self::PAYMENT_NOTFINISHED;
+            case self::CODE_AUTHORIZED:
+                return self::PAYMENT_AUTHORIZED;
+            case self::CODE_CONFIRMED:
+                return self::PAYMENT_CONFIRMED;
+            case self::CODE_DENIED:
+                return self::PAYMENT_DENIED;
+            case self::CODE_VOIDED:
+                return self::PAYMENT_VOIDED;
+            case self::CODE_REFUNDED:
+                return self::PAYMENT_REFUNDED;
+            case self::CODE_PENDING:
+                return self::PAYMENT_PENDING;
+            case self::CODE_ABORTED:
+                return self::PAYMENT_ABORTED;
+            case self::CODE_SCHEDULED:
+                return self::PAYMENT_SCHEDULED;
+            default:
+                return 'not_geted';
         }
     }
 
@@ -606,48 +527,5 @@ Class BrasPagLib implements IPayment
             "message" 			=> 'split_not_implementd',
             "transaction_id" 	=> ''
         );
-    }
-
-    /**
-     *  Return a date for the next compensation
-     * 
-     * @return Token
-     */
-
-    private static function getChargeStatus($split, $capture)
-    {
-        switch ($split) {
-            case false:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
-            case true:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
-            default:
-                # code...
-                break;
-        }
     }
 }
