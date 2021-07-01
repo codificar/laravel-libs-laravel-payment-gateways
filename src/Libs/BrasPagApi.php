@@ -290,7 +290,7 @@ class BraspagApi
         $fields = array(
             "MerchantOrderId"  =>  $orderId,
             "Customer"  => (object)array(
-                'Name'          =>  'José Santos Braspag',/*$user->first_name.' '.$user->last_name.$this->prefixAccept*/
+                'Name'          =>  $user->first_name.' '.$user->last_name.$this->prefixAccept,
                 "Email"         =>  $user->email,
                 "Identity"      =>  $user->document,
                 "Identitytype"  =>  $docType,
@@ -308,7 +308,7 @@ class BraspagApi
                 "SoftDescriptor" =>  $softDescriptor,
                 $cardType        =>  (object)array(
                    "CardNumber"      =>  $cardNumber,
-                   "Holder"          =>  'José Santos Braspag',
+                   "Holder"          =>  $payment->getCardHolder(),
                    "ExpirationDate"  =>  $expirationDate,
                    "SecurityCode"    =>  $payment->getCardCvc(),
                    "Brand"           =>  $this->getBrand($cardNumber),
