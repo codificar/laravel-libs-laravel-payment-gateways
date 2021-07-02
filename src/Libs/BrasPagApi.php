@@ -310,8 +310,8 @@ class BraspagApi
                 "Credentials" => (object)array()
             )
         );
-        if(!isset($this->prefixAccept))
-            unset($fields["Payment"]->Provider);
+        // if(!isset($this->prefixAccept))
+        //     unset($fields["Payment"]->Provider);
 
         return json_encode($fields);
     }
