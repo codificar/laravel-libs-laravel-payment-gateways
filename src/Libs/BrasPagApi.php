@@ -306,8 +306,7 @@ class BraspagApi
                    "SecurityCode"    =>  $payment->getCardCvc(),
                    "Brand"           =>  $this->getBrand($cardNumber),
                    "SaveCard"        =>  false
-                ),
-                "Credentials" => (object)array()
+                )
             )
         );
         // if(!isset($this->prefixAccept))
