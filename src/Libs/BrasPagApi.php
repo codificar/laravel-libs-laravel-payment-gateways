@@ -21,6 +21,8 @@ class BraspagApi
 
     private $header;
 
+    private $braspagProvider;
+
     const NOTIFICATION_URL  =   "https://site.com.br/api/subordinados";
 
     const CREDIT_CARD   =   "CreditCard";
@@ -41,12 +43,14 @@ class BraspagApi
         {
             $this->apiUrl           = "https://api.braspag.com.br/v2/";
             $this->apiGetUrl        = "https://apiquery.braspag.com.br/v2/";
+            $this->braspagProvider  = "Cielo30";
         }
         else
         {
             $this->apiUrl           = "https://apisandbox.braspag.com.br/v2/";
             $this->apiGetUrl        = "https://apiquerysandbox.braspag.com.br/v2/";
             $this->prefixAccept     = " ACCEPT";
+            $this->braspagProvider  = "Simulado";
         }
 
         $this->setHeader();
@@ -287,7 +291,7 @@ class BraspagApi
                 "Phone"         =>  $phone,
             ),
             "Payment"   => (object)array(
-                "Provider"       =>  "Simulado",
+                "Provider"       =>  $this->braspagProvider,
                 "Type"           =>  $cardType,
                 "Amount"         =>  $totalAmount,
                 "Currency"       =>  Settings::findByKey('generic_keywords_currency'),
