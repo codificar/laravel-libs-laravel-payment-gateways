@@ -31,8 +31,6 @@ class BraspagApi
     const MASTER        =   "Master";
     const VISA          =   "Visa";
 
-    const FEE           =   0;
-
     const ROUND_VALUE       =   100;
 
     const APP_TIMEOUT       =   200;
@@ -313,11 +311,6 @@ class BraspagApi
         //     unset($fields["Payment"]->Provider);
 
         return json_encode($fields);
-    }
-
-    public function getBrasPagFee()
-    {
-        return self::FEE;
     }
 
     public function getCountrySlug($country){
