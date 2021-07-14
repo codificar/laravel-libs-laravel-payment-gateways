@@ -36,8 +36,6 @@ class BraspagCieloEcommerceApi
 
     const MCC           =   "5045";
 
-    const FEE           =   0;
-
     const INITIAL_INSTALLMENT_NUMBER    =   1;
     const FINAL_INSTALLMENT_NUMBER      =   1;
 
@@ -180,7 +178,7 @@ class BraspagCieloEcommerceApi
                 'ZipCode'           =>  $provider->zipcode
             ),
             'Agreement'             =>  (object)array(
-                'Fee'               =>  self::FEE,
+                'Fee'               =>  0,
                 'MerchantDiscountRates' =>  array(
                     (object)array(
                         'PaymentArrangement'    =>  (object)array(
@@ -567,11 +565,6 @@ class BraspagCieloEcommerceApi
         }
         
         return json_encode($fields);
-    }
-
-    public function getBrasPagFee()
-    {
-        return self::FEE;
     }
 
     public function getCountrySlug($country)

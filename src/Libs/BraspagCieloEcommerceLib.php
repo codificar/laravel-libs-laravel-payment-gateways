@@ -24,7 +24,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
     const WAITING_PAYMENT = 'waiting_payment';
 
-    public function __construct()
+    public function setApi()
     {
         $this->api = new BraspagCieloEcommerceApi();
     }
@@ -45,6 +45,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
     {
         try {
+            $this->setApi();
             $response = $this->api->chargeWithSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
 
             $responseChargeStatus = self::getChargeStatus(true, $capture);
@@ -123,6 +124,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
     {
         // try {
+        // $this->setApi();
         //     $response = $this->api->billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
 
         //     if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
@@ -203,6 +205,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
         try {
+            $this->setApi();
             $response = $this->api->captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
 			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
@@ -272,6 +275,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
         try {
+            $this->setApi();
 			$response = $this->api->refund($transaction);
 			
 			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
@@ -310,6 +314,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     {
         
 		try {
+            $this->setApi();
 			$response = $this->api->refund($transaction);
 			
 			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
@@ -347,6 +352,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     {
         $transactionId = $transaction->gateway_transaction_id;
 
+        $this->setApi();
 		$response = $this->api->retrieve($transaction);
 
 		if(!$response->success)
@@ -452,6 +458,7 @@ Class BraspagCieloEcommerceLib implements IPayment
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
         try {
+            $this->setApi();
             $response = $this->api->getBrasPagAccount($ledgerBankAccount->recipient_id);
 
             if ($response->success) {
@@ -503,7 +510,7 @@ Class BraspagCieloEcommerceLib implements IPayment
      */        
     public function getGatewayFee()
     {
-        return $this->api->getBrasPagFee();
+        return 0; //if change this value, needs change on api
     }
 
     /**
