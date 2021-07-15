@@ -24,10 +24,16 @@ class BancoInterController extends Controller
     }
     
     public function saveCertificates(CertificatesFormRequest $request){
-        if(isset($request->crt))
+        $crt = '';
+        $key ='';
+        if(isset($request->crt) && isset($request->key))
+        {
             $crt = $request->crt->storeAs('certificates', "BancoInterCertificate.pem");
-
-        if(isset($request->key))
             $key = $request->key->storeAs('certificates', "BancoInterKey.pem");
+            
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['success' => false, 'message' => 'Both files are required']);
+
     }
 }

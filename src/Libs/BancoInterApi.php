@@ -205,10 +205,10 @@ class BancoInterApi{
             "cnpjCpf"       => $client->document,
             "nome"          => $client->getFullName(),
             "email"         => $client->email,
-            "telefone"      => $client->getPhoneNumber(),
+            "telefone"      => self::formatPhone($client->getPhoneNumber()),
             "cep"           => $zipcode,
-            "numero"        => self::formatPhone($client->getStreetNumber()),
-            "complemento"   => $client->address_complements,
+            "numero"        => $client->getStreetNumber(),
+            "complemento"   => self::formatComplements($client->address_complements),
             "bairro"        => $client->getNeighborhood(),
             "cidade"        => $client->address_city,
             "uf"            => $client->state,
@@ -230,6 +230,10 @@ class BancoInterApi{
 		return $word;
 	}
 
+    private static function formatComplements($complements)
+    {
+        return strlen($complements) > 30 ? substr($complements, 0, -29) : $complements;
+    }
     private static function formatPhone($phone)
     {
         $phone = str_replace('(', '', $phone);

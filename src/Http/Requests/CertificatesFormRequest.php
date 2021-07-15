@@ -27,17 +27,20 @@ class CertificatesFormRequest extends FormRequest
      */
     public function rules()
     {
-        if (!$this->crt && request()->crt && request()->crt != true)
+        \Log::info(request());
+        if (request()->crt)
             $this->crt = request()->crt;
-        else
-            $this->crt = null;
 
-        if (!$this->key && request()->key && request()->key != true)
+        if (request()->key)
             $this->key = request()->key;
-        else
-            $this->key = null;
 
-        return [];
+        \Log::info($this->crt);
+        \Log::info($this->key);
+
+        return [
+            'crt' => ['required', 'file'], 
+            'key' => ['required', 'file']
+        ];
     }
 
     public function messages()
