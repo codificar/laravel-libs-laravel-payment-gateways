@@ -65,11 +65,11 @@ class BancoInterApi{
                     'data'              =>  $result
                 );
             } else {
-                \Log::error($url);
-                \Log::error($httpcode);
-                \Log::error($msg_chk);
+                \Log::error("url:".$url);
+                \Log::error("httpcode:".$httpcode);
+                \Log::error("result:".print_r($result,1));
                 throw new Exception(
-                    $msg_chk
+                    $result
                 );
             }            
 
@@ -79,10 +79,11 @@ class BancoInterApi{
             $return = (object)array(
                 "success" 					=> false ,
                 // "transaction_id"            => $result->paymentToken,
-                "message" 					=> $ex->getMessage()
+                "message" 					=> $ex->getMessage(),
+                "error" 					=> $ex->getMessage()
             );
             
-            \Log::error(($ex));
+            \Log::error(($ex->getMessage().$ex->getTraceAsString()));
 
             return $return;
         }
