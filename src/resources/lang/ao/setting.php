@@ -49,8 +49,7 @@ return array(
 	'bancard'					=> 'Bancard',
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rápido',
-
-	
+	'ipag'						=> 'Ipag',
 	
 	//Chaves dos gateways
 	'pagarme_settings'			=> 'Pagar.me Configurações',
@@ -147,6 +146,8 @@ return array(
     'wednesday'					=> 'Quarta-feira',
     'thursday'					=> 'Quinta-feira',
     'friday'					=> 'Sexta-feira',
-	'saturday'					=> 'Sábado'
-
+	'saturday'					=> 'Sábado',
+	'ipag_api_id'				=> 'Ipag API Id',
+	'ipag_api_key'				=> 'Ipag API Key',
+	'ipag_token'				=> 'Ipag Token'
 );

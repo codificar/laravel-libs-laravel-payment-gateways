@@ -19,7 +19,6 @@ Class IpagLib implements IPayment
     const CHARGE_SUCCESS = 1;
     const CAPTURE_SUCCESS = 2;
     const REFUND_SUCCESS = 10;
-    const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
     const WAITING_PAYMENT = 'waiting_payment';
 
     /**
@@ -37,7 +36,7 @@ Class IpagLib implements IPayment
      */    
     public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
         try {
-            $response = BrasPagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
+            $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
             
             $responseChargeStatus = self::getChargeStatus(true, $capture);
 
@@ -91,7 +90,7 @@ Class IpagLib implements IPayment
         $paymentId = null ;
 
         try {
-            $response = BrasPagApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
+            $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
             
             $responseChargeStatus = self::getChargeStatus(false, $capture);
 
@@ -148,7 +147,7 @@ Class IpagLib implements IPayment
     public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
     {
         try {
-            $response = BrasPagApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
+            $response = IpagApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
 
             if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
                 return array (
@@ -233,7 +232,7 @@ Class IpagLib implements IPayment
         // $user = User::find($payment->user_id);
         
         try {
-			$response = BrasPagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
+			$response = IpagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
 			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
 				$result = array (
@@ -278,7 +277,7 @@ Class IpagLib implements IPayment
      */    
     public function capture(Transaction $transaction, $amount, Payment $payment = null) {
         try {
-			$response = BrasPagApi::capture($transaction, $amount);
+			$response = IpagApi::capture($transaction, $amount);
 
 			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
 				$result = array (
@@ -323,7 +322,7 @@ Class IpagLib implements IPayment
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
         try {
-			$response = BrasPagApi::refund($transaction);
+			$response = IpagApi::refund($transaction);
 			
 			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
             {
@@ -361,7 +360,7 @@ Class IpagLib implements IPayment
     {
         
 		try {
-			$response = BrasPagApi::refund($transaction);
+			$response = IpagApi::refund($transaction);
 			
 			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
             {
@@ -399,7 +398,7 @@ Class IpagLib implements IPayment
         $transactionId = $transaction->gateway_transaction_id;
 
 		
-        $response = BrasPagApi::retrieve($transaction);
+        $response = IpagApi::retrieve($transaction);
 		if(!$response->success)
 		{
 			\Log::error($response->message);
@@ -449,7 +448,7 @@ Class IpagLib implements IPayment
 			'card_type'		=>	detectCardType($cardNumber),
             'card_token'	=>	'',
             'token'	        =>	'',
-            'gateway'       => 'braspag'
+            'gateway'       => 'ipag'
 		);
 
 		return $result;
@@ -481,7 +480,7 @@ Class IpagLib implements IPayment
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
         try {
-            $response = BrasPagApi::getBrasPagAccount($ledgerBankAccount->recipient_id);
+            $response = IpagApi::getSeller($ledgerBankAccount->recipient_id);
 
             if ($response->success) {
                 $result = array(
@@ -491,7 +490,7 @@ Class IpagLib implements IPayment
                 $ledgerBankAccount->recipient_id = $response->data->MerchantId;
                 $ledgerBankAccount->save();
             } else {
-                $newAccount = BrasPagApi::createOrUpdateAccount($ledgerBankAccount);
+                $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
                 if ($newAccount->success) {
                     $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
                     $ledgerBankAccount->save();
@@ -531,7 +530,7 @@ Class IpagLib implements IPayment
      */        
     public function getGatewayFee()
     {
-        return BrasPagApi::getBrasPagFee();
+        return 0.5;
     }
 
     /**

@@ -100,6 +100,11 @@ class GatewaysController extends Controller
             'pagarapido_production'
 
         ],
+        'ipag' => [
+            'ipag_api_id',
+            'ipag_api_key',
+            'ipag_token'
+        ],
     ];
 
     public $payment_gateways =  array(
@@ -115,6 +120,7 @@ class GatewaysController extends Controller
         array('value' => 'transbank', 'name' => 'setting.transbank'),
         array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
         array('value' => 'adiq', 'name' => 'setting.adiq'),
+        array('value' => 'ipag', 'name' => 'setting.ipag'),
     );
 
 

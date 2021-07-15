@@ -16,27 +16,15 @@ use Bank;
 
 class IpagApi
 {
-    const URL_PROD = "https://api.ipag.com.br/service/";
+    const URL_PROD  =   "https://api.ipag.com.br/service";
+    const URL_DEV   =   "https://sandbox.ipag.com.br/service";
 
-    const URL_DEV = "https://sandbox.ipag.com.br/service/";
+    const ROUND_VALUE   =   100;
+    const APP_TIMEOUT   =   200;
 
-    const MCC   =   '5045';
-
-    const CREDIT_CARD = 'CreditCard';
-    const MASTER    ='Master';
-    const INITIAL_INSTALLMENT_NUMBER = 1;
-    const FINAL_INSTALLMENT_NUMBER = 1;
-    const MASTER_PERCENT = 2.36;
-    const VISA = "Visa";
-    const VISA_PERCENT = 2.36;  
-
-    const ROUND_VALUE = 100;
-
-    const POST_REQUEST      = 'POST';
-    const GET_REQUEST       = 'GET';
-    const PUT_REQUEST       = 'PUT';
-
-    const APP_TIMEOUT = 200;
+    const POST_REQUEST  =   'POST';
+    const GET_REQUEST   =   'GET';
+    const PUT_REQUEST   =   'PUT';
 
     private static function apiUrl()
     {
@@ -48,174 +36,114 @@ class IpagApi
 
     public static function charge(Payment $payment, $user, $amount, $capture, $cardType)
     {
-        $url = sprintf('%s/sales/', self::apiUrl());
+        $url = sprintf('%s/payment', self::apiUrl());
 
-        $header = self::getHeader(true);
-
-        $body = self::getBody($payment, $amount, null, $capture, $cardType, $user);
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $header     =   self::getHeader(true);
+        $body       =   self::getBody($payment, $amount, null, $capture);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
 
     public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $amount, $providerAmount = null, $capture)
     {
-        $url = sprintf('%s/sales/', self::apiUrl());
+        $url = sprintf('%s/payment', self::apiUrl());
 
-        $header = self::getHeader(true);
-
-        $amount = self::amountRound($amount);
-
-        $body = self::getBody($payment, $amount, $providerAmount, $capture, $provider);
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $header     =   self::getHeader(true);
+        $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function captureWithSplit(Transaction $transaction, $provider, Payment $payment)
+    public static function captureWithSplit(Transaction $transaction, Provider $provider, Payment $payment)
     {
-        $url = sprintf('%s/sales/%s/capture', self::apiUrl(), $transaction->gateway_transaction_id);
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
-        $header = self::getHeader(true);
-
-        $fields = self::getBody($payment, $transaction->gross_value, $transaction->provider_value, true, $provider);
-
-        $apiRequest = self::apiRequest($url, $fields, $header, self::POST_REQUEST);
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function capture(Transaction $transaction, $amount)
+    public static function capture(Transaction $transaction)
     {
-        $url = sprintf('%s/sales/%s/capture', self::apiUrl(), $transaction->gateway_transaction_id);
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
-        $body = null;
-
-        $header = self::getHeader(true);
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
 
     public static function refund(Transaction $transaction)
     {
-        $url = sprintf('%s/sales/%s/void', self::apiUrl(), $transaction->gateway_transaction_id);
+        $url = sprintf('%s/cancel?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
-        $body = null;
-
-        $header = self::getHeader();
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
 
     public static function retrieve(Transaction $transaction)
     {
-        $url = sprintf('%ssales/%s', self::apiUrl(), $transaction->gateway_transaction_id);
+        $url = sprintf('%s/consult?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
-        $body = null;
-
-        $header = self::getHeader();
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::GET_REQUEST);
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function createOrUpdateAccount($ledgerBankAccount)
+    public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        $url = sprintf('%s/api/subordinates/', self::apiUrl());
-        $document = $ledgerBankAccount->document;
+        $url = sprintf('%s/resources/sellers', self::apiUrl());
         
-        $provider = Provider::find($ledgerBankAccount->provider_id);
+        $phoneRemask    =   null;
+        $provider       =   Provider::find($ledgerBankAccount->provider_id);
+        $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        $bankCode = Bank::getBankCode($ledgerBankAccount->bank_id);
-
-        $docType = ((strlen($document)) > 11) ? "CNPJ" : "CPF";
-
-        $phone = self::formatPhone($provider->phone);
-
-        $state = self::abbreviationState($provider->state);
-
-        if ($ledgerBankAccount->account_type == "conta_corrente") {
-            $accountType = "CheckingAccount";
-        } else {
-            $accountType = "SavingsAccount";
-        }
+        //mobile or fixed phone remask BR
+        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches))
+            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
+        if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches))
+            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
+        if(!$phoneRemask)
+            $phoneRemask = '(31) 99999-9999'; //if the phone has save error
 
         $fields = array(
-            'CorporateName' =>  $ledgerBankAccount->holder,
-            'FancyName'     =>  $ledgerBankAccount->holder,
-            'DocumentNumber'    =>  $ledgerBankAccount->document,
-            'DocumentType'      =>  $docType,
-            'MerchantCategoryCode'  =>  self::MCC,
-            'ContactName'           =>  $ledgerBankAccount->holder,
-            'ContactPhone'          =>  $phone,
-            'MailAddress'           =>  $provider->email,
-            'Website'               =>  '',
-            'BankAccount'           =>  (object)array(
-                'Bank'              =>  $bankCode,
-                'BankAccountType'   =>  $accountType,
-                'Number'            =>  $ledgerBankAccount->account,
-                'VerifierDigit'     =>  $ledgerBankAccount->account_digit,
-                'AgencyNumber'      =>  $ledgerBankAccount->agency,
-                'AgencyDigit'       =>  $ledgerBankAccount->agency_digit,
-                'DocumentNumber'    =>  $ledgerBankAccount->document,
-                'DocumentType'      =>  $docType
-            ),
-            'Address'               =>  (object)array(
-                'Street'            =>  $provider->address,
-                'Number'            =>  $provider->address_number,
-                'Complement'        =>  $provider->adress_complements,
-                'Neighborhood'      =>  $provider->address_neighbour,
-                'City'              =>  $provider->address_city,
-                'State'             =>  $state,
-                'ZipCode'           =>  $provider->zipcode
-            ),
-            'Agreement'             =>  (object)array(
-                'MerchantDiscountRates' =>  array(
-                    (object)array(
-                        'PaymentArrangement'    =>  (object)array(
-                            'Product'           =>  self::CREDIT_CARD,
-                            'Brand'             =>  self::MASTER
-                        ),
-                        'InitialInstallmentNumber'  =>  self::INITIAL_INSTALLMENT_NUMBER,
-                        'FinalInstallmentNumber'    =>  self::FINAL_INSTALLMENT_NUMBER,
-                        'Percent'                   =>  self::MASTER_PERCENT
-                    ),
-                    (object)array(
-                        'PaymentArrangement'    =>  (object)array(
-                            'Product'           =>  self::CREDIT_CARD,
-                            'Brand'             =>  self::VISA
-                        ),
-                        'InitialInstallmentNumber'  =>  self::INITIAL_INSTALLMENT_NUMBER,
-                        'FinalInstallmentNumber'    =>  self::FINAL_INSTALLMENT_NUMBER,
-                        'Percent'                   =>  self::VISA_PERCENT
-                    ),
-                    
-                ) 
-            ),
-            'Notification'          =>  (object)array(
-                'Url'               =>  self::NOTIFICATION_URL,
-                'Headers'           =>  array(
-                    (object)array(
-                        'Key'           =>  'Key1',
-                        'Value'         =>  'Value'
-                    )
-                    
-                )
+            'login'     =>  $ledgerBankAccount->provider_id.$ledgerBankAccount->document,
+            'password'      =>  $ledgerBankAccount->document,
+            'name'          =>  $ledgerBankAccount->holder,
+            'cpf_cnpj'      =>  self::remaskDocument($ledgerBankAccount->document), //document remask BR
+            'email'         =>  $provider->mail,
+            'phone'         =>  $phoneRemask,
+            'bank'      =>  (object)array(
+                'code'          =>  $bank->code,
+                'agency'        =>  $ledgerBankAccount->agency,
+                'account'       =>  $ledgerBankAccount->account
             )
         );
 
-        $body = json_encode($fields);
+        //to juridical bank account
+        $birthday = $ledgerBankAccount->birthday_date;
+        if(strlen($ledgerBankAccount->document) > 11)
+            $fields['owner'] = (object)array(
+                'name'      =>  $provider->first_name . $provider->last_name,
+                'email'     =>  $provider->email,
+                'cpf'       =>  self::remaskDocument($provider->document), //document remask BR
+                'phone'     =>  $phoneRemask,
+                'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
+            );
 
-        $header = self::getHeader();
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $header     =   self::getHeader();
+        $body       =   json_encode($fields);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $apiRequest;
     }
@@ -223,17 +151,9 @@ class IpagApi
     private static function getOrderId()
     {
         list($microSeconds, $seconds) = explode(" ", microtime());
-        $orderId = $seconds.substr($microSeconds,2,-3);
+        $orderId = $seconds.substr($microSeconds, 2, -3);
 
         return $orderId;
-    }
-
-    private static function formatPhone($phone)
-    {
-        $phone  =   preg_replace('/\D/', '', $phone);
-        $phone  =   substr($phone, -11);
-
-        return $phone;
     }
 
     private static function getExpirationDate($payment)
@@ -260,35 +180,49 @@ class IpagApi
 
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        $subordinateId = $ledgerBankAccount->recipient_id;
+        $sellerId = $ledgerBankAccount->recipient_id;
 
-        if ($subordinateId == '' || $subordinateId == 'empty' || $subordinateId === null) {
+        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null)
             $response = self::createOrUpdateAccount($ledgerBankAccount);
-        } else {
-            $response = self::getBrasPagAccount($subordinateId);
+        else
+            $response = self::getSeller($sellerId);
+
+        if(!isset($response->data->id))
+        {
+            \Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
+            $response = (object)array(
+                'success'       =>  false,
+                'recipient_id'  =>  ""
+            );
         }
 
-        if ($response->success) {
+        if($response->success)
+        {
             $result = (object)array(
-                'success'       => true,
-                'recipient_id'   => $ledgerBankAccount->recipient_id
+                'success'           =>  true,
+                'recipient_id'      =>  $ledgerBankAccount->recipient_id
             );
-            $ledgerBankAccount->recipient_id = $response->data->MerchantId;
+            $ledgerBankAccount->recipient_id = $response->data->id;
             $ledgerBankAccount->save();
-        } else {
+        }
+        else
+        {
             #TODO remover após job de recriar recipients ao trocar gateway
             $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
-            if ($newAccount->success) {
+            if($newAccount->success)
+            {
                 $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
                 $ledgerBankAccount->save();
                 $result = (object)array(
-                    'success'       => true,
-                    'recipient_id'   => $ledgerBankAccount->recipient_id
+                    'success'       =>  true,
+                    'recipient_id'  =>  $ledgerBankAccount->recipient_id
                 );
-            } else {
+            }
+            else
+            {
                 $result = (object)array(
-                    'success'       => false,
-                    'recipient_id'   => ""
+                    'success'       =>  false,
+                    'recipient_id'  =>  ""
                 );
             }
         }
@@ -296,13 +230,13 @@ class IpagApi
         return $result;
     }
 
-    public static function getBrasPagAccount($subordinateId)
+    public static function getSeller($sellerId)
     {
-        $url = sprintf('%s/api/subordinates/%s', self::apiUrl(), $subordinateId);
+        $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
 
-        $header = self::getHeader();
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::GET_REQUEST);
+        $body       =   null;
+        $header     =   self::getHeader();
+        $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $apiRequest;
     }
@@ -331,9 +265,17 @@ class IpagApi
 
         $user->document = vsprintf($mask, str_split($user->document));
 
-        $orderId = self::getOrderId();
+        //mask to card, 13 to 20 digits
+        $cardLength = strlen($cardNumber);
+        if($cardLength > 16)
+            $regexCard = '/^(\d{4})(\d{4})(\d{4})(\d{4})([0-9]{0,4})$/';
+        else
+            $regexCard = '/^(\d{4})(\d{4})(\d{4})([0-9]{1,4})$/';
+        preg_match($regexCard, $cardNumber,  $matches);
+        $cardMask = implode(' ', array_slice($matches,1));
 
-        $totalAmount = self::amountRound($amount);
+        $orderId        =   self::getOrderId();
+        $totalAmount    =   self::amountRound($amount);
 
         $fields = array
         (
@@ -350,7 +292,7 @@ class IpagApi
                 'installments'  =>  1,
                 'card'          =>  (object)array(
                     'holder'        =>  $payment->getCardHolder(),
-                    'number'        =>  $cardNumber,
+                    'number'        =>  $cardMask,
                     'expiry_month'  =>  $expirationDate[0],
                     'expiry_year'   =>  $expirationDate[1],
                     'cvv'           =>  $payment->getCardCvc()
@@ -374,9 +316,9 @@ class IpagApi
         if(!$ledgerBankAccount)
             return false;
 
-        $subordinateId = self::checkProviderAccount($ledgerBankAccount);
+        $sellerId = self::checkProviderAccount($ledgerBankAccount);
 
-        if(!isset($subordinateId['success']) || (isset($subordinateId['success']) && !$subordinateId['success']))
+        if(!isset($sellerId['success']) || (isset($sellerId['success']) && !$sellerId['success']))
             return false;
 
         $providerAmount = self::amountRound($providerAmount);
@@ -442,27 +384,24 @@ class IpagApi
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($session, CURLOPT_CUSTOMREQUEST, $requestType );
-            
-            if ($fields) {
+
+            if($fields)
                 curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
-            }	else {
+            else
                 array_push($header, 'Content-Length: 0');
-                // curl_setopt($session, CURLOPT_POSTFIELDS, json_encode(array()));
-            }
-            
+
             curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
             curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
 
-            $msg_chk = curl_exec($session);  
+            $msg_chk    =   curl_exec($session);  
+            $result     =   json_decode($msg_chk);
+            $httpcode   =   curl_getinfo($session, CURLINFO_HTTP_CODE);  
             
-            $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);  
-
-            $result = json_decode($msg_chk);
-            
-            if ($httpcode == 200 ||$httpcode ==  201 ||$httpcode ==  202) {
+            if($httpcode == 200 || $httpcode == 201 || $httpcode == 202)
+            {
                 return (object)array (
-                    'success'           =>  true,
-                    'data'              =>  $result
+                    'success'   =>  true,
+                    'data'      =>  $result
                 );
             } else {
                 throw new Exception(
@@ -475,11 +414,10 @@ class IpagApi
         catch(Exception  $ex)
         {
             $return = (object)array(
-                "success" 					=> false ,
-                // "transaction_id"            => $result->paymentToken,
-                "message" 					=> $ex->getMessage()
+                "success"       => false ,
+                "message"       => $ex->getMessage()
             );
-            
+
             \Log::error(($ex));
 
             return $return;
@@ -527,8 +465,8 @@ class IpagApi
         }
         $body = json_encode($fields);
 
-        $merchantId         = Settings::findObjectByKey('braspag_merchant_id');
-        $merchandtKey       = Settings::findObjectByKey('braspag_merchant_key');
+        $merchantId         = Settings::findObjectByKey('ipag_api_id');
+        $merchandtKey       = Settings::findObjectByKey('ipag_api_key');
         $header = [
             'Content-Type:  application/json',
             'MerchantId: '.$merchantId->value, 
@@ -539,17 +477,12 @@ class IpagApi
         return $apiRequest;
     }
 
-    private static function abbreviationState($state)
+    private static function remaskDocument($document)
     {
-        $state = strtolower($state);
-        switch ($state) {
-            case 'minas gerais':
-                return "mg";
-                break;
-    
-            default:
-                return "mg";
-                break;
-        }
+        $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
+        $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
+        $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
+
+        return vsprintf($mask, str_split($document));
     }
 }

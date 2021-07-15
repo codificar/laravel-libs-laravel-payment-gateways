@@ -11,6 +11,18 @@ use Tests\libs\gateways\GatewaysInterfaceTest;
 
 class AllGatewaysTest extends TestCase
 {
+	public function testIpag() {
+		$gateway = 'ipag';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'ipag_api_id')->update(['value' => 'gateways@codificar.com.br']);
+		Settings::where('key', 'ipag_api_key')->update(['value' => 'D5FE-B6130375-566F7F5F-A9C756CA-19DA']);
+
+		$this->runSPlitGateways($gateway, '4111111111111111');
+	}
+
 	public function testAdiq() {
 		$gateway = 'adiq';
 		//Update the gateway selected

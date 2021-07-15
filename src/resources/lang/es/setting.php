@@ -50,6 +50,7 @@ return array(
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rapido',
 	'adiq'						=> 'Adiq',
+	'ipag'						=> 'Ipag',
 
 	
 	
@@ -152,4 +153,7 @@ return array(
 	'adiq_client_id'			=> 'ID de cliente de Adiq',
 	'adiq_client_secret'		=> 'Secreto de cliente de Adiq',
 	'adiq_token'				=> 'Token de transacción Adiq',
+	'ipag_api_id'				=> 'Ipag API Id',
+	'ipag_api_key'				=> 'Ipag API Key',
+	'ipag_token'				=> 'Ipag Token',
 );
