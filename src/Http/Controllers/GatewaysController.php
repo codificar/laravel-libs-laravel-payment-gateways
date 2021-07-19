@@ -16,6 +16,7 @@ use Exception;
 use Input, Validator, View, Response;
 use Provider, Settings, Ledger, Finance, Bank, LedgerBankAccount, Payment;
 use stdClass;
+use Storage;
 
 class GatewaysController extends Controller
 {
@@ -99,6 +100,10 @@ class GatewaysController extends Controller
             'pagarapido_gateway_key',
             'pagarapido_production'
 
+        ],
+        'bancointer' => [
+            'banco_inter_account',
+            'cnpj_for_banco_inter'
         ],
     ];
 
@@ -202,6 +207,12 @@ class GatewaysController extends Controller
         $settings['enum'] = array(
             'week_days' => self::WEEK_DAYS
         );
+
+        $certificates = array(
+            'crt'   => Storage::exists('certificates/BancoInterCertificate.pem'),
+            'key'   => Storage::exists('certificates/BancoInterKey.pem')
+        );
+
         //retorna view
         return View::make('gateways::settings')
             ->with([
@@ -210,7 +221,8 @@ class GatewaysController extends Controller
                 'carto' => $carto,
                 'bancryp' => $bancryp,
                 'prepaid' => $prepaid,
-                'settings' => $settings
+                'settings' => $settings,
+                'certificates' => $certificates
             ]);
     }
 

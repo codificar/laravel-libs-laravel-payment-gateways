@@ -68,6 +68,9 @@ class PaymentFactory
         switch (Settings::findByKey('default_payment_boleto')) {
             case PaymentFacade::PAYMENT_GATEWAY_GERENCIANET:
                 return (new GerenciaNetLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_BANCO_INTER:
+                return (new BancoInterLib());
         }
     }
 

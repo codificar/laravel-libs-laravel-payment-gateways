@@ -36,6 +36,7 @@ return array(
 	'default_pay_gate_boleto'	=> 'Standard Intermediary for Boleto Payment',
 	'compensate_provider_days'	=> 'Days to compensate the provider',
 	'compensate_provider_msg'	=> 'Define how many days the provider will receive the balance on your account statement when payment is made with a card. For the provider to receive the moment the request is finalized, enter 0. If no value is selected, the gateway compensation time (usually 31 days) will be considered.',
+	'uploaded'					=> 'uploaded',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pay me',
@@ -50,6 +51,7 @@ return array(
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rapido',
 	'adiq'						=> 'Adiq',
+	'bancinter'					=> 'Banco Inter',
 
 	
 
@@ -154,4 +156,10 @@ return array(
 	'adiq_client_id'			=> 'Adiq Client Id',
 	'adiq_client_secret'		=> 'Adiq Client Secret',
 	'adiq_token'				=> 'Adiq Transaction Token',
+
+	'banco_inter_settings'		=> 'Banco Inter Configurations',
+	'banco_inter_account'		=> 'Banco Inter account number',
+	'cnpj_for_banco_inter'		=> 'CNPJ',
+	'banco_inter_crt'			=> 'Certificate',
+	'banco_inter_key'			=> 'Key',
 );

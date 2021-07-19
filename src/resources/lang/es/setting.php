@@ -36,6 +36,7 @@ return array(
 	'default_pay_gate_boleto'	=> 'Intermediario estándar para el pago de boleto',
 	'compensate_provider_days'	=> 'Días para compensar al proveedor',
 	'compensate_provider_msg'	=> 'Defina cuántos días recibirá el proveedor el saldo en su estado de cuenta cuando el pago se realice con una tarjeta. Para que el proveedor lo reciba en el momento en que finalice la solicitud, ingrese 0. Si no se selecciona ningún valor, se considerará el tiempo de compensación de la puerta de enlace (generalmente 31 días).',
+	'uploaded'					=> 'enviado',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Págame',
@@ -50,6 +51,7 @@ return array(
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rapido',
 	'adiq'						=> 'Adiq',
+	'bancinter'					=> 'Banco Inter',
 
 	
 	
@@ -152,4 +154,10 @@ return array(
 	'adiq_client_id'			=> 'ID de cliente de Adiq',
 	'adiq_client_secret'		=> 'Secreto de cliente de Adiq',
 	'adiq_token'				=> 'Token de transacción Adiq',
+
+	'banco_inter_settings'		=> 'Configuración  Banco Inter',
+	'banco_inter_account'		=> 'Número de cuenta de Banco Inter',
+	'cnpj_for_banco_inter'		=> 'CNPJ',
+	'banco_inter_crt'			=> 'Certificado',
+	'banco_inter_key'			=> 'Clave',
 );
