@@ -20,6 +20,7 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'ipag_api_id')->update(['value' => 'gateways@codificar.com.br']);
 		Settings::where('key', 'ipag_api_key')->update(['value' => 'D5FE-B6130375-566F7F5F-A9C756CA-19DA']);
 
+		$this->runInterfaceGateways($gateway, '4111111111111111');
 		$this->runSPlitGateways($gateway, '4111111111111111');
 	}
 
@@ -307,7 +308,7 @@ class AllGatewaysTest extends TestCase
 
 
 		//billetCharge (boleto bancario)
-		if($gateway != 'stripe' && $gateway != 'adiq' && $gateway != 'braspag') { //stripe nao possui boleto, entao nao eh verificado no teste
+		if($gateway != 'stripe' && $gateway != 'adiq' && $gateway != 'braspag' && $gateway != 'ipag') { //stripe nao possui boleto, entao nao eh verificado no teste
 			$billet = $interface->testBilletCharge();
 			$this->assertTrue($billet['success']);
 			$this->assertInternalType('string', $billet['billet_url']);

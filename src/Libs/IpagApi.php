@@ -116,8 +116,8 @@ class IpagApi
         if(!$phoneRemask)
             $phoneRemask = '(31) 99999-9999'; //if the phone has save error
 
-        $fields = array(
-            'login'     =>  $ledgerBankAccount->provider_id.$ledgerBankAccount->document,
+        $fields = (object)array(
+            'login'         =>  (string)$ledgerBankAccount->provider_id.$ledgerBankAccount->document,
             'password'      =>  $ledgerBankAccount->document,
             'name'          =>  $ledgerBankAccount->holder,
             'cpf_cnpj'      =>  self::remaskDocument($ledgerBankAccount->document), //document remask BR
@@ -161,7 +161,8 @@ class IpagApi
         $month = $payment->getCardExpirationMonth();
         $year = $payment->getCardExpirationYear();
 
-        $expDate[0] = (strlen($month) < 2) ? '0'.$month : $month ;
+        $expDate[0] = str_pad($month, 2, '0', STR_PAD_LEFT);
+        $year  = $year % 100;
         $expDate[1] = (strlen($year) < 4) ? '20'.$year : $year ;
 
         return $expDate;
@@ -250,7 +251,7 @@ class IpagApi
         return $amount;
     }
 
-    private static function getBody($payment, $amount, $providerAmount, $capture = false, $provider = null)
+    private static function getBody($payment, $amount, $providerAmount, $capture = false, Provider $provider = null)
     {
         $expirationDate = self::getExpirationDate($payment);
 
@@ -272,13 +273,12 @@ class IpagApi
         else
             $regexCard = '/^(\d{4})(\d{4})(\d{4})([0-9]{1,4})$/';
         preg_match($regexCard, $cardNumber,  $matches);
-        $cardMask = implode(' ', array_slice($matches,1));
+        $cardMask = implode(' ', array_slice($matches, 1));
 
         $orderId        =   self::getOrderId();
         $totalAmount    =   self::amountRound($amount);
 
-        $fields = array
-        (
+        $fields         =   (object)array(
             'amount'            =>  $totalAmount,
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
@@ -288,7 +288,7 @@ class IpagApi
             'payment'           =>  (object)array(
                 'type'          =>  'card',
                 'capture'       =>  $capture,
-                'method'        =>  self::getBrand($cardNumber),
+                'method'        =>  self::getBrand($payment),
                 'installments'  =>  1,
                 'card'          =>  (object)array(
                     'holder'        =>  $payment->getCardHolder(),
@@ -300,12 +300,12 @@ class IpagApi
             )
         );
 
-        if($capture && $provider)
+        if($capture && $provider && isset($provider->id))
         {
-            $split = self::getSplitInfo($provider, $providerAmount);
-            $fields['split_rules'] = $split['split_rules'];
+            $split = self::getSplitInfo($provider->id, $providerAmount);
+            $fields->split_rules = $split->split_rules;
         }
-        
+
         return json_encode($fields);
     }
 
@@ -318,16 +318,16 @@ class IpagApi
 
         $sellerId = self::checkProviderAccount($ledgerBankAccount);
 
-        if(!isset($sellerId['success']) || (isset($sellerId['success']) && !$sellerId['success']))
+        if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             return false;
 
         $providerAmount = self::amountRound($providerAmount);
 
-        $fields = array(
+        $fields = (object)array(
             'split_rules'   =>  array(
                 (object)array(
                     'seller_id'             =>  $ledgerBankAccount->recipient_id,
-                    'amount'                =>  $providerAmount,
+                    'amount'                =>  floatval($providerAmount),
                     'liable'                =>  true,
                     'charge_processing_fee' =>  false
                 )
@@ -345,7 +345,7 @@ class IpagApi
         $basic      =   $ipagToken && isset($ipagToken->value)  ? $ipagToken->value : $token;
 
         $header = array (
-            'Content-Type: application/json;',
+            'Content-Type: application/json',
             'Authorization: Basic '.$basic
         );
 
@@ -396,7 +396,7 @@ class IpagApi
             $msg_chk    =   curl_exec($session);  
             $result     =   json_decode($msg_chk);
             $httpcode   =   curl_getinfo($session, CURLINFO_HTTP_CODE);  
-            
+
             if($httpcode == 200 || $httpcode == 201 || $httpcode == 202)
             {
                 return (object)array (
@@ -404,8 +404,9 @@ class IpagApi
                     'data'      =>  $result
                 );
             } else {
-                throw new Exception(
-                    $msg_chk
+                return (object)array(
+                    "success"   => false,
+                    "message"   => $msg_chk
                 );
                 \Log::error('Error message Exception: '.$msg_chk);
             }            

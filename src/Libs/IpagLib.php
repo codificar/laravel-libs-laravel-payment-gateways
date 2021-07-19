@@ -16,6 +16,33 @@ use Settings;
 
 Class IpagLib implements IPayment
 {
+    /**
+     * Payment status code
+     */
+    const CODE_CREATED          =   1;
+    const CODE_WAITING_PAYMENT  =   2;
+    const CODE_CANCELED         =   3;
+    const CODE_IN_ANALISYS      =   4;
+    const CODE_PRE_AUTHORIZED   =   5;
+    const CODE_PARTIAL_CAPTURED =   6;
+    const CODE_DECLINED         =   7;
+    const CODE_CAPTURED         =   8;
+    const CODE_CHARGEDBACK      =   9;
+    const CODE_IN_DISPUTE       =   10;
+
+    /**
+     * Payment status string
+     */
+    const PAYMENT_NOTFINISHED  =   'not_finished';
+    const PAYMENT_AUTHORIZED   =   'authorized';
+    const PAYMENT_PAID         =   'paid';
+    const PAYMENT_DENIED       =   'denied';
+    const PAYMENT_VOIDED       =   'voided';
+    const PAYMENT_REFUNDED     =   'refunded';
+    const PAYMENT_PENDING      =   'pending';
+    const PAYMENT_ABORTED      =   'aborted';
+    const PAYMENT_SCHEDULED    =   'scheduled';
+
     const CHARGE_SUCCESS = 1;
     const CAPTURE_SUCCESS = 2;
     const REFUND_SUCCESS = 10;
@@ -34,19 +61,28 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
-        try {
-            $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, true);
-            
-            $responseChargeStatus = self::getChargeStatus(true, $capture);
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    {
+        try
+        {
+            $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
 
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
+            if (
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                (
+                    $response->data->attributes->status->message == 'CAPTURED' ||
+                    $response->data->attributes->status->message == 'PRE-AUTHORIZED'
+                )
+            ){
+                $statusMessage = $response->data->attributes->status->message;
 				$result = array (
 					'success' 		    => true,
-					'status' 		    => $capture,
-					'captured' 			=> $capture,
-					'paid' 		        => $capture ? 'paid' : 'authorized',
-					'transaction_id'    => $response->data->Payment->PaymentId
+					'status' 		    => $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
+					'captured' 			=> $statusMessage == 'CAPTURED' ? true : false,
+					'paid' 		        => $statusMessage == 'CAPTURED' ? 'paid' : 'denied',
+					'transaction_id'    => (string)$response->data->id
 				);
 				return $result;
 			} else {
@@ -62,12 +98,12 @@ Class IpagLib implements IPayment
 		} catch (Exception $th) {
 			
 			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'transaction_id'	=>	$response['transaction_id'],
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+				"success"           =>  false ,
+				'data'              =>  null,
+				'transaction_id'    =>  '',
+				'error'     => array(
+					"code"          => ApiErrors::CARD_ERROR,
+					"messages"      => array(trans('creditCard.customerCreationFail'))
 				)
 			);
 		}
@@ -86,52 +122,50 @@ Class IpagLib implements IPayment
      */      
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
+        try
+        {
+            $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
 
-        $paymentId = null ;
-
-        try {
-            $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $description, $capture, false);
-            
-            $responseChargeStatus = self::getChargeStatus(false, $capture);
-
-            if($response && isset($response->data) && $response->data && isset($response->data->Payment) && $response->data->Payment) {
-                $paymentId = $response->data->Payment->PaymentId;
-            } else {
-                $paymentId = -1;
-            }
-
-			if ($response->success && $response->data->Payment->Status == $responseChargeStatus) {
+			if(
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                (
+                    $response->data->attributes->status->message == 'CAPTURED' ||
+                    $response->data->attributes->status->message == 'PRE-AUTHORIZED'
+                )
+            ){
+                $statusMessage = $response->data->attributes->status->message;
 				$result = array (
-                    'success' => true,
-                    'captured' => $capture,
-                    'paid' => $capture,
-                    'status' => $capture ? 'paid' : 'authorized',
-                    'transaction_id' => $paymentId
+                    'success'           =>  true,
+                    'captured'          =>  $statusMessage == 'CAPTURED' ? true : false,
+                    'paid'              =>  $statusMessage == 'CAPTURED' ? true : false,
+                    'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
+                    'transaction_id'    =>  (string)$response->data->id
                 );
 				return $result;
 			} else {
                 return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'transaction_id'    => $paymentId,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                    "success"           => false ,
+                    'data'              => null,
+                    'transaction_id'    => -1,
+                    'error' => array(
+                        "code"      => ApiErrors::CARD_ERROR,
+                        "messages"  => array(trans('creditCard.customerCreationFail'))
                     )
                 );
             }
 		} catch (Exception $th) {
 			\Log::error('Error message: number One '.$th);
 			return array(
-				"success" 	=> false ,
-				'data' 		=> null,
-				'transaction_id'	=> $response->data->Payment->PaymentId,
-				'error' 	=> array(
-					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+				"success"           =>  false ,
+				'data'              =>  null,
+				'transaction_id'    =>  $response->data->Payment->PaymentId,
+				'error' => array(
+					"code"      =>  ApiErrors::CARD_ERROR,
+					"messages"  =>  array(trans('creditCard.customerCreationFail'))
 				)
             );
-            
 		}
     }
 
@@ -229,18 +263,26 @@ Class IpagLib implements IPayment
      */         
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
-        // $user = User::find($payment->user_id);
-        
-        try {
+        try
+        {
 			$response = IpagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
+			if(
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                (
+                    $response->data->attributes->status->message == 'CAPTURED' ||
+                    $response->data->attributes->status->message == 'PRE-AUTHORIZED'
+                )
+            ){
+                $statusMessage = $response->data->attributes->status->message;
 				$result = array (
 					'success' 		 => true,
-					'captured' 		 => true,
-					'paid' 			 => true,
-					'status' 		 => 'paid',
-					'transaction_id' => $transaction->gateway_transaction_id
+					'captured' 		 => $statusMessage == 'CAPTURED' ? true : false,
+					'paid' 			 => $statusMessage == 'CAPTURED' ? true : false,
+					'status' 		 => $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
+					'transaction_id' => (string)$response->data->id
 				);
 				return $result;
 			} else {
@@ -279,13 +321,19 @@ Class IpagLib implements IPayment
         try {
 			$response = IpagApi::capture($transaction, $amount);
 
-			if ($response->success && $response->data->Status == self::CAPTURE_SUCCESS) {
+            if (
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                $response->data->attributes->status->message == 'CAPTURED'
+            ){
+                $statusMessage = $response->data->attributes->status->message;
 				$result = array (
 					'success' 		 => true,
-					'captured' 		 => true,
-					'paid' 			 => true,
-					'status' 		 => 'paid',
-					'transaction_id' => $transaction->gateway_transaction_id
+					'captured' 		 => $statusMessage == 'CAPTURED' ? true : false,
+					'paid' 			 => $statusMessage == 'CAPTURED' ? true : false,
+					'status' 		 => $statusMessage == 'CAPTURED' ? 'paid' : '',
+					'transaction_id' => (string)$response->data->id
 				);
 				return $result;
 			} else {
@@ -321,20 +369,10 @@ Class IpagLib implements IPayment
      */       
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
-        try {
-			$response = IpagApi::refund($transaction);
-			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
-            {
-                $result = array(
-                    "success" 					=> true ,
-                    "status" 					=> 'refunded',
-                    "transaction_id"			=> $transaction->gateway_transaction_id                    
-                );
-                
-                return $result;
-            }
-		
+        try
+        {
+			return $this->refund($transaction, $payment);
+
 		} catch (\Throwable $ex) {
 			\Log::error($ex->__toString());
 
@@ -343,7 +381,7 @@ Class IpagLib implements IPayment
                 "type" 				=> 'api_refund_error' ,
                 "code" 				=> 'api_refund_error',
                 "message" 			=> $ex->getMessage(),
-				"transaction_id" 	=> $transaction->gateway_transaction_id
+				"transaction_id" 	=> ''
 			);
 		}
     }
@@ -358,16 +396,20 @@ Class IpagLib implements IPayment
      */      
     public function refund(Transaction $transaction, Payment $payment)
     {
-        
-		try {
+		try
+        {
 			$response = IpagApi::refund($transaction);
-			
-			if($response->success && $response->data->Status == self::REFUND_SUCCESS)
-            {
+
+			if(
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                $response->data->attributes->status->message == 'CANCELED'
+            ){
                 $result = array(
-                    "success" 					=> true ,
-                    "status" 					=> 'refunded',
-                    "transaction_id"			=> $transaction->gateway_transaction_id                    
+                    "success"           =>  true ,
+                    "status"            =>  'refunded',
+                    "transaction_id"    =>  (string)$response->data->id                   
                 );
                 
                 return $result;
@@ -381,7 +423,7 @@ Class IpagLib implements IPayment
                 "type" 				=> 'api_refund_error' ,
                 "code" 				=> 'api_refund_error',
                 "message" 			=> $ex->getMessage(),
-				"transaction_id" 	=> $transaction->gateway_transaction_id
+				"transaction_id" 	=> ''
 			);
 		}
     }
@@ -395,30 +437,47 @@ Class IpagLib implements IPayment
      */       
     public function retrieve(Transaction $transaction, Payment $payment = null)
     {
-        $transactionId = $transaction->gateway_transaction_id;
+        try
+        {
+            $response = IpagApi::retrieve($transaction);
 
-		
-        $response = IpagApi::retrieve($transaction);
-		if(!$response->success)
-		{
-			\Log::error($response->message);
+            if(
+                isset($response->success) && 
+                $response->success && 
+                isset($response->data) && 
+                isset($response->data->attributes->status->code)
+            ){
+                return array(
+                    'success' 			=> true,
+                    'transaction_id' 	=> (string)$response->data->id,
+                    'amount' 			=> $response->data->attributes->amount,
+                    'destination' 		=> '',	
+                    'status' 			=> $this->getStatusString($response->data->attributes->status->code),
+                    'card_last_digits' 	=> $payment ? $payment->last_four : ''
+                );
+            }
+            else
+            {
+                \Log::error($response->message);
 
-			return array(
-				"success" 			=> false ,
-				"type" 				=> 'api_retrieve_error' ,
-				"code" 				=> 'api_retrieve_error',
-				"message" 			=> $response['message']
-			);            
-		}
+                return array(
+                    "success" 			=> false ,
+                    "type" 				=> 'api_retrieve_error' ,
+                    "code" 				=> 'api_retrieve_error',
+                    "message" 			=> $response->message
+                );  
+            }
+        } catch (\Throwable $th) {
+            \Log::error($th->__toString());
 
-		return array(
-			'success' 			=> true,
-			'transaction_id' 	=> $response->data->Payment->PaymentId,
-			'amount' 			=> $response->data->Payment->Amount,
-			'destination' 		=> '',	
-			'status' 			=> $response->data->Payment->Status == 2 ? 'paid' : strval($response->data->Payment->Status),
-			'card_last_digits' 	=> $payment ? $payment->last_four : '',
-		);
+            return array(
+                "success" 			=>  false ,
+                "type" 				=>  'api_refund_error' ,
+                "code" 				=>  'api_refund_error',
+                "message" 			=>  $th->getMessage(),
+				"transaction_id" 	=>  ''
+			);
+        }
     }
 
     /**
@@ -479,44 +538,52 @@ Class IpagLib implements IPayment
      */      
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        try {
+        try
+        {
             $response = IpagApi::getSeller($ledgerBankAccount->recipient_id);
 
-            if ($response->success) {
+            if($response->success && isset($response->data->id))
+            {
                 $result = array(
-                    'success'       => true,
-                    'recipient_id'   => $ledgerBankAccount->recipient_id
+                    'success'           =>  true,
+                    'recipient_id'      =>  $ledgerBankAccount->recipient_id
                 );
-                $ledgerBankAccount->recipient_id = $response->data->MerchantId;
+                $ledgerBankAccount->recipient_id = $response->data->id;
                 $ledgerBankAccount->save();
-            } else {
+            }
+            else
+            {
                 $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
-                if ($newAccount->success) {
-                    $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
+
+                if($newAccount->success && isset($newAccount->data->id))
+                {
+                    $ledgerBankAccount->recipient_id = $newAccount->data->id;
                     $ledgerBankAccount->save();
                     $result = array(
-                        'success'       => true,
-                        'recipient_id'   => $ledgerBankAccount->recipient_id
+                        'success'       =>  true,
+                        'recipient_id'  =>  $ledgerBankAccount->recipient_id
                     );
-                } else {
+                }
+                else
+                {
                     $result = array(
-                        'success'       => false,
-                        'recipient_id'   => ""
+                        'success'       =>  false,
+                        'recipient_id'  =>  ""
                     );
                 }
             }
-    
+
             return $result;
-           
+
         } catch (\Throwable $ex) {
             \Log::error($ex->__toString());
 
 			$result = array(
-				"success" 					=> false ,
-				"recipient_id"				=> 'empty',
-				"type" 						=> 'api_bankaccount_error' ,
-				"code" 						=> 500 ,
-				"message" 					=> trans("empty.".$ex->getMessage())
+				"success"               =>  false ,
+				"recipient_id"          =>  'empty',
+				"type"                  =>  'api_bankaccount_error' ,
+				"code"                  =>  500 ,
+				"message"               =>  trans("empty.".$ex->getMessage())
 			);
 
 			return $result;
@@ -608,45 +675,35 @@ Class IpagLib implements IPayment
     }
 
     /**
-     *  Return a date for the next compensation
-     * 
-     * @return Token
+     * Returns status string based on status code
+     *
+     * @param Integer        $statusCode    Payment status code captured on gateway.
+     *
+     * @return String                       String related to the payment status code.
+     *
      */
-
-    private static function getChargeStatus($split, $capture)
+    private function getStatusString($statusCode)
     {
-        switch ($split) {
-            case false:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
-            case true:
-                switch ($capture) {
-                    case false:
-                        return self::CHARGE_SUCCESS;
-                        break;
-                    
-                    case true:
-                        return self::CAPTURE_SUCCESS;
-                        break;
-                    default:
-                        # code...
-                        break;
-                }
-                break;
+        switch ($statusCode) {
+            case self::CODE_CREATED:
+            case self::CODE_IN_ANALISYS:
+            case self::CODE_PARTIAL_CAPTURED:
+            case self::CODE_IN_DISPUTE:
+                return self::PAYMENT_NOTFINISHED;
+            case self::CODE_PRE_AUTHORIZED:
+                return self::PAYMENT_AUTHORIZED;
+            case self::CODE_CAPTURED:
+                return self::PAYMENT_PAID;
+            case self::CODE_DECLINED:
+                return self::PAYMENT_DENIED;
+            case self::CODE_CANCELED:
+                return self::PAYMENT_VOIDED;
+            case self::CODE_CHARGEDBACK:
+                return self::PAYMENT_REFUNDED;
+            case self::CODE_WAITING_PAYMENT:
+                return self::PAYMENT_PENDING;
             default:
-                # code...
-                break;
+                return 'not_geted';
         }
     }
 }
