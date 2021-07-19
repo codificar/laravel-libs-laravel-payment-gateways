@@ -91,7 +91,7 @@ class BancoInterApi{
 
     /**
 	 * Função para gerar boletos de pagamentos
-	 * @param int $amount valor do boleto
+	 * @param float $amount valor do boleto
 	 * @param User/Provider $client instância do usuário ou prestador
 	 * @param string $postbackUrl url para receber notificações do status do pagamento
 	 * @param string $boletoExpirationDate data de expiração do boleto
