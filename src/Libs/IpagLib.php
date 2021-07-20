@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\IpagApi;
 
 use ApiErrors;
+use Exception;
 //models do sistema
 use Payment;
 use Provider;
@@ -178,31 +179,69 @@ Class IpagLib implements IPayment
 	 * @param string $billetInstructions descrição no boleto
 	 * @return array
 	 */
-    public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
+    public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
     {
-        try {
-            $response = IpagApi::billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions);
+        try
+        {
+            if(!Settings::findByKey('ipag_webhook_isset'))
+            {
+                $responseHooks = IpagApi::retrieveHooks();
 
-            if ($response && $response->data && $response->data->Payment->Status == self::CHARGE_SUCCESS) {
+                if(
+                    !isset($responseHooks->success) ||
+                    !$responseHooks->success ||
+                    !isset($responseHooks->data->data) ||
+                    !count($responseHooks->data->data)
+                ){
+                    $responseHook = IpagApi::registerHook($postbackUrl);
+
+                    if(
+                        !isset($responseHook->success) ||
+                        !$responseHook->success ||
+                        !isset($responseHook->data->id)
+                    )
+                        return array(
+                            "success" 				=> false,
+                            "type" 					=> 'api_charge_error',
+                            "code" 					=> '',
+                            "message" 				=> '',
+                            "transaction_id"		=> ''
+                        );
+                }
+
+                if($objectHook = Settings::findObjectByKey('ipag_webhook_isset'))
+                {
+                    $objectHook->value = 1;
+                    $objectHook->save();
+                }
+            }
+
+            $response = IpagApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);
+
+            if (
+                isset($response->success) ||
+                $response->success ||
+                isset($response->data->id)
+            )
                 return array (
-                    'success' => true,
-                    'captured' => true,
-                    'paid' => false,
-                    'status' => self::WAITING_PAYMENT,
-                    'transaction_id' => $response->data->Payment->PaymentId,
-                    'billet_url' => $response->data->Payment->Url,
-                    'digitable_line' => $response->data->Payment->DigitableLine,
-                    'billet_expiration_date' => $response->data->Payment->ExpirationDate
+                    'success'                   =>  true,
+                    'captured'                  =>  true,
+                    'paid'                      =>  false,
+                    'status'                    =>  self::WAITING_PAYMENT,
+                    'transaction_id'            =>  (string)$response->data->id,
+                    'billet_url'                =>  $response->data->attributes->boleto->link,
+                    'digitable_line'            =>  $response->data->attributes->boleto->digitable_line,
+                    'billet_expiration_date'    =>  $response->data->attributes->boleto->due_date
                 );
-            } else {
+            else
                 return array(
-                    "success" 				=> false ,
-                    "type" 					=> 'api_charge_error' ,
+                    "success" 				=> false,
+                    "type" 					=> 'api_charge_error',
                     "code" 					=> '',
                     "message" 				=> '',
                     "transaction_id"		=> ''
                 );
-            }
+
         } catch (\Throwable $th) {
             \Log::error($th->getMessage());
 
@@ -221,33 +260,57 @@ Class IpagLib implements IPayment
 	 */
 	public function billetVerify ($request, $transaction_id = null)
 	{
-        if($transaction_id) {
-			$transaction = Transaction::find($transaction_id);
-			$retrieve = $this->retrieve($transaction);
-			return [
-				'success' => true,
-				'status' => $retrieve['status'],
-				'transaction_id' => $retrieve['transaction_id']
-			];
-		} else {
-            $postbackTransaction = $request->PaymentId;
-        
-            if (!$postbackTransaction)
+        \Log::debug("postback ipag billet: " . print_r($request->all(), 1));
+
+        try
+        {
+            if(!isset($request->attributes->boleto))
                 return [
-                    'success' => false,
-                    'status' => '',
-                    'transaction_id' => ''
+                        'success'       =>  false,
+                        'status'        =>  '',
+                        'transaction_id'=>  ''
+                    ];
+
+            if($transaction_id)
+            {
+                $transaction    =   Transaction::find($transaction_id);
+                $retrieve       =   $this->retrieve($transaction);
+                return [
+                    'success'           =>  true,
+                    'status'            =>  $retrieve['status'],
+                    'transaction_id'    =>  $retrieve['transaction_id']
                 ];
+            }
+            else
+            {
+                $postbackTransaction = $request->id;
             
-            $transaction = Transaction::getTransactionByGatewayId($postbackTransaction);
-            $retrieve = $this->retrieve($transaction);
-    
+                if (!$postbackTransaction)
+                    return [
+                        'success'       =>  false,
+                        'status'        =>  '',
+                        'transaction_id'=>  ''
+                    ];
+                
+                $transaction    =   Transaction::getTransactionByGatewayId($postbackTransaction);
+                $retrieve       =   $this->retrieve($transaction);
+        
+                return [
+                    'success'           =>  true,
+                    'status'            =>  $retrieve['status'],
+                    'transaction_id'    =>  $retrieve['transaction_id']
+                ];
+            }
+        } catch (Exception $ex) {
+            \Log::error($ex->getMessage());
+
             return [
-                'success' => true,
-                'status' => $retrieve['status'],
-                'transaction_id' => $retrieve['transaction_id']
+                'success'       =>  false,
+                'status'        =>  '',
+                'transaction_id'=>  ''
             ];
         }
+        
 	}
 
     /**
@@ -265,7 +328,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-			$response = IpagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
+			$response = IpagApi::captureWithSplit($transaction, $provider);
 
 			if(
                 isset($response->success) && 
@@ -465,7 +528,7 @@ Class IpagLib implements IPayment
                     "type" 				=> 'api_retrieve_error' ,
                     "code" 				=> 'api_retrieve_error',
                     "message" 			=> $response->message
-                );  
+                );
             }
         } catch (\Throwable $th) {
             \Log::error($th->__toString());
@@ -633,12 +696,12 @@ Class IpagLib implements IPayment
     {
         try
         {
-            if(Settings::findByKey(self::AUTO_TRANSFER_PROVIDER) == "1")
+            if(Settings::findByKey('auto_transfer_provider_payment') == "1")
                 return(true);
             else
                 return(false);
         }
-        catch(Exception$ex)
+        catch(Exception $ex)
         {
             \Log::error($ex);
 

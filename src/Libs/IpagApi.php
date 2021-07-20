@@ -56,8 +56,36 @@ class IpagApi
         return $apiRequest;
     }
 
-    public static function captureWithSplit(Transaction $transaction, Provider $provider, Payment $payment)
+    public static function captureWithSplit(Transaction $transaction, Provider $provider)
     {
+        $splitBody      =   null;
+        $splitHeader    =   self::getHeader();
+        $splitUrl       =   sprintf('%s/resources/split_rules?transaction=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+        $splitRequest   =   self::apiRequest($splitUrl, $splitBody, $splitHeader, self::GET_REQUEST);
+
+        if(
+            !isset($splitRequest->success) &&
+            !$splitRequest->success &&
+            !isset($splitRequest->data->data) &&
+            !count($splitRequest->data->data)
+        ){
+            $ruleHeader    =   self::getHeader();
+            $ruleBody      =   self::getSplitInfo($provider->id, $transaction->provider_value);
+            $ruleUrl       =   sprintf('%s/resources/split_rules?transaction=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+            $ruleRequest   =   self::apiRequest($ruleUrl, $ruleBody, $ruleHeader, self::POST_REQUEST);
+
+            if(
+                !isset($ruleRequest->success) &&
+                !$ruleRequest->success
+            ){
+                Log::error("Set split rule fail: " . print_r($ruleRequest, 1));
+                return (object)array(
+                    "success"   => false,
+                    "message"   => 'Set split rule fail'
+                );
+            }
+        }
+
         $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
         $body       =   null;
@@ -190,7 +218,7 @@ class IpagApi
 
         if(!isset($response->data->id))
         {
-            \Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
+            Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
             $response = (object)array(
                 'success'       =>  false,
                 'recipient_id'  =>  ""
@@ -251,29 +279,37 @@ class IpagApi
         return $amount;
     }
 
-    private static function getBody($payment, $amount, $providerAmount, $capture = false, Provider $provider = null)
+    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null)
     {
-        $expirationDate = self::getExpirationDate($payment);
-
-        $user = User::find($payment->user_id);
-
-        $cardNumber = $payment->getCardNumber();
+        if($payment)
+            $client = User::find($payment->user_id);
 
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
 
-        $mask = ((strlen($user->document)) > 11) ? $cnpjMask : $cpfMask;
+        $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
 
-        $user->document = vsprintf($mask, str_split($user->document));
+        $client->document = vsprintf($mask, str_split($client->document));
 
-        //mask to card, 13 to 20 digits
-        $cardLength = strlen($cardNumber);
-        if($cardLength > 16)
-            $regexCard = '/^(\d{4})(\d{4})(\d{4})(\d{4})([0-9]{0,4})$/';
+        if($payment)
+        {
+            $expirationDate = self::getExpirationDate($payment);
+
+            $cardNumber = $payment->getCardNumber();
+
+            //mask to card, 13 to 20 digits
+            $cardLength = strlen($cardNumber);
+            if($cardLength > 16)
+                $regexCard = '/^(\d{4})(\d{4})(\d{4})(\d{4})([0-9]{0,4})$/';
+            else
+                $regexCard = '/^(\d{4})(\d{4})(\d{4})([0-9]{1,4})$/';
+            preg_match($regexCard, $cardNumber,  $matches);
+            $cardMask = implode(' ', array_slice($matches, 1));
+
+            $type = 'card';
+        }
         else
-            $regexCard = '/^(\d{4})(\d{4})(\d{4})([0-9]{1,4})$/';
-        preg_match($regexCard, $cardNumber,  $matches);
-        $cardMask = implode(' ', array_slice($matches, 1));
+            $type = 'billet';
 
         $orderId        =   self::getOrderId();
         $totalAmount    =   self::amountRound($amount);
@@ -282,25 +318,44 @@ class IpagApi
             'amount'            =>  $totalAmount,
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
-                'name'          =>  $user->first_name.' '.$user->last_name,
-                'cpf_cnpj'      =>  $user->document
+                'name'          =>  $client->first_name.' '.$client->last_name,
+                'cpf_cnpj'      =>  $client->document
             ),
             'payment'           =>  (object)array(
-                'type'          =>  'card',
+                'type'          =>  $type,
                 'capture'       =>  $capture,
-                'method'        =>  self::getBrand($payment),
-                'installments'  =>  1,
-                'card'          =>  (object)array(
+                'method'        =>  $payment ? self::getBrand($payment) : Settings::getBilletProvider(),
+                'installments'  =>  1
+            )
+        );
+
+        if($payment)
+        {
+            $cardFields = (object)array(
+                'card'  =>  (object)array(
                     'holder'        =>  $payment->getCardHolder(),
                     'number'        =>  $cardMask,
                     'expiry_month'  =>  $expirationDate[0],
                     'expiry_year'   =>  $expirationDate[1],
                     'cvv'           =>  $payment->getCardCvc()
                 )
-            )
-        );
+            );
 
-        if($capture && $provider && isset($provider->id))
+            $fields->payment->card = $cardFields->card;
+        }
+        else
+        {
+            $billetFields = (object)array(
+                'boleto'  =>  (object)array(
+                    'due_date'      =>  Carbon::parse($billetExpiry)->format('Y-m-d'),
+                    'instructions'  =>  Settings::getBilletInstructions()
+                )
+            );
+
+            $fields->payment->boleto = $billetFields->boleto;
+        }
+
+        if($capture && $provider && isset($provider->id) && $type == 'card')
         {
             $split = self::getSplitInfo($provider->id, $providerAmount);
             $fields->split_rules = $split->split_rules;
@@ -368,7 +423,7 @@ class IpagApi
             $token->save();
         }
         catch (Exception $ex){
-            \Log::error($ex->getMessage().$ex->getTraceAsString());
+            Log::error($ex->getMessage().$ex->getTraceAsString());
         }
 
         return $concateString;
@@ -408,7 +463,7 @@ class IpagApi
                     "success"   => false,
                     "message"   => $msg_chk
                 );
-                \Log::error('Error message Exception: '.$msg_chk);
+                Log::error('Error message Exception: '.$msg_chk);
             }            
 
         }
@@ -419,7 +474,7 @@ class IpagApi
                 "message"       => $ex->getMessage()
             );
 
-            \Log::error(($ex));
+            Log::error(($ex));
 
             return $return;
         }
@@ -429,52 +484,16 @@ class IpagApi
 	 * Função para gerar boletos de pagamentos
 	 * @param int $amount valor do boleto
 	 * @param User/Provider $client instância do usuário ou prestador
-	 * @param string $postbackUrl url para receber notificações do status do pagamento
 	 * @param string $boletoExpirationDate data de expiração do boleto
-	 * @param string $boletoInstructions descrição no boleto
-	 * @return array
 	 */
-    public static function billetCharge ($amount, $client, $postbackUrl, $boletoExpirationDate, $boletoInstructions)
+    public static function billetCharge($amount, $client, $boletoExpirationDate)
     {
-        $url = sprintf('%s/sales/', self::apiUrl());
-        $orderId = self::getOrderId();
+        $url = sprintf('%s/payment', self::apiUrl());
 
-        $fields = [
-            "MerchantOrderId" => $orderId,
-            "Customer" => [
-                "Name" => $client->getFullName(),
-                "Identity" => $client->getDocument(),
-                "IdentityType" => "CPF",
-                "Address" =>  [  
-                    "Street" => $client->getStreet(),
-                    "Number" => $client->getStreetNumber(),
-                    "Complement" => $client->address_complements,
-                    "ZipCode" => $client->zipcode,
-                    "City" => $client->address_city,
-                    "District" => $client->getNeighborhood()
-                ]
-            ],
-            "Payment" => [
-                "Type" => "Boleto",
-                "Amount" => self::amountRound($amount),
-                "ExpirationDate" => date('Y-m-d', strtotime($boletoExpirationDate)),
-                "Instructions" => $boletoInstructions
-            ]
-        ];
-        if (App::environment() != 'production') {
-            $fields['Payment']['Provider'] = 'Simulado';
-        }
-        $body = json_encode($fields);
+        $header     =   self::getHeader(true);
+        $body       =   self::getBody(null, $amount, null, false, null, $client, $boletoExpirationDate);
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
-        $merchantId         = Settings::findObjectByKey('ipag_api_id');
-        $merchandtKey       = Settings::findObjectByKey('ipag_api_key');
-        $header = [
-            'Content-Type:  application/json',
-            'MerchantId: '.$merchantId->value, 
-            'MerchantKey: '.$merchandtKey->value       
-        ];
-
-        $apiRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
         return $apiRequest;
     }
 
@@ -485,5 +504,41 @@ class IpagApi
         $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
 
         return vsprintf($mask, str_split($document));
+    }
+
+    public static function retrieveHooks()
+    {
+        $body       =   null;
+        $header     =   self::getHeader();
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+        $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+
+        return $apiRequest;
+    }
+
+    public static function registerHook($postbackUrl)
+    {
+        $header     =   self::getHeader();
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+
+        $body       =   (object)array(
+            'http_method'   =>  self::POST_REQUEST,
+            'url'           =>  $postbackUrl,
+            'description'   =>  'Webhook para receber notificações de atualização das transações',
+            'actions'       =>  (object)array(
+                'TransactionCreated',
+                'TransactionWaitingPayment',
+                'TransactionCanceled',
+                'TransactionPreAuthorized',
+                'TransactionCaptured',
+                'TransactionDenied',
+                'TransactionDisputed',
+                'TransactionChargedback'
+            )
+        );
+
+        $apiRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        return $apiRequest;
     }
 }
