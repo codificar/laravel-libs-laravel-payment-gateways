@@ -44,9 +44,6 @@ Class IpagLib implements IPayment
     const PAYMENT_ABORTED      =   'aborted';
     const PAYMENT_SCHEDULED    =   'scheduled';
 
-    const CHARGE_SUCCESS = 1;
-    const CAPTURE_SUCCESS = 2;
-    const REFUND_SUCCESS = 10;
     const WAITING_PAYMENT = 'waiting_payment';
 
     /**
@@ -260,17 +257,16 @@ Class IpagLib implements IPayment
 	 */
 	public function billetVerify ($request, $transaction_id = null)
 	{
-        \Log::debug("postback ipag billet: " . print_r($request->all(), 1));
-
         try
         {
             if(!isset($request->attributes->boleto))
-                return [
-                        'success'       =>  false,
-                        'status'        =>  '',
-                        'transaction_id'=>  ''
-                    ];
-
+            return [
+                'success'       =>  false,
+                'status'        =>  '',
+                'transaction_id'=>  ''
+            ];
+            
+            \Log::debug("postback ipag billet: " . print_r($request->all(), 1));
             if($transaction_id)
             {
                 $transaction    =   Transaction::find($transaction_id);
@@ -380,7 +376,8 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
+    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    {
         try {
 			$response = IpagApi::capture($transaction, $amount);
 
@@ -767,6 +764,49 @@ Class IpagLib implements IPayment
                 return self::PAYMENT_PENDING;
             default:
                 return 'not_geted';
+        }
+    }
+
+    public function pixCharge($amount, User $user)
+    {
+        try
+        {
+            $response = IpagApi::pixCharge($amount, $user);
+
+            if (
+                isset($response->success) ||
+                $response->success ||
+                isset($response->data->id)
+            )
+                return array (
+                    'success'                   =>  true,
+                    'captured'                  =>  true,
+                    'paid'                      =>  false,
+                    'status'                    =>  self::WAITING_PAYMENT,
+                    'transaction_id'            =>  (string)$response->data->id,
+                    'billet_expiration_date'    =>  $response->data->attributes->pix->qrcode
+                );
+            else
+                return array(
+                    "success" 				=>  false,
+                    "type" 					=>  'api_charge_error',
+                    "code" 					=>  '',
+                    "message" 				=>  '',
+                    "transaction_id"		=>  '',
+                    'billet_expiration_date'=>  ''
+                );
+
+        } catch (\Throwable $th) {
+            \Log::error($th->getMessage());
+
+			return array(
+				"success" 				=>  false,
+				"type" 					=>  'api_charge_error',
+				"code" 					=>  '',
+				"message" 				=>  $th->getMessage(),
+				"transaction_id"		=>  '',
+                'billet_expiration_date'=>  ''
+			);
         }
     }
 }

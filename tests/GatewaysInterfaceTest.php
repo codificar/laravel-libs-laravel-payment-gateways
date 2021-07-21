@@ -115,7 +115,7 @@ class GatewaysInterfaceTest {
 		$value = 14.20;
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
-		$response = $gateway->billetCharge($value, $user, 'rota/de/postback/teste', date("Y-m-d"), 'boleto de teste');
+		$response = $gateway->billetCharge($value, $user, config('app.url') . '/api/v3/postback', date("Y-m-d"), 'boleto de teste');
 		
 		return $response;
 	}
