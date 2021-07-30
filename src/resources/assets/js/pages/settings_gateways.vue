@@ -391,30 +391,6 @@ export default {
                   </div>
                 </div>
               </div>
-              <div class="row">
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.ipag_token") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.ipag_token')"
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control input-ipag"
-                      v-model="gateways.ipag.ipag_token"
-                    />
-                    <div class="help-block with-errors"></div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
           <!-- / Configurações do ipag-->
