@@ -28,11 +28,6 @@ class AdiqApi
 
     const INITIAL_INSTALLMENT_NUMBER = 1;
     const FINAL_INSTALLMENT_NUMBER = 1;
-    // const MASTER_PERCENT = 2.36;
-    // const VISA = "Visa";
-    // const VISA_PERCENT = 2.36;  
-
-    const ROUND_VALUE = 100;
 
     const POST_REQUEST      = 'POST';
     const GET_REQUEST       = 'GET';
@@ -63,7 +58,7 @@ class AdiqApi
 
         $header = self::getHeader();
 
-        $totalAmount = self::amountRound($totalAmount);
+        $totalAmount = $totalAmount;
 
         $cardToken = self::tokenizeCard($payment->getCardNumber());
 
@@ -106,7 +101,7 @@ class AdiqApi
 
         $url = sprintf('%s/v1/payments/%s/capture', self::apiUrl(), $transactionToken);
 
-        $totalAmount = self::amountRound($amount);
+        $totalAmount = $amount;
 
         $body = ['amount' => $totalAmount];
 
@@ -134,7 +129,7 @@ class AdiqApi
 
         $header = self::getHeader();
 
-        $totalAmount = self::amountRound($totalAmount);
+        $totalAmount = $totalAmount;
 
         $cardToken = self::tokenizeCard($payment->getCardNumber());
 
@@ -176,7 +171,7 @@ class AdiqApi
 
         $url = sprintf('%s/v1/payments/%s/cancel', self::apiUrl(), $transactionToken);
 
-        $totalAmount = self::amountRound($transaction->gross_value);
+        $totalAmount = $transaction->gross_value;
 
         $body = ['amount' => $totalAmount];
 
@@ -217,14 +212,6 @@ class AdiqApi
     public static function getAdiqFee()
     {
         return self::FEE;
-    }
-
-    private static function amountRound($amount)
-    {
-        $amount = $amount * self::ROUND_VALUE;
-        $amount = (int)$amount;
-
-        return $amount;
     }
 
     private static function getHeader()
