@@ -3,18 +3,17 @@
 namespace Codificar\PaymentGateways\Libs;
 
 use Carbon\Carbon;
-use Zoop\ZoopBase;
-use Zoop\Lib\APIResource;
 use Zoop\Facades\ZoopSellers;
 use Zoop\Facades\ZoopBuyers;
 use Zoop\Facades\ZoopCards;
 use Zoop\Facades\ZoopChargesCNP;
 use Zoop\Facades\ZoopTokens;
 use Zoop\Facades\ZoopSplitTransactions;
-use Zoop\src\Exceptions\ZoopAuthenticationException;
-use Zoop\Exceptions\ZoopObjectNotFound;
+use Zoop\Exceptions\ZoopException;
 
 //models do sistema
+use ApiErrors;
+use Bank;
 use Payment;
 use Provider;
 use Transaction;
@@ -52,6 +51,16 @@ class ZoopLib implements IPayment
     
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
+    /**
+     * Payment status string
+     */
+    const PAYMENT_NOTFINISHED  =   'not_finished';
+    const PAYMENT_AUTHORIZED   =   'authorized';
+    const PAYMENT_CONFIRMED    =   'paid';
+    const PAYMENT_DENIED       =   'denied';
+    const PAYMENT_REFUNDED     =   'refunded';
+    const PAYMENT_PENDING      =   'pending';
+
     public function __construct()
     {
     }
@@ -61,12 +70,10 @@ class ZoopLib implements IPayment
      * @param user User - instância do usuário para definir comprador  com dados do cartão
      * @return array
      */
-
     public function createCard(Payment $payment, User $user = null)
     {
-
-        try {
-
+        try
+        {
             //recupera informações do cartão
             $cardNumber = $payment->getCardNumber();
             $cardExpirationMonth = $payment->getCardExpirationMonth();
@@ -77,18 +84,20 @@ class ZoopLib implements IPayment
             $last4 = substr($cardNumber, -4);
 
             //captura user do pagamento se não foi enviado
-            if (!$user) {
+            if(!$user)
                 $user = $payment->User;
-            }
 
             //recupera comprador na zoop
             $customer = $this->findCustomerAll($user);
 
             //cria comprador na zoop caso não exista
-            if ($customer == null)
+            if($customer == null)
                 $customer_id = $this->createCustomer($user);
             else
                 $customer_id = $customer->id;
+
+            if($customer_id == null)
+                throw new ZoopException("Customer não foi criado", 1);
 
             //cria o cartão na ZOOP
             $token = ZoopTokens::tokenizeCard([
@@ -99,8 +108,14 @@ class ZoopLib implements IPayment
                 'card_number' => $cardNumber,
             ]);
 
+            if(!$token || !isset($token->id) || $token->id == '')
+                throw new ZoopException("Token do carão não foi criado", 1);
+
             //associa o cartão criado ao comprador
             $associate = $this->associateWithACustomer($token->id, $customer_id);
+
+            if(!$associate || !isset($associate->customer) || !$associate->customer || $associate->customer == '')
+                throw new ZoopException("Associação de customer e token não realizada", 1);
 
             return array(
                 "success" => true,
@@ -111,15 +126,15 @@ class ZoopLib implements IPayment
                 "last_four" => $last4,
                 "gateway"   => "zoop"
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
 
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => $ex->getMessage(),
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
             );
         }
     }
@@ -131,23 +146,22 @@ class ZoopLib implements IPayment
      * @param $capture Boolean - definição de captura da transação
      * @return array
      */
-
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
-
-        try {
-
+        try
+        {
             //recupera cartão na zoop
             $card = ZoopCards::get($payment->card_token);
 
-            if ($card == null)
-                throw new Zoop\Exceptions\ZoopException("Cartão não encontrado", 1);
+            if(!$card || !isset($card->id) || !$card->id || $card->id == '')
+                throw new ZoopException("Cartão não encontrado", 1);
 
             //cria transação na ZOOP
             $zoopTransaction = ZoopChargesCNP::create([
                 'payment_type' => 'credit',
                 'on_behalf_of' => Settings::findByKey('zoop_seller_id'), //vendedor admin
-                'customer' => $card->customer, //comprador
+                'customer' => isset($card->customer) ? $card->customer : '', //comprador
+                'capture' => boolval($capture),
                 'source' => array(
                     'currency' => 'BRL',
                     'amount' => floor($amount * 100),
@@ -161,31 +175,37 @@ class ZoopLib implements IPayment
 
             \Log::debug("[charge]parameters:" . print_r($zoopTransaction, 1));
 
-            if ($zoopTransaction->status == self::ZOOP_FAILED) {
+            if(
+                !$zoopTransaction || 
+                !isset($zoopTransaction->status) || 
+                (
+                    ($zoopTransaction->status != self::ZOOP_PRE_AUTHORIZED && !$capture) ||
+                    ($zoopTransaction->status != self::ZOOP_SUCCEEDED && $capture)
+                )
+            )
                 return array(
                     "success" => false,
                     "type" => 'api_charge_error',
                     "code" => 'api_charge_error',
                     "message" => trans("paymentError.refused"),
-                    "transaction_id" => $zoopTransaction->id
+                    "transaction_id" => ''
                 );
-            }
 
             return array(
                 'success' => true,
                 'captured' => $capture,
                 'paid' => ($zoopTransaction->status == self::ZOOP_SUCCEEDED),
-                'status' => $zoopTransaction->status,
+                'status' => $this->getStatusString($zoopTransaction->status),
                 'transaction_id' => $zoopTransaction->id
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => 'api_charge_error',
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
                 "transaction_id" => ''
             );
         }
@@ -202,8 +222,8 @@ class ZoopLib implements IPayment
 	 */
     public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions = "")
     {
-        try {
-            
+        try
+        {
             //recupera comprador na zoop
             $customer = $this->findCustomerAll($client);
 
@@ -213,57 +233,62 @@ class ZoopLib implements IPayment
             else
                 $customer_id = $customer->id;
 
+            if($customer_id == null)
+                throw new ZoopException("Customer não foi criado", 1);
+
             //cria transação na ZOOP
             $zoopTransaction = ZoopChargesCNP::create([
-                        'amount' => floor($amount * 100),
-                        'currency' => 'BRL',
-                        'description' => self::ZOOP_BILLET_CHARGE,
-                        'payment_type' => 'boleto',
-                        'capture' => true,
-                        'on_behalf_of' => Settings::findByKey('zoop_seller_id'),
-                        'customer' => $customer_id,
-                        'payment_method' => array(
-                            'expiration_date' => $billetExpirationDate,
-                            'top_instructions' => array($billetInstructions)
-                        ),
-                        'source' => array('currency' => 'BRL',
-                            'amount' => floor($amount * 100),
-                            'description' => self::ZOOP_BILLET_CHARGE,
-                            'usage' => 'single_use',
-                            'type' => 'customer'
-                        ),
+                'amount' => floor($amount * 100),
+                'currency' => 'BRL',
+                'description' => self::ZOOP_BILLET_CHARGE,
+                'payment_type' => 'boleto',
+                'capture' => true,
+                'on_behalf_of' => Settings::findByKey('zoop_seller_id'),
+                'customer' => $customer_id,
+                'payment_method' => array(
+                    'expiration_date' => $billetExpirationDate,
+                    'top_instructions' => array($billetInstructions)
+                ),
+                'source' => array('currency' => 'BRL',
+                    'amount' => floor($amount * 100),
+                    'description' => self::ZOOP_BILLET_CHARGE,
+                    'usage' => 'single_use',
+                    'type' => 'customer'
+                ),
             ]);
 
             \Log::debug("[charge]parameters:" . print_r($zoopTransaction, 1));
 
-            if ($zoopTransaction->status == self::ZOOP_FAILED) {
+            if(!$zoopTransaction || !isset($zoopTransaction->status) || $zoopTransaction->status == self::ZOOP_FAILED)
                 return array(
                     "success" => false,
                     "type" => 'api_charge_error',
                     "code" => 'api_charge_error',
                     "message" => trans("paymentError.refused"),
-                    "transaction_id" => $zoopTransaction->id
+                    "transaction_id" => '',
+                    "digitable_line" => ''
                 );
-            }
 
             return array(
                 'success' => true,
                 'captured' => true,
                 'paid' => ($zoopTransaction->status == self::ZOOP_SUCCEEDED),
-                'status' => self::ZOOP_WAITING_PAYMENT,
+                'status' => $this->getStatusString($zoopTransaction->status),
                 'transaction_id' => $zoopTransaction->id,
                 'billet_url' => $zoopTransaction->payment_method->url,
-                'billet_expiration_date' => $zoopTransaction->payment_method->expiration_date
+                'billet_expiration_date' => $zoopTransaction->payment_method->expiration_date,
+                'digitable_line' => $zoopTransaction->payment_method->barcode
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => 'api_charge_error',
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
-                "transaction_id" => ''
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
+                "transaction_id" => '',
+                "digitable_line" => ''
             );
         }
     }
@@ -274,7 +299,7 @@ class ZoopLib implements IPayment
 	public function billetVerify ($request, $transaction_id = null)
 	{
 		$postbackTransaction = $request->payload;
-        
+
 		if (!$postbackTransaction)
 			return [
 				'success' => false,
@@ -284,7 +309,7 @@ class ZoopLib implements IPayment
 
 		return [
 			'success' => true,
-			'status' => $postbackTransaction->status == self::ZOOP_SUCCEEDED ? "paid" : $postbackTransaction->status,
+			'status' => $this->getStatusString($postbackTransaction->status),
 			'transaction_id' => $postbackTransaction->id
 		];
 	}
@@ -298,12 +323,10 @@ class ZoopLib implements IPayment
      * @param $capture Boolean - definição de captura da transação
      * @return array
      */
-
     public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
     {
-
-        try {
-
+        try
+        {
             //ajusta valores para o admin e para o prestador
             $admin_value = $totalAmount - $providerAmount;
             $admin_value = round($admin_value * 100);
@@ -316,36 +339,40 @@ class ZoopLib implements IPayment
             else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
                 $totalAmount = floor($totalAmount * 100);
 
-            //Recupera vendedor admin na ZOOP
-            $seller_adm = ZoopSellers::get(Settings::findByKey('zoop_seller_id'));
-
-            if ($seller_adm == null)
-                throw new Zoop\Exceptions\ZoopException("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
-
             //Recupera conta do prestador
             $bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
 
-            if ($bank_account == null)
-                throw new Zoop\Exceptions\ZoopException("Conta do prestador nao encontrada.", 1);
+            if (!$bank_account)
+                throw new ZoopException("Conta do prestador nao encontrada.", 1);
+
+            if(!$bank_account->recipient_id || $bank_account->recipient_id == '' || $bank_account->recipient_id == 'empty')
+            {
+                $recipientCreated = $this->createOrUpdateAccount($bank_account);
+                if(!isset($recipientCreated['success']) || (isset($recipientCreated['success']) && !$recipientCreated['success']))
+                    $bank_account->recipient_id = $recipientCreated['recipient_id'];
+                else
+                    throw new ZoopException("Recebedor não foi criado", 1);
+            }
 
             //Recupera vendedor na ZOOP do prestador
             $recipient = ZoopSellers::get($bank_account->recipient_id);
 
-            if ($recipient == null)
-                throw new Zoop\Exceptions\ZoopException("Recebedor não foi encontrado", 1);
+            \Log::debug("[charge]response: recipient" . print_r($recipient, 1));
 
+            if(!$recipient || !isset($recipient->id) || !$recipient->id || !count($recipient->id))
+                throw new ZoopException("Recebedor não foi encontrado", 1);
 
             //Recupera cartão do comprador
             $card = ZoopCards::get($payment->card_token);
 
-            if ($card == null)
-                throw new Zoop\Exceptions\ZoopException("Cartão não encontrado", 1);
+            if(!$card || !isset($card->id) || !$card->id || $card->id == '')
+                throw new ZoopException("Cartão não encontrado", 1);
 
-            //Cria transação na ZOOP
-            $zoopTransaction = ZoopChargesCNP::create([
+            $transactionFields = [
                 'payment_type' => 'credit',
                 'on_behalf_of' => Settings::findByKey('zoop_seller_id'), //vendedor admin
-                'customer' => $card->customer, //comprador
+                'customer' => isset($card->customer) ? $card->customer : '', //comprador
+                'capture' => boolval($capture),
                 'source' => array(
                     'currency' => 'BRL',
                     'amount' => $totalAmount,
@@ -354,80 +381,68 @@ class ZoopLib implements IPayment
                     'type' => 'card',
                     'capture' => boolval($capture),
                     'card' => $card
-                ),
-            ]);
+                )
+            ];
 
-            //Faz split com o prestador na transação
-            $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
-                'recipient' => isset($recipient->items) ? $recipient->items[0]->id : $recipient->id,
-                'amount' => $providerAmount,
-                "charge_processing_fee" => self::getReversedProcessingFeeCharge() ? true : false,
-                "liable" => true, //assume risco de transação (possíveis estornos)
-            ]);
+            $splitFields = array();
+
+            if($capture)
+                $splitFields = array(
+                    'split_rules' => (object)array(
+                        'recipient' => $recipient->id,
+                        'amount' => $providerAmount,
+                        'charge_processing_fee' => true,
+                        'liable' => true //assume risco de transação (possíveis estornos)
+                    )
+                );
+
+            $mergeFields = array_merge($transactionFields, $splitFields);
+
+            //Cria transação na ZOOP
+            $zoopTransaction = ZoopChargesCNP::create($mergeFields);
 
             \Log::debug("[charge]response: zoopTransaction" . print_r($zoopTransaction, 1));
-            \Log::debug("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
 
-            if ($zoopTransaction->status == self::ZOOP_FAILED) {
+            if(!$zoopTransaction || !isset($zoopTransaction->status) || $zoopTransaction->status == self::ZOOP_FAILED)
                 return array(
                     "success" => false,
                     "type" => 'api_charge_error',
                     "code" => 'api_charge_error',
                     "message" => trans("paymentError.refused"),
-                    "transaction_id" => $zoopTransaction->id
+                    "transaction_id" => ''
                 );
-            }
+
+            //Faz split com o prestador na transação
+            $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
+                'recipient' => $recipient->id,
+                'amount' => $providerAmount,
+                "charge_processing_fee" => true,
+                "liable" => true, //assume risco de transação (possíveis estornos)
+            ]);
+
+            \Log::debug("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
+
+            if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
+                throw new ZoopException("Split não foi criado", 1);
 
             return array(
                 'success' => true,
                 'captured' => $capture,
                 'paid' => ($zoopTransaction->status == self::ZOOP_SUCCEEDED),
-                'status' => $zoopTransaction->status,
+                'status' => $this->getStatusString($zoopTransaction->status),
                 'transaction_id' => $zoopTransaction->id
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => 'api_charge_error',
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
                 "transaction_id" => ''
             );
         }
-    }
-
-    /* Método para retornar comprador padrão ZOOP
-     * @param $payment Payment - instância do pagamento com dados do cartão
-     * @return array
-     */
-
-    private function getCustomer(Payment $payment = null, $user = null)
-    {
-
-    if ($payment)
-        $user = $payment->User;
-
-        $customer = array(
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'email' => $user->email,
-            'phone_number' => $user->phone,
-            'taxpayer_id' => $user->document,
-            'birthdate' => $user->birthdate,
-            'description' => "Customer for " . $user->email,
-            'address' => array(
-                'line1' => $user->address . ", " . $user->address_number,
-                'neighborhood' => $user->address_neighbour,
-                'city' => $user->address_city,
-                'state' => $user->state,
-                'postal_code' => $user->zipcode,
-                'country_code' => 'BR'
-            )
-        );
-
-        return $customer;
     }
 
     /* Método para capturar transação do comprador sem repassar valor algum ao prestador
@@ -436,19 +451,17 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com dados do cartão
      * @return array
      */
-
     public function capture(Transaction $transaction, $amount, Payment $payment = null)
     {
-
-        try {
-
+        try
+        {
             $amount *= 100;
 
             //Recupera transação na ZOOP
             $zoopTransaction = ZoopChargesCNP::get($transaction->gateway_transaction_id);
 
-            if ($zoopTransaction == null)
-                throw new Zoop\Exceptions\ZoopException("Transaction not found.", 1);
+            if(!$zoopTransaction || !isset($zoopTransaction->status) || $zoopTransaction->status == self::ZOOP_FAILED)
+                throw new ZoopException("Transaction not found.", 1);
 
             //verificar se valor passado é maior que valor registrado na zoop
             if ($amount > $zoopTransaction->amount)
@@ -464,21 +477,24 @@ class ZoopLib implements IPayment
 
             \Log::debug("[capture]response:" . print_r($zoopTransactionCapture, 1));
 
+            if(!$zoopTransactionCapture || !isset($zoopTransactionCapture->status) || $zoopTransactionCapture->status == self::ZOOP_FAILED)
+                throw new ZoopException("Transaction not found.", 1);
+
             return array(
                 'success' => true,
-                'status' => $zoopTransactionCapture->status,
+                'status' => $this->getStatusString($zoopTransactionCapture->status),
                 'captured' => ($zoopTransactionCapture->status == self::ZOOP_SUCCEEDED),
                 'paid' => ($zoopTransactionCapture->status == self::ZOOP_SUCCEEDED),
                 'transaction_id' => $zoopTransactionCapture->id
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => 'api_capture_error',
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
                 "transaction_id" => $transaction->gateway_transaction_id
             );
         }
@@ -489,10 +505,8 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento
      * @return array
      */
-
     public function refund(Transaction $transaction, Payment $payment)
     {
-
         //verifica se a transação já foi reembolsada
         if ($transaction && $transaction->status != Transaction::REFUNDED) {
 
@@ -506,9 +520,12 @@ class ZoopLib implements IPayment
 
                 \Log::debug("[refund]response:" . print_r($refund, 1));
 
+                if(!$refund || !isset($refund->status) || ($refund->status != self::ZOOP_SUCCEEDED && $refund->status != self::ZOOP_CANCELED))
+                    throw new ZoopException("Refund fail.", 1);
+
                 return array(
                     "success" => true,
-                    "status" => $refund->status,
+                    "status" => $this->getStatusString($refund->status),
                     "transaction_id" => $refund->id,
                 );
             } catch (Exception $ex) {
@@ -543,10 +560,8 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento
      * @return array
      */
-
     public function refundWithSplit(Transaction $transaction, Payment $payment)
     {
-
         \Log::debug('refund with split');
 
         //chama reembolso padrão
@@ -561,12 +576,10 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com dados do cartão
      * @return array
      */
-
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
-
-        try {
-
+        try
+        {
             \Log::debug('capture with split');
 
             //define valor do admin a partir do valor total e valor do prestador
@@ -575,8 +588,35 @@ class ZoopLib implements IPayment
             //Recupera transação na ZOOP
             $zoopTransaction = ZoopChargesCNP::get($transaction->gateway_transaction_id);
 
-            if ($zoopTransaction == null)
-                throw new Zoop\Exceptions\ZoopException("Transaction not found.", 1);
+            if(!$zoopTransaction || !isset($zoopTransaction->id) || !$zoopTransaction->id)
+                throw new ZoopException("Transaction not found.", 1);
+
+            //retrieve split rules to check, if there is not at least one creates
+            $zoopSplitRetrieve = ZoopSplitTransactions::getAllSplitRules($zoopTransaction->id);
+
+            if(!$zoopSplitRetrieve || !isset($zoopSplitRetrieve->items) || !count($zoopSplitRetrieve->items))
+            {
+                $bank_account = $provider->getBankAccount();
+
+                if(isset($bank_account->recipient_id))
+                    $recipient = ZoopSellers::get($bank_account->recipient_id);// Recupera vendedor na ZOOP do prestador
+                else
+                    $recipient = null;
+
+                if(!$recipient || !isset($recipient->id) || !$recipient->id || !count($recipient->id))
+                    throw new ZoopException("Recebedor não foi encontrado", 1);
+
+                //Faz split com o prestador na transação
+                $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
+                    'recipient' => $recipient->id,
+                    'amount' => $providerAmount,
+                    "charge_processing_fee" => true,
+                    "liable" => true, //assume risco de transação (possíveis estornos)
+                ]);
+
+                if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
+                    throw new ZoopException("Split não foi criado", 1);
+            }
 
             //Realiza captura a partir de transação já com split
             $zoopTransactionCapture = ZoopChargesCNP::capture($zoopTransaction->id, [
@@ -586,21 +626,24 @@ class ZoopLib implements IPayment
 
             \Log::debug("[capture]response:" . print_r($zoopTransactionCapture, 1));
 
+            if(!$zoopTransactionCapture || !isset($zoopTransactionCapture->status) || $zoopTransactionCapture->status != self::ZOOP_SUCCEEDED)
+                throw new ZoopException("Captura com split não foi realizada", 1);
+
             return array(
                 'success' => true,
-                'status' => $zoopTransactionCapture->status,
+                'status' => $this->getStatusString($zoopTransactionCapture->status),
                 'captured' => ($zoopTransactionCapture->status == self::ZOOP_SUCCEEDED),
                 'paid' => ($zoopTransactionCapture->status == self::ZOOP_SUCCEEDED),
                 'transaction_id' => $zoopTransactionCapture->id
             );
-        } catch (Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" => false,
                 "type" => 'api_capture_error',
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
+                "code" => ApiErrors::CARD_ERROR,
+                "message" => trans("paymentError." . ApiErrors::CARD_ERROR),
                 "transaction_id" => $transaction->gateway_transaction_id
             );
         }
@@ -611,19 +654,20 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento
      * @return array
      */
-
     public function retrieve(Transaction $transaction, Payment $payment = null)
     {
-
         //Recupera transação na ZOOP
         $zoopTransaction = ZoopChargesCNP::get($transaction->gateway_transaction_id);
+
+        if(!$zoopTransaction || !isset($zoopTransaction->id) || !$zoopTransaction->id)
+            throw new ZoopException("Retorno de transação não foi realizado", 1);
 
         return array(
             'success' => true,
             'transaction_id' => $zoopTransaction->id,
             'amount' => $zoopTransaction->amount,
             'destination' => '',
-            'status' => $zoopTransaction->status,
+            'status' => $this->getStatusString($zoopTransaction->status),
             'card_last_digits' => $zoopTransaction->payment_method->last4_digits,
         );
     }
@@ -632,23 +676,29 @@ class ZoopLib implements IPayment
      * @param $ledgerBankAccount LedgerBankAccount - instância da conta do vendedor
      * @return array
      */
-
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-
         $return = [];
         $recipient = null;
 
-        $bank = Bank::where('id', $ledgerBankAccount->bank_id)->first();
-        $provider = Provider::find($ledgerBankAccount->provider_id);
+        try
+        {
+            $bank = Bank::where('id', $ledgerBankAccount->bank_id)->first();
 
-        //Se o recipient_id for diferente de null e diferente de empty (padrão do sistema), retorna vendedor. Senão, cria novo vendedor.
-        if ($ledgerBankAccount->recipient_id && $ledgerBankAccount->recipient_id != "empty") {
-            $recipient = ZoopSellers::get($ledgerBankAccount->recipient_id);
-        } else {
-            $ledgerBankAccount->recipient_id = null;
-        }
-        try {
+            if(!$bank)
+                throw new ZoopException("Falha ao recuperar instituição bancária", 1);
+
+            $provider = Provider::find($ledgerBankAccount->provider_id);
+
+            if(!$provider)
+                throw new ZoopException("Falha ao recuperar prestador", 1);
+
+            //Se o recipient_id for diferente de null e diferente de empty (padrão do sistema), retorna vendedor. Senão, cria novo vendedor.
+            if ($ledgerBankAccount->recipient_id && $ledgerBankAccount->recipient_id != "empty" && $ledgerBankAccount->recipient_id != "") {
+                $recipient = ZoopSellers::get($ledgerBankAccount->recipient_id);
+            } else {
+                $ledgerBankAccount->recipient_id = null;
+            }
 
             //define dados para a conta
             $bankAccount = array(
@@ -656,16 +706,19 @@ class ZoopLib implements IPayment
                 "bank_code" => $bank->code,
                 "routing_number" => $ledgerBankAccount->agency,
                 "account_number" => $ledgerBankAccount->account . $ledgerBankAccount->account_digit,
-                "taxpayer_id" => $recipient ? $recipient->taxpayer_id : $ledgerBankAccount->document,
+                "taxpayer_id" => $recipient && isset($recipient->taxpayer_id) ? $recipient->taxpayer_id : $ledgerBankAccount->document,
                 "type" => ($ledgerBankAccount->account_type == "conta_corrente" ? "checking" : ($ledgerBankAccount->account_type == "conta_poupanca" ? "savings" : "")),
             );
 
             //Cria ou atualiza conta se o taxpayer_id for o mesmo
             $zoopBank = ZoopTokens::tokenizeBankAccount($bankAccount);
 
-            //Cria um vendedor na ZOOP por não existir
-            if (!$recipient) {
+            if(!$zoopBank || !isset($zoopBank->bank_account->id) || !$zoopBank->bank_account->id)
+                throw new ZoopException("Falha ao criar conta recipient", 1);
 
+            //Cria um vendedor na ZOOP por não existir
+            if (!$recipient || !isset($recipient->id) || !$recipient->id)
+            {
                 //define dados do vendedor
                 $dataSeller = array(
                     'first_name' => $provider->first_name,
@@ -688,8 +741,11 @@ class ZoopLib implements IPayment
 
                 //Cria um vendedor na ZOOP
                 $seller = ZoopSellers::createIndividuals($dataSeller);
-                //------------------
-                \Log::info("[Zoop_Recipient] Saida: " . print_r($seller, 1));
+
+                \Log::debug("[Zoop_Recipient] Saida: " . print_r($seller, 1));
+
+                if(!$seller || !isset($seller->id) || !$seller->id)
+                    throw new ZoopException("Falha ao criar conta recipient", 1);
 
                 //Registra novo recipient_id no sistema
                 $ledgerBankAccount->recipient_id = $seller->id;
@@ -707,7 +763,7 @@ class ZoopLib implements IPayment
                 "success" => true,
                 "recipient_id" => $return['recipient_id']
             );
-        } catch (\Zoop\Exceptions\ZoopException $ex) {
+        } catch (ZoopException $ex) {
 
             \Log::error($ex->__toString());
 
@@ -715,7 +771,7 @@ class ZoopLib implements IPayment
                 "success" => false,
                 "recipient_id" => 'empty',
                 "type" => 'api_bankaccount_error',
-                "code" => $ex->getReturnCode(),
+                "code" => ApiErrors::CARD_ERROR,
                 "message" => trans("empty." . $ex->getMessage())
             );
 
@@ -727,32 +783,28 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com cartão
      * @return array
      */
-
     public function deleteCard(Payment $payment, User $user = null)
     {
-
-        try {
-
+        try
+        {
             //Recupera cartão
             $card = ZoopCards::get($payment->card_token);
 
-            if ($card == null)
-                throw new Zoop\Exceptions\ZoopException("Cartão não encontrado", 1);
+            if(!$card || !isset($card->id) || $card->id || $card->id == '')
+                throw new ZoopException("Cartão não encontrado", 1);
 
             //Deleta cartão
-            ZoopCards::delete($card->id);
+            $deletedCard = ZoopCards::delete($card->id);
+
+            \Log::debug("[ZoopCards] deletedCard: " . print_r($deletedCard, 1));
 
             return array(
                 "success" => true
             );
-        } catch (\Zoop\Exceptions\ZoopException $ex) {
+
+        } catch (ZoopException $ex) {
             $body = $ex->getJsonBody();
             $error = $body['error'];
-
-            if (array_key_exists('code', $body))
-                $code = $body["code"];
-            else
-                $code = null;
 
             return array(
                 "success" => false,
@@ -769,10 +821,8 @@ class ZoopLib implements IPayment
      * @param $user User - instância do usuário comprador
      * @return array
      */
-
     private function createCustomer($user)
     {
-
         //define dados do comprador e cria na zoop
         $customer = ZoopBuyers::create([
             'first_name' => $user->first_name,
@@ -792,52 +842,30 @@ class ZoopLib implements IPayment
             ),
         ]);
 
-        return $customer->id;
+        if($customer && isset($customer->id) && $customer->id && $customer->id != '')
+            return $customer->id;
+        else
+            return null;
     }
 
     /* Método para procurar e retorna o comprador na base de dados da ZOOP
      * @param $user User - instância do usuário comprador
      * @return array
      */
-
     private function findCustomerAll($user)
     {
-
         $res = ZoopBuyers::getAll();
 
-        foreach ($res->items as $customer) {
+        if($res && isset($res->items) && count($res->items))
+            foreach ($res->items as $customer)
+            {
 
-            if ($user->email == $customer->email && $user->document == $customer->taxpayer_id) {
+                if($user->email == $customer->email && $user->document == $customer->taxpayer_id)
+                    return $customer;
 
-                return $customer;
             }
-        }
 
         return null;
-    }
-
-    /* Método para procurar e retorna o comprador na base de dados da ZOOP de forma específica
-     * @param $user User - instância do usuário comprador
-     * @return array
-     */
-
-    private function findCustomer($user)
-    {
-
-        try {
-            $res = ZoopBuyers::get('search?taxpayer_id=' . $user->document . '&email=' . $user->email);
-            return $res;
-        } catch (Zoop\Exceptions\ZoopException $ex) {
-
-            \Log::error($ex->getMessage());
-
-            return array(
-                "success" => false,
-                "type" => $ex->getMessage(),
-                "code" => $ex->getReturnCode(),
-                "message" => trans("paymentError." . $ex->getReturnCode()),
-            );
-        }
     }
 
     /* Método para associar o cartão criado ao comprador existente ou novo
@@ -845,19 +873,21 @@ class ZoopLib implements IPayment
      * @param $customer_id - id do comprador
      * @return array
      */
-
     private function associateWithACustomer($token_id, $customer_id)
     {
-
         $associate = ZoopCards::associateWithACustomer([
             'token' => $token_id,
-            'customer' => $customer_id,
+            'customer' => $customer_id
         ]);
 
-        return $associate;
+        if($associate && isset($associate->customer) && $associate->customer && $associate->customer != '')
+            return $associate;
+        else
+            return null;
     }
 
-    public function getNextCompensationDate(){
+    public function getNextCompensationDate()
+    {
 		$carbon = Carbon::now();
 		$compDays = Settings::findByKey('compensate_provider_days');
 		$addDays = ($compDays || (string)$compDays == '0') ? (int)$compDays : 31;
@@ -881,11 +911,6 @@ class ZoopLib implements IPayment
         return 0.5;
     }
 
-    private static function getReversedProcessingFeeCharge()
-    {
-        return true;
-    }
-
     public function checkAutoTransferProvider()
     {
         try {
@@ -900,8 +925,9 @@ class ZoopLib implements IPayment
         }
     }
 
-    public static function getSellerStatusBySellerId($id){
-        if ($id) {
+    public static function getSellerStatusBySellerId($id)
+    {
+        if ($id && $id != "empty") {
             try {
                 $seller_adm = ZoopSellers::get($id);
             } catch (\Throwable $th) {
@@ -911,10 +937,10 @@ class ZoopLib implements IPayment
         } else {
             $seller_adm = null;
         }
-        
-        if ($seller_adm) {
+
+        if($seller_adm && isset($seller_adm->status) && $seller_adm->status && count($seller_adm->items))
             return $seller_adm->status;
-        } else {
+        else {
             return null;
         }
         
@@ -946,5 +972,39 @@ class ZoopLib implements IPayment
             "message" 			=> 'split_not_implementd',
             "transaction_id" 	=> ''
         );
+    }
+
+    /**
+     * Returns status string based on status gateway
+     *
+     * @param String        $statusGateway      Payment status string captured on gateway.
+     *
+     * @return String                           String related to the payment status on gateway.
+     *
+     */
+    private function getStatusString($statusGateway)
+    {
+        switch ($statusGateway) {
+            case self::ZOOP_SUCCEEDED:
+                return self::PAYMENT_CONFIRMED;
+            case self::ZOOP_PRE_AUTHORIZED:
+                return self::PAYMENT_AUTHORIZED;
+            case self::ZOOP_NEW:
+                return self::PAYMENT_NOTFINISHED;
+            case self::ZOOP_FAILED:
+                return self::PAYMENT_DENIED;
+            case self::ZOOP_CANCELED:
+            case self::ZOOP_CHARGE_BACK:
+            case self::ZOOP_REFUNDED:
+            case self::ZOOP_REVERSED:
+                return self::PAYMENT_REFUNDED;
+            case self::ZOOP_PENDING:
+            case self::ZOOP_BILLET_CHARGE:
+            case self::ZOOP_WAITING_PAYMENT:
+            case self::ZOOP_DISPUTE:
+                return self::PAYMENT_PENDING;
+            default:
+                return 'not_geted';
+        }
     }
 }

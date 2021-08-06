@@ -138,8 +138,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'zoop_marketplace_id')->update(['value' => 'c7bbd8b1b7574077804948faa27ff903']);
 
 		$this->assertTrue(true);
-		echo "\n".$gateway." - nao implementado ainda";
-		// $this->runInterfaceGateways($gateway);
+		$this->runInterfaceGateways($gateway, "4539003370725497");
+		$this->runSPlitGateways($gateway, "4539003370725497");
 	}
 
 	public function testGerencianet() {
@@ -295,7 +295,7 @@ class AllGatewaysTest extends TestCase
 
 
 		//billetCharge (boleto bancario)
-		if($gateway != 'stripe' && $gateway != 'adiq') { //stripe nao possui boleto, entao nao eh verificado no teste
+		if($gateway != 'stripe' && $gateway != 'adiq' && $gateway != 'braspag') { //stripe nao possui boleto, entao nao eh verificado no teste
 			$billet = $interface->testBilletCharge();
 			$this->assertTrue($billet['success']);
 			$this->assertInternalType('string', $billet['billet_url']);
