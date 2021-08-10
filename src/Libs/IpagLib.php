@@ -13,6 +13,7 @@ use Provider;
 use Transaction;
 use User;
 use LedgerBankAccount;
+use Requests;
 use Settings;
 
 Class IpagLib implements IPayment
@@ -378,7 +379,28 @@ Class IpagLib implements IPayment
      */    
     public function capture(Transaction $transaction, $amount, Payment $payment = null)
     {
-        try {
+        try
+        {
+            $request = Requests::find($transaction->request_id);
+
+            if($request && isset($request->total) && $request->total != $request->estimate_price)
+            {
+                $responseRefund = $this->refund($transaction, $payment);
+
+                if (!isset($responseRefund['success']) || !$responseRefund['success'])
+                {
+                    return array(
+                        "success" 			=> false,
+                        "type" 				=> 'api_refund_error',
+                        "code" 				=> 'api_refund_error',
+                        "message" 			=> trans('creditCard.rafund'),
+                        "transaction_id" 	=> ''
+                    );
+                }
+
+                //(Payment $payment, $amount, $description, $capture = true, User $user = null)
+            }
+
 			$response = IpagApi::capture($transaction, $amount);
 
             if (
