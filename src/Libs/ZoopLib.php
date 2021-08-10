@@ -19,6 +19,7 @@ use Provider;
 use Transaction;
 use User;
 use LedgerBankAccount;
+use Requests;
 use Settings;
 
 class ZoopLib implements IPayment
@@ -340,22 +341,22 @@ class ZoopLib implements IPayment
                 $totalAmount = floor($totalAmount * 100);
 
             //Recupera conta do prestador
-            $bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
+            $bankAccount = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
 
-            if (!$bank_account)
+            if (!$bankAccount)
                 throw new ZoopException("Conta do prestador nao encontrada.", 1);
 
-            if(!$bank_account->recipient_id || $bank_account->recipient_id == '' || $bank_account->recipient_id == 'empty')
+            if(!$bankAccount->recipient_id || $bankAccount->recipient_id == '' || $bankAccount->recipient_id == 'empty')
             {
-                $recipientCreated = $this->createOrUpdateAccount($bank_account);
+                $recipientCreated = $this->createOrUpdateAccount($bankAccount);
                 if(!isset($recipientCreated['success']) || (isset($recipientCreated['success']) && !$recipientCreated['success']))
-                    $bank_account->recipient_id = $recipientCreated['recipient_id'];
+                    $bankAccount->recipient_id = $recipientCreated['recipient_id'];
                 else
                     throw new ZoopException("Recebedor não foi criado", 1);
             }
 
             //Recupera vendedor na ZOOP do prestador
-            $recipient = ZoopSellers::get($bank_account->recipient_id);
+            $recipient = ZoopSellers::get($bankAccount->recipient_id);
 
             \Log::debug("[charge]response: recipient" . print_r($recipient, 1));
 
@@ -384,22 +385,8 @@ class ZoopLib implements IPayment
                 )
             ];
 
-            $splitFields = array();
-
-            if($capture)
-                $splitFields = array(
-                    'split_rules' => (object)array(
-                        'recipient' => $recipient->id,
-                        'amount' => $providerAmount,
-                        'charge_processing_fee' => true,
-                        'liable' => true //assume risco de transação (possíveis estornos)
-                    )
-                );
-
-            $mergeFields = array_merge($transactionFields, $splitFields);
-
             //Cria transação na ZOOP
-            $zoopTransaction = ZoopChargesCNP::create($mergeFields);
+            $zoopTransaction = ZoopChargesCNP::create($transactionFields);
 
             \Log::debug("[charge]response: zoopTransaction" . print_r($zoopTransaction, 1));
 
@@ -412,18 +399,21 @@ class ZoopLib implements IPayment
                     "transaction_id" => ''
                 );
 
-            //Faz split com o prestador na transação
-            $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
-                'recipient' => $recipient->id,
-                'amount' => $providerAmount,
-                "charge_processing_fee" => true,
-                "liable" => true, //assume risco de transação (possíveis estornos)
-            ]);
+            if($capture)
+            {
+                //Faz split com o prestador na transação
+                $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
+                    'recipient' => $recipient->id,
+                    'amount' => $providerAmount,
+                    "charge_processing_fee" => true,
+                    "liable" => true, //assume risco de transação (possíveis estornos)
+                ]);
 
-            \Log::debug("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
+                \Log::debug("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
 
-            if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
-                throw new ZoopException("Split não foi criado", 1);
+                if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
+                    throw new ZoopException("Split não foi criado", 1);
+            }
 
             return array(
                 'success' => true,
@@ -472,13 +462,53 @@ class ZoopLib implements IPayment
             //Captura a partir de transação já existente
             $zoopTransactionCapture = ZoopChargesCNP::capture($zoopTransaction->id, [
                 'on_behalf_of' => Settings::findByKey('zoop_seller_id'), //vendedor admin
-                'amount' => floor($amount),
+                'amount' => floor($amount * 100),
             ]);
 
             \Log::debug("[capture]response:" . print_r($zoopTransactionCapture, 1));
 
             if(!$zoopTransactionCapture || !isset($zoopTransactionCapture->status) || $zoopTransactionCapture->status == self::ZOOP_FAILED)
                 throw new ZoopException("Transaction not found.", 1);
+
+            // if($this->checkAutoTransferProvider())
+            // {
+            //     //retrieve split rules to check, if there is not at least one creates
+            //     $zoopSplitRetrieve = ZoopSplitTransactions::getAllSplitRules($zoopTransaction->id);
+
+            //     if(!$zoopSplitRetrieve || !isset($zoopSplitRetrieve->items) || !count($zoopSplitRetrieve->items))
+            //     {
+            //         $requestTransaction = Requests::find($transaction->request_id);
+
+            //         if(!$requestTransaction)
+            //             throw new ZoopException("RequestTransaction not found.", 1);
+
+            //         $providerTransaction = Provider::find($requestTransaction->current_provider);
+
+            //         if(!$providerTransaction)
+            //             throw new ZoopException("ProviderTransaction not found.", 1);
+
+            //         $bankAccount = $providerTransaction->getBankAccount();
+
+            //         if(isset($bankAccount->recipient_id))
+            //             $recipient = ZoopSellers::get($bankAccount->recipient_id);// Recupera vendedor na ZOOP do prestador
+            //         else
+            //             $recipient = null;
+
+            //         if(!$recipient || !isset($recipient->id) || !$recipient->id || !count($recipient->id))
+            //             throw new ZoopException("Recebedor não foi encontrado", 1);
+
+            //         //Faz split com o prestador na transação
+            //         $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
+            //             'recipient' => $recipient->id,
+            //             'amount' => $transaction->provider_value,
+            //             "charge_processing_fee" => true,
+            //             "liable" => true, //assume risco de transação (possíveis estornos)
+            //         ]);
+
+            //         if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
+            //             throw new ZoopException("Split não foi criado", 1);
+            //     }
+            // }
 
             return array(
                 'success' => true,
@@ -525,10 +555,10 @@ class ZoopLib implements IPayment
 
                 return array(
                     "success" => true,
-                    "status" => $this->getStatusString($refund->status),
+                    "status" => self::PAYMENT_REFUNDED,
                     "transaction_id" => $refund->id,
                 );
-            } catch (Exception $ex) {
+            } catch (ZoopException $ex) {
 
                 \Log::error($ex->__toString());
 
@@ -582,24 +612,32 @@ class ZoopLib implements IPayment
         {
             \Log::debug('capture with split');
 
-            //define valor do admin a partir do valor total e valor do prestador
-            $adminAmount = $totalAmount - $providerAmount;
-
             //Recupera transação na ZOOP
             $zoopTransaction = ZoopChargesCNP::get($transaction->gateway_transaction_id);
 
             if(!$zoopTransaction || !isset($zoopTransaction->id) || !$zoopTransaction->id)
                 throw new ZoopException("Transaction not found.", 1);
 
+            //Realiza captura a partir de transação já com split
+            $zoopTransactionCapture = ZoopChargesCNP::capture($zoopTransaction->id, [
+                'on_behalf_of' => Settings::findByKey('zoop_seller_id'), //vendedor admin
+                'amount' => floor($totalAmount * 100),
+            ]);
+
+            \Log::debug("[capture]response:" . print_r($zoopTransactionCapture, 1));
+
+            if(!$zoopTransactionCapture || !isset($zoopTransactionCapture->status) || $zoopTransactionCapture->status != self::ZOOP_SUCCEEDED)
+                throw new ZoopException("Captura com split não foi realizada", 1);
+
             //retrieve split rules to check, if there is not at least one creates
             $zoopSplitRetrieve = ZoopSplitTransactions::getAllSplitRules($zoopTransaction->id);
 
             if(!$zoopSplitRetrieve || !isset($zoopSplitRetrieve->items) || !count($zoopSplitRetrieve->items))
             {
-                $bank_account = $provider->getBankAccount();
+                $bankAccount = $provider->getBankAccount();
 
-                if(isset($bank_account->recipient_id))
-                    $recipient = ZoopSellers::get($bank_account->recipient_id);// Recupera vendedor na ZOOP do prestador
+                if(isset($bankAccount->recipient_id))
+                    $recipient = ZoopSellers::get($bankAccount->recipient_id);// Recupera vendedor na ZOOP do prestador
                 else
                     $recipient = null;
 
@@ -609,7 +647,7 @@ class ZoopLib implements IPayment
                 //Faz split com o prestador na transação
                 $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
                     'recipient' => $recipient->id,
-                    'amount' => $providerAmount,
+                    'amount' => floor($providerAmount * 100),
                     "charge_processing_fee" => true,
                     "liable" => true, //assume risco de transação (possíveis estornos)
                 ]);
@@ -617,17 +655,6 @@ class ZoopLib implements IPayment
                 if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
                     throw new ZoopException("Split não foi criado", 1);
             }
-
-            //Realiza captura a partir de transação já com split
-            $zoopTransactionCapture = ZoopChargesCNP::capture($zoopTransaction->id, [
-                'on_behalf_of' => Settings::findByKey('zoop_seller_id'), //vendedor admin
-                'amount' => floor($adminAmount),
-            ]);
-
-            \Log::debug("[capture]response:" . print_r($zoopTransactionCapture, 1));
-
-            if(!$zoopTransactionCapture || !isset($zoopTransactionCapture->status) || $zoopTransactionCapture->status != self::ZOOP_SUCCEEDED)
-                throw new ZoopException("Captura com split não foi realizada", 1);
 
             return array(
                 'success' => true,
@@ -790,7 +817,9 @@ class ZoopLib implements IPayment
             //Recupera cartão
             $card = ZoopCards::get($payment->card_token);
 
-            if(!$card || !isset($card->id) || $card->id || $card->id == '')
+            \Log::debug("[ZoopCards] card: " . print_r($card, 1));
+
+            if(!$card || !isset($card->id) || !$card->id || $card->id == '')
                 throw new ZoopException("Cartão não encontrado", 1);
 
             //Deleta cartão
@@ -803,15 +832,14 @@ class ZoopLib implements IPayment
             );
 
         } catch (ZoopException $ex) {
-            $body = $ex->getJsonBody();
-            $error = $body['error'];
+            \Log::error($ex->__toString());
 
             return array(
                 "success" => false,
                 'data' => null,
                 'error' => array(
                     "code" => ApiErrors::CARD_ERROR,
-                    "messages" => array(trans('creditCard.' . $error["code"]))
+                    "message" => $ex->getMessage()
                 )
             );
         }
@@ -825,19 +853,19 @@ class ZoopLib implements IPayment
     {
         //define dados do comprador e cria na zoop
         $customer = ZoopBuyers::create([
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'email' => $user->email,
-            'phone_number' => $user->phone,
-            'taxpayer_id' => $user->document,
-            'birthdate' => $user->birthdate,
-            'description' => "Customer for " . $user->email,
+            'first_name' => (string)$user->first_name,
+            'last_name' => (string)$user->last_name,
+            'email' => (string)$user->email,
+            'phone_number' => (string)$user->phone,
+            'taxpayer_id' => (string)$user->document,
+            'birthdate' => (string)$user->birthdate,
+            'description' => "Customer for " . (string)$user->email,
             'address' => array(
-                'line1' => $user->address . ", " . $user->address_number,
-                'neighborhood' => $user->address_neighbour,
-                'city' => $user->address_city,
-                'state' => $user->state,
-                'postal_code' => $user->zipcode,
+                'line1' => (string)$user->address . ", " . (string)$user->address_number,
+                'neighborhood' => (string)$user->address_neighbour,
+                'city' => (string)$user->address_city,
+                'state' => (string)$user->state,
+                'postal_code' => (string)$user->zipcode,
                 'country_code' => 'BR'
             ),
         ]);
@@ -918,7 +946,7 @@ class ZoopLib implements IPayment
                 return (true);
             else
                 return (false);
-        } catch (Exception $ex) {
+        } catch (ZoopException $ex) {
             \Log::error($ex);
 
             return (false);
