@@ -328,17 +328,17 @@ class ZoopLib implements IPayment
     {
         try
         {
-            //ajusta valores para o admin e para o prestador
-            $admin_value = $totalAmount - $providerAmount;
-            $admin_value = round($admin_value * 100);
-            $providerAmount = round($providerAmount * 100);
+            // //ajusta valores para o admin e para o prestador
+            // $admin_value = $totalAmount - $providerAmount;
+            // $admin_value = round($admin_value * 100);
+            // $providerAmount = round($providerAmount * 100);
 
-            if ($admin_value + $providerAmount == (round($totalAmount * 100)))
-                $totalAmount = round($totalAmount * 100);
-            else if ($admin_value + $providerAmount == (ceil($totalAmount * 100)))
-                $totalAmount = ceil($totalAmount * 100);
-            else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
-                $totalAmount = floor($totalAmount * 100);
+            // if ($admin_value + $providerAmount == (round($totalAmount * 100)))
+            //     $totalAmount = round($totalAmount * 100);
+            // else if ($admin_value + $providerAmount == (ceil($totalAmount * 100)))
+            //     $totalAmount = ceil($totalAmount * 100);
+            // else if ($admin_value + $providerAmount == (floor($totalAmount * 100)))
+            //     $totalAmount = floor($totalAmount * 100);
 
             //Recupera conta do prestador
             $bankAccount = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
@@ -376,7 +376,7 @@ class ZoopLib implements IPayment
                 'capture' => boolval($capture),
                 'source' => array(
                     'currency' => 'BRL',
-                    'amount' => $totalAmount,
+                    'amount' => floor($totalAmount * 100),
                     'description' => $description,
                     'usage' => 'single_use',
                     'type' => 'card',
@@ -404,7 +404,7 @@ class ZoopLib implements IPayment
                 //Faz split com o prestador na transação
                 $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
                     'recipient' => $recipient->id,
-                    'amount' => $providerAmount,
+                    'amount' => floor($providerAmount * 100),
                     "charge_processing_fee" => true,
                     "liable" => true, //assume risco de transação (possíveis estornos)
                 ]);
@@ -545,7 +545,7 @@ class ZoopLib implements IPayment
                 //Realiza reembolso da transação
                 $refund = ZoopChargesCNP::cancel($transaction->gateway_transaction_id, [
                     'on_behalf_of' => Settings::findByKey('zoop_seller_id'),
-                    'amount' => floor($transaction->gross_value),
+                    'amount' => floor($transaction->gross_value * 100),
                 ]);
 
                 \Log::debug("[refund]response:" . print_r($refund, 1));
@@ -883,7 +883,6 @@ class ZoopLib implements IPayment
     private function findCustomerAll($user)
     {
         $res = ZoopBuyers::getAll();
-
         if($res && isset($res->items) && count($res->items))
             foreach ($res->items as $customer)
             {
