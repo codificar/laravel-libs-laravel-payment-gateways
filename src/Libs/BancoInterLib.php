@@ -536,7 +536,7 @@ class BancoInterLib implements IPayment
 		$items = [];
         $amount = 0;
 		foreach ($finances as $finance) {
-            $amount += $finance->value * -1;
+            $amount += round($finance->value,2) * -1;
 		}
         $items['amount'] = $amount;
 		return $items;
