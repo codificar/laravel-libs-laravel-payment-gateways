@@ -138,8 +138,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'zoop_marketplace_id')->update(['value' => 'c7bbd8b1b7574077804948faa27ff903']);
 
 		$this->assertTrue(true);
-		$this->runInterfaceGateways($gateway, "4539003370725497");
-		$this->runSPlitGateways($gateway, "4539003370725497");
+		$this->runInterfaceGateways($gateway, "4174010084197152");
+		$this->runSPlitGateways($gateway, "4174010084197152");
 	}
 
 	public function testGerencianet() {
