@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Relations\Model;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\PaymentFactory;
 use Eloquent;
 use Payment, Settings, LedgerBankAccount;
 use DB;
-
+use Exception;
 
 class GatewaysLibModel extends Eloquent
 {
@@ -119,7 +120,8 @@ class GatewaysLibModel extends Eloquent
                 }
                 
                 $ledgerBankAccount->save();
-            } catch (\Throwable $th) {
+            } catch (Exception $e) {
+                \Log::error("Change gateway update recip: ".print_r($e->getMessage(),1));
                 continue;
             }
         }
