@@ -773,10 +773,6 @@ class ZoopLib implements IPayment
 
                 if(!$seller || !isset($seller->id) || !$seller->id)
                     throw new ZoopException("Falha ao criar conta recipient", 1);
-
-                //Registra novo recipient_id no sistema
-                $ledgerBankAccount->recipient_id = $seller->id;
-                $ledgerBankAccount->save();
             }
 
             //se já tiver vendedor, retorna
@@ -965,7 +961,11 @@ class ZoopLib implements IPayment
             $seller_adm = null;
         }
 
-        if($seller_adm && isset($seller_adm->status) && $seller_adm->status && count($seller_adm->items))
+        if(
+            $seller_adm && 
+            isset($seller_adm->status) && 
+            $seller_adm->status
+        )
             return $seller_adm->status;
         else {
             return null;
