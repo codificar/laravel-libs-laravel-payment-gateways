@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Carbon\Carbon;
 use Eloquent;
-use Payment, Settings;
+use Payment, Settings, LedgerBankAccount;
 use DB;
 
 
@@ -100,5 +100,29 @@ class GatewaysLibModel extends Eloquent
 		\Log::alert(print_r($errCards, true));
 		\Log::alert(print_r($sucCards, true));
 	}
+
+    public static function gatewayUpdateBankAccounts(){
+
+        foreach (LedgerBankAccount::all() as $ledgerBankAccount)
+        {
+            try
+            {
+                if(
+                    Settings::findByKey('payment_card') == 1 || 
+                    Settings::findByKey('payment_debitCard') == 1 ||
+                    Settings::findByKey('payment_carto') == 1 ||
+                    Settings::findByKey('payment_crypt') == 1
+                )
+                {
+                    $return = PaymentFactory::createGateway()->createOrUpdateAccount($ledgerBankAccount);
+                    $ledgerBankAccount->recipient_id = $return['recipient_id'];
+                }
+                
+                $ledgerBankAccount->save();
+            } catch (\Throwable $th) {
+                continue;
+            }
+        }
+    }
     
 }

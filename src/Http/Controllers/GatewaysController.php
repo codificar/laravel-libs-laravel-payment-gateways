@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
 // Importar Resource
-use Codificar\PaymentGateways\Commands\GatewayUpdateCardsJob;
+use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
@@ -271,7 +271,7 @@ class GatewaysController extends Controller
             $estimateUpdateCards = GatewaysLibModel::getUpdateCardsEstimateTime();
 
             //Call the job to update the cards
-            GatewayUpdateCardsJob::dispatch();
+            GatewayUpdateDependenciesJob::dispatch();
         }
 
         //Salva o gateway de cartao de credito escolhido
