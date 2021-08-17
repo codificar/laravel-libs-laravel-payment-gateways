@@ -740,6 +740,8 @@ class ZoopLib implements IPayment
             //Cria ou atualiza conta se o taxpayer_id for o mesmo
             $zoopBank = ZoopTokens::tokenizeBankAccount($bankAccount);
 
+            \Log::debug("[zoopBank] Saida: " . print_r($zoopBank, 1));
+
             if(!$zoopBank || !isset($zoopBank->bank_account->id) || !$zoopBank->bank_account->id)
                 throw new ZoopException("Falha ao criar conta recipient", 1);
 
