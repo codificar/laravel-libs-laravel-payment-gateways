@@ -256,7 +256,7 @@ class ZoopLib implements IPayment
                     'description' => self::ZOOP_BILLET_CHARGE,
                     'usage' => 'single_use',
                     'type' => 'customer'
-                ),
+                )
             ]);
 
             \Log::alert("[charge]parameters:" . print_r($zoopTransaction, 1));
@@ -408,6 +408,7 @@ class ZoopLib implements IPayment
                     'amount' => floor($providerAmount * 100),
                     "charge_processing_fee" => true,
                     "liable" => true, //assume risco de transação (possíveis estornos)
+                    "charge_recipient_processing_fee" => true
                 ]);
 
                 \Log::alert("[charge]response: zoopSplit" . print_r($zoopSplit, 1));
@@ -651,6 +652,7 @@ class ZoopLib implements IPayment
                     'amount' => floor($providerAmount * 100),
                     "charge_processing_fee" => true,
                     "liable" => true, //assume risco de transação (possíveis estornos)
+                    "charge_recipient_processing_fee" => true
                 ]);
 
                 if(!$zoopSplit || !isset($zoopSplit->id) || !$zoopSplit->id)
@@ -915,7 +917,7 @@ class ZoopLib implements IPayment
         ]);
 
         \Log::alert("[ZoopBuyers] customer: " . print_r($customer, 1));
-        \Log::info("[ZoopBuyers] customer: " . print_r($customer, 1));
+        \Log::notice("[ZoopBuyers] customer: " . print_r($customer, 1));
 
         if($customer && isset($customer->id) && $customer->id && $customer->id != '')
             return $customer->id;
