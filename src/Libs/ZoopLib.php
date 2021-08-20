@@ -22,6 +22,7 @@ use User;
 use LedgerBankAccount;
 use Requests;
 use Settings;
+use ProviderDocument;
 
 class ZoopLib implements IPayment
 {
@@ -745,7 +746,7 @@ class ZoopLib implements IPayment
 
             \Log::alert("[ZoopTokens] zoopBank: " . print_r($zoopBank, 1));
 
-            if(!$zoopBank || !isset($zoopBank->bank_account->id) || !$zoopBank->bank_account->id)
+            if(!$zoopBank || !isset($zoopBank->id) || !$zoopBank->id)
                 throw new ZoopException("Falha ao criar conta recipient", 1);
 
             //Cria um vendedor na ZOOP por não existir
@@ -782,47 +783,13 @@ class ZoopLib implements IPayment
 
                 $associateBank = ZoopBankAccounts::associateWithACustomer([
                     "customer"  =>  $seller->id,
-                    "token"     =>  $zoopBank->bank_account->id
+                    "token"     =>  $zoopBank->id
                 ]);
 
                 \Log::alert("[ZoopBankAccounts] associateBank: " . print_r($associateBank, 1));
 
                 if(!$associateBank || !isset($associateBank->id) || !$associateBank->id)
                     throw new ZoopException("Falha ao associar conta ao seller", 1);
-
-                if(
-                    $identification = $provider->getDocumentByType(Settings::findByKey('default_doc_identification')) &&
-                    $activity = $provider->getDocumentByType(Settings::findByKey('default_doc_activity')) &&
-                    $address = $provider->getDocumentByType(Settings::findByKey('default_doc_address')) &&
-                    $document = $provider->getDocumentByType(Settings::findByKey('default_doc_document'))
-                )
-                {
-                    $selfDoc = ZoopSellers::sendDocs([
-                        "file"      =>  $identification->getFilePath(),
-                        "category"  =>  "identificacao"
-                    ]);
-                    \Log::alert("[ZoopSellers] selfDoc: " . print_r($selfDoc, 1));
-
-                    $actDoc = ZoopSellers::sendDocs([
-                        "file"      =>  $activity->getFilePath(),
-                        "category"  =>  "atividade"
-                    ]);
-                    \Log::alert("[ZoopSellers] actDoc: " . print_r($actDoc, 1));
-
-                    $addDoc = ZoopSellers::sendDocs([
-                        "file"      =>  $address->getFilePath(),
-                        "category"  =>  "residencia"
-                    ]);
-                    \Log::alert("[ZoopSellers] addDoc: " . print_r($addDoc, 1));
-
-                    $idDoc = ZoopSellers::sendDocs([
-                        "file"      =>  $document->getFilePath(),
-                        "category"  =>  strlen($provider->document) == 11 ? "cpf" : "cnpj"
-                    ]);
-                    \Log::alert("[ZoopSellers] idDoc: " . print_r($idDoc, 1));
-                }
-                else
-                    throw new ZoopException("Falha ao carregar documentos do seller", 1);
             }
 
             //se já tiver vendedor, retorna
@@ -830,6 +797,47 @@ class ZoopLib implements IPayment
                 $return['recipient_id'] = $recipient->id;
             } else {
                 $return['recipient_id'] = $seller->id;
+            }
+
+            $identification = $provider->getDocumentByType(Settings::findByKey('default_doc_identification'));
+            $activity = $provider->getDocumentByType(Settings::findByKey('default_doc_activity'));
+            $address = $provider->getDocumentByType(Settings::findByKey('default_doc_address'));
+            $document = $provider->getDocumentByType(Settings::findByKey('default_doc_document'));
+
+            if(
+                $identification instanceof ProviderDocument &&
+                $activity instanceof ProviderDocument &&
+                $address instanceof ProviderDocument &&
+                $document instanceof ProviderDocument
+            )
+            {
+                $selfDoc = ZoopSellers::sendDocs(
+                    $return['recipient_id'],
+                    $identification->getFilePath(),
+                    "identificacao"
+                );
+                \Log::alert("[ZoopSellers] selfDoc: " . print_r($selfDoc, 1));
+
+                $actDoc = ZoopSellers::sendDocs(
+                    $return['recipient_id'],
+                    $activity->getFilePath(),
+                    "atividade"
+                );
+                \Log::alert("[ZoopSellers] actDoc: " . print_r($actDoc, 1));
+
+                $addDoc = ZoopSellers::sendDocs(
+                    $return['recipient_id'],
+                    $address->getFilePath(),
+                    "residencia"
+                );
+                \Log::alert("[ZoopSellers] addDoc: " . print_r($addDoc, 1));
+
+                $idDoc = ZoopSellers::sendDocs(
+                    $return['recipient_id'],
+                    $document->getFilePath(),
+                    strlen($provider->document) == 11 ? "cpf" : "cnpj"
+                );
+                \Log::alert("[ZoopSellers] idDoc: " . print_r($idDoc, 1));
             }
 
             return array(
