@@ -407,7 +407,7 @@ class ZoopLib implements IPayment
                 $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
                     'recipient' => $recipient->id,
                     'amount' => floor($providerAmount * 100),
-                    "charge_processing_fee" => true,
+                    "charge_processing_fee" => false,
                     "liable" => true, //assume risco de transação (possíveis estornos)
                     "charge_recipient_processing_fee" => true
                 ]);
@@ -651,7 +651,7 @@ class ZoopLib implements IPayment
                 $zoopSplit = ZoopSplitTransactions::create($zoopTransaction->id, [
                     'recipient' => $recipient->id,
                     'amount' => floor($providerAmount * 100),
-                    "charge_processing_fee" => true,
+                    "charge_processing_fee" => false,
                     "liable" => true, //assume risco de transação (possíveis estornos)
                     "charge_recipient_processing_fee" => true
                 ]);
@@ -736,6 +736,7 @@ class ZoopLib implements IPayment
                 "holder_name" => $ledgerBankAccount->holder,
                 "bank_code" => $bank->code,
                 "routing_number" => $ledgerBankAccount->agency,
+                "routing_check_digit" => $ledgerBankAccount->agency_digit,
                 "account_number" => $ledgerBankAccount->account . $ledgerBankAccount->account_digit,
                 "taxpayer_id" => $recipient && isset($recipient->taxpayer_id) ? $recipient->taxpayer_id : $ledgerBankAccount->document,
                 "type" => ($ledgerBankAccount->account_type == "conta_corrente" ? "checking" : ($ledgerBankAccount->account_type == "conta_poupanca" ? "savings" : "")),
@@ -832,10 +833,11 @@ class ZoopLib implements IPayment
                 );
                 \Log::alert("[ZoopSellers] addDoc: " . print_r($addDoc, 1));
 
+                $personType = strlen($provider->document) == 11 ? "cpf" : "cnpj";
                 $idDoc = ZoopSellers::sendDocs(
                     $return['recipient_id'],
                     $document->getFilePath(),
-                    strlen($provider->document) == 11 ? "cpf" : "cnpj"
+                    $personType
                 );
                 \Log::alert("[ZoopSellers] idDoc: " . print_r($idDoc, 1));
             }
