@@ -750,48 +750,50 @@ class ZoopLib implements IPayment
             if(!$zoopBank || !isset($zoopBank->id) || !$zoopBank->id)
                 throw new ZoopException("Falha ao criar conta recipient", 1);
 
+            //define dados do vendedor
+            $dataSeller = array(
+                'first_name' => $provider->first_name,
+                'last_name' => $provider->last_name,
+                'email' => $provider->email,
+                'phone_number' => $provider->phone,
+                'description' => "Seller for " . $provider->email,
+                'type' => 'individual',
+                'taxpayer_id' => $ledgerBankAccount->document,
+                'marketplace_id' => Settings::findByKey('zoop_marketplace_id'),
+                'address' => array(
+                    'line1' => $provider->address,
+                    'line2' => $provider->address_number,
+                    'line3' => $provider->address_complements,
+                    'neighborhood' => $provider->address_neighbour,
+                    'city' => $provider->address_city,
+                    'state' => $provider->state,
+                    'postal_code' => $provider->zipcode,
+                    'country_code' => 'BR'
+                ),
+            );
+
+            \Log::alert("[Zoop_Recipient] param: " . print_r($dataSeller, 1));
+
             //Cria um vendedor na ZOOP por não existir
             if (!$recipient || !isset($recipient->id) || !$recipient->id)
-            {
-                //define dados do vendedor
-                $dataSeller = array(
-                    'first_name' => $provider->first_name,
-                    'last_name' => $provider->last_name,
-                    'email' => $provider->email,
-                    'phone_number' => $provider->phone,
-                    'description' => "Seller for " . $provider->email,
-                    'type' => 'individual',
-                    'taxpayer_id' => $ledgerBankAccount->document,
-                    'marketplace_id' => Settings::findByKey('zoop_marketplace_id'),
-                    'address' => array(
-                        'line1' => $provider->address,
-                        'line2' => $provider->address_number,
-                        'line3' => $provider->address_complements,
-                        'neighborhood' => $provider->address_neighbour,
-                        'city' => $provider->address_city,
-                        'state' => $provider->state,
-                        'postal_code' => $provider->zipcode
-                    ),
-                );
+                $seller = ZoopSellers::createIndividuals($dataSeller);//Cria um vendedor na ZOOP
+            else
+                $seller = ZoopSellers::editIndividuals($recipient->id,$dataSeller);//Edita um vendedor na ZOOP
 
-                //Cria um vendedor na ZOOP
-                $seller = ZoopSellers::createIndividuals($dataSeller);
+            \Log::alert("[Zoop_Recipient] Saida: " . print_r($seller, 1));
 
-                \Log::alert("[Zoop_Recipient] Saida: " . print_r($seller, 1));
+            if(!$seller || !isset($seller->id) || !$seller->id)
+                throw new ZoopException("Falha ao criar/editar conta recipient", 1);
 
-                if(!$seller || !isset($seller->id) || !$seller->id)
-                    throw new ZoopException("Falha ao criar conta recipient", 1);
+            $associateBank = ZoopBankAccounts::associateWithACustomer([
+                "customer"  =>  $seller->id,
+                "token"     =>  $zoopBank->id
+            ]);
 
-                $associateBank = ZoopBankAccounts::associateWithACustomer([
-                    "customer"  =>  $seller->id,
-                    "token"     =>  $zoopBank->id
-                ]);
+            \Log::alert("[ZoopBankAccounts] associateBank: " . print_r($associateBank, 1));
 
-                \Log::alert("[ZoopBankAccounts] associateBank: " . print_r($associateBank, 1));
-
-                if(!$associateBank || !isset($associateBank->id) || !$associateBank->id)
-                    throw new ZoopException("Falha ao associar conta ao seller", 1);
-            }
+            if(!$associateBank || !isset($associateBank->id) || !$associateBank->id)
+                throw new ZoopException("Falha ao associar conta ao seller", 1);
 
             //se já tiver vendedor, retorna
             if ($recipient) {
