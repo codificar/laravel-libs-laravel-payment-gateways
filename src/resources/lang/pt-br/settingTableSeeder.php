@@ -33,5 +33,7 @@ return array(
 	,'transbank_public_cert'				=> 'transbank public cert'
 	,'prepaid_min_billet_value'				=> 'prepaid min billet value'
 	,'prepaid_tax_billet'					=> 'prepaid tax billet'
+	,'ipag_api_id'							=> 'Ipag API Id'
+	,'ipag_api_key'							=> 'Ipag API Key'
 
 );

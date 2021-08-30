@@ -51,6 +51,7 @@ return array(
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rápido',
 	'bancinter'					=> 'Banco Inter',	
+	'ipag'						=> 'Ipag',
 
 	
 	
@@ -157,4 +158,7 @@ return array(
 	'banco_inter_crt'			=> 'Arquivo do Certificado',
 	'banco_inter_key'			=> 'Arquivo da Chave',
 
+	'ipag_api_id'				=> 'Ipag API Id',
+	'ipag_api_key'				=> 'Ipag API Key',
+	'ipag_token'				=> 'Ipag Token'
 );

@@ -60,6 +60,9 @@ class PaymentFactory
 
             case PaymentFacade::PAYMENT_GATEWAY_ADIQ:
                 return (new AdiqLib());
+
+            case PaymentFacade::PAYMENT_GATEWAY_IPAG:
+                return (new IpagLib());
         }
     }
 

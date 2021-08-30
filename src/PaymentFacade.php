@@ -26,6 +26,7 @@ class PaymentFacade extends \Illuminate\Support\Facades\Facade
     const PAYMENT_GATEWAY_PAGARAPIDO = 'pagarapido';
     const PAYMENT_GATEWAY_ADIQ = 'adiq';
     const PAYMENT_GATEWAY_BANCO_INTER = 'bancointer';
+    const PAYMENT_GATEWAY_IPAG = 'ipag';
 
     /**
      * @param  array  $parameters

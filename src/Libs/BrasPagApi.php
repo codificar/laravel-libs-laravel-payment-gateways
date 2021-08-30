@@ -2,7 +2,6 @@
 
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
-
 //models do sistema
 use Log, Exception;
 use App;
@@ -14,805 +13,176 @@ use LedgerBankAccount;
 use Settings;
 use Bank;
 
-class BrasPagApi
+class BraspagApi
 {
-    
-    const URL_PROD = "https://api.braspag.com.br/v2";
-    const GET_URL_PROD   = "https://apiquery.braspag.com.br/v2";
-    const CIELO_URL_PROD = "https://api.cieloecommerce.cielo.com.br/1";
-    const CIELO_GET_URL_PROD   = "https://apiquery.cieloecommerce.cielo.com.br/1";
-    
-    const SUBORD_URL_PROD = "https://splitonboarding.braspag.com.br";
-    const TOKEN_URL_PROD = "https://auth.braspag.com.br/oauth2/token";
+    private $apiUrl;
 
-    const URL_DEV = "https://apisandbox.braspag.com.br/v2";
-    const CIELO_URL_DEV = "https://apisandbox.cieloecommerce.cielo.com.br/1" ;
-    const GET_URL_DEV   = "https://apiquerysandbox.braspag.com.br/v2";
-    const CIELO_GET_URL_DEV   = "https://apiquerysandbox.cieloecommerce.cielo.com.br/1";
+    private $prefixAccept = null;
 
-    const SUBORD_URL_DEV = "https://splitonboardingsandbox.braspag.com.br";
-    const TOKEN_URL_DEV = "https://authsandbox.braspag.com.br/oauth2/token";
-    
+    private $header;
 
-    const FINGERPRINT_URL = "https://h.online-metrix.net/fp/tags.js?";
-    const ORDER_ID = "org_id=k8vif92e";
-    const SESSION_ID = "&session_id=braspag_split_ilev";
+    private $braspagProvider;
 
-    const MCC   =   '5045';
+    const NOTIFICATION_URL  =   "https://site.com.br/api/subordinados";
 
-    const FEE = 0;
-    const CREDIT_CARD = 'CreditCard';
-    const MASTER    ='Master';
-    const INITIAL_INSTALLMENT_NUMBER = 1;
-    const FINAL_INSTALLMENT_NUMBER = 1;
-    const MASTER_PERCENT = 2.36;
-    const VISA = "Visa";
-    const VISA_PERCENT = 2.36;  
+    const CREDIT_CARD   =   "CreditCard";
+    const DEBIT_CARD    =   "DebitCard";
 
-    const ROUND_VALUE = 100;
+    const MASTER        =   "Master";
+    const VISA          =   "Visa";
 
-    const NOTIFICATION_URL = "https://site.com.br/api/subordinados";
+    const ROUND_VALUE       =   100;
 
-    const POST_REQUEST      = 'POST';
-    const GET_REQUEST       = 'GET';
-    const PUT_REQUEST       = 'PUT';
+    const APP_TIMEOUT       =   200;
 
-    const APP_TIMEOUT = 200;
-
-    private static function apiUrl() {
-        if(self::isCieloEcommerce()) 
-            return self::apiCieloUrl();
-
-        if (App::environment() == 'production')
-            return self::URL_PROD;
-        
-        return self::URL_DEV;
-    }
-
-    private static function apiCieloUrl() {
-        if (App::environment() == 'production')
-            return self::CIELO_URL_PROD;
-        
-        return self::CIELO_URL_DEV;
-    }
-
-    private static function apiSubordUrl() {
-        if (App::environment() == 'production')
-            return self::SUBORD_URL_PROD;
-        
-        return self::SUBORD_URL_DEV;
-    }
-
-    private static function apiTokenUrl() {
-        if (App::environment() == 'production')
-            return self::TOKEN_URL_PROD;
-        
-        return self::TOKEN_URL_DEV;
-    }
-
-
-    private static function apiGetUrl() {
-        if(self::isCieloEcommerce()) 
-            return self::apiCieloGetUrl();
-
-        if (App::environment() == 'production')
-            return self::GET_URL_PROD;
-        
-        return self::GET_URL_DEV;
-    }
-
-    private static function apiCieloGetUrl() {
-        if (App::environment() == 'production')
-            return self::CIELO_GET_URL_PROD;
-        
-        return self::CIELO_GET_URL_DEV;
-    }
-
-    private static function isCieloEcommerce(){
-        $model = Settings::findObjectByKey('braspag_cielo_ecommerce');
-        if(isset($model) && $model && isset($model->value) && $model->value) {
-            return $model->value;
-        } else {
-            return false;
+    public function __construct()
+    {
+        if(App::environment() == 'production')
+        {
+            $this->apiUrl           = "https://api.braspag.com.br/v2/";
+            $this->apiGetUrl        = "https://apiquery.braspag.com.br/v2/";
+            $this->braspagProvider  = "Cielo30";
         }
+        else
+        {
+            $this->apiUrl           = "https://apisandbox.braspag.com.br/v2/";
+            $this->apiGetUrl        = "https://apiquerysandbox.braspag.com.br/v2/";
+            $this->prefixAccept     = " ACCEPT";
+            $this->braspagProvider  = "Simulado";
+        }
+
+        $this->setHeader();
     }
 
+    public function charge($payment, $user, $amount, $capture, $cardType, $description)
+    {
+        $url = $this->apiUrl."sales/";
 
-    public static function charge($payment, $user, $amount, $capture, $description){
+        $body = $this->getBody($payment, $amount, $capture, $cardType, $user);
 
-        $time = Carbon::now()->toDateTimeString();
-
-        $orderId = self::getOrderId($time);
-
-        $expirationDate = self::getExpirationDate($payment);
-
-        $brand = self::getBrand($payment);
-
-        $url = sprintf('%s/sales/', self::apiUrl());
-
-        $phone = self::formatPhone($user->phone);
-
-        $docType = ((strlen($user->document)) > 11) ? "CNPJ" : "CPF";
-
-        $totalAmount = self::amountRound($amount);
-
-        $fields = array (
-            'MerchantOrderId'   =>  $orderId,
-            'Customer'          =>  (object)array(
-                'Name'          =>  $user->first_name.' '.$user->last_name,
-                "email"         =>  $user->email,
-                "Identity"      =>  $user->document,
-                "identitytype"  =>  $docType,
-                "Mobile"        =>  $phone,
-                "Phone"         =>  $phone,
-            ),
-            'Payment'           =>  (object)array(
-                'Type'          =>  'CreditCard',
-                'Amount'        =>  $totalAmount,
-                'Installments'  =>  1,
-                'Capture'       =>  $capture,
-                'SoftDescriptor'    =>  Settings::findByKey('website_title'),
-                'CreditCard'            =>  (object)array(
-                    'CardNumber'        =>  $payment->getCardNumber(),
-                    'Holder'            =>  $payment->getCardHolder(),
-                    'ExpirationDate'    =>  $expirationDate,
-                    'SecurityCode'      =>  $payment->getCardCvc(),
-                    'Brand'             =>  $brand,
-                    'SaveCard'          =>  false
-                ),
-                'fraudanalysis'     =>  (object)array(
-                    'provider'      =>  'cybersource',
-                    'Shipping'      =>  (object)array(
-                        'Addressee' =>  $user->first_name.' '.$user->last_name
-                    ),
-                    'browser'       =>  (object)array(
-                        // 'ipaddress'             =>  '179.221.103.151',
-                        'browserfingerprint'    =>  $orderId
-                    ),
-                    'totalorderamount'          =>  $totalAmount,
-                    'MerchantDefinedFields'     =>  array(
-                        (object)array(
-                            'id'    =>  1,
-                            'value' =>  'Guest'
-                        )
-                    ),
-                    
-
-                )
-            ),            
-        );
-
-
-        $body = json_encode($fields);
-
-        $header = self::getHeader();
-
-        $requestType = self::POST_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+        $apiRequest = $this->apiRequest($url, $body, "POST");
 
         return $apiRequest;
     }
 
-    public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
+    public function capture(Transaction $transaction)
     {
-        $time = Carbon::now()->toDateTimeString();
-
-        $orderId = self::getOrderId($time);
-
-        $expirationDate = self::getExpirationDate($payment);
-
-        $user = User::find($payment->user_id);
-
-        $brand = self::getBrand($payment);
-
-        $url = sprintf('%s/sales/', self::apiUrl());
-
-        if ($provider) {
-            $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $provider->id);
-
-            $subordinateId = self::checkProviderAccount($ledgerBankAccount);
-        }
-
-        $type = $split ? 'splittedcreditcard' : 'CreditCard'; 
-
-        $header = self::getHeader();
-        
-        $fingerPrintUrl = sprintf('%s%s%s', self::FINGERPRINT_URL, self::ORDER_ID, self::SESSION_ID.$orderId);
-
-        $fingerPrint = self::apiRequest($fingerPrintUrl, null, $header, self::GET_REQUEST);
-
-        $docType = ((strlen($user->document)) > 11) ? "CNPJ" : "CPF";
-
-        $phone = self::formatPhone($user->phone);
-
-        $totalAmount = self::amountRound($totalAmount);
-
-        /*
-        *
-        {  
-   "MerchantOrderId":"2017051002",
-   "Customer":{  
-      "Name":"Nome do Comprador",
-      "Identity":"12345678909",
-      "IdentityType":"CPF",
-      "Email":"comprador@braspag.com.br",
-      "Birthdate":"1991-01-02",
-      "IpAddress":"127.0.0.1",
-      "Address":{  
-         "Street":"Alameda Xingu",
-         "Number":"512",
-         "Complement":"27 andar",
-         "ZipCode":"12345987",
-         "City":"São Paulo",
-         "State":"SP",
-         "Country":"BRA",
-         "District":"Alphaville"
-      },
-      "DeliveryAddress":{  
-         "Street":"Alameda Xingu",
-         "Number":"512",
-         "Complement":"27 andar",
-         "ZipCode":"12345987",
-         "City":"São Paulo",
-         "State":"SP",
-         "Country":"BRA",
-         "District":"Alphaville"
-      }
-   },
-   "Payment":{  
-      "Provider":"Simulado",
-      "Type":"CreditCard",
-      "Amount":10000,
-      "Currency":"BRL",
-      "Country":"BRA",
-      "Installments":1,
-      "Interest":"ByMerchant",
-      "Capture":true,
-      "Authenticate":false,
-      "Recurrent":false,
-      "SoftDescriptor":"Mensagem",
-      "DoSplit":false,
-      "CreditCard":{  
-         "CardNumber":"4551870000000181",
-         "Holder":"Nome do Portador",
-         "ExpirationDate":"12/2021",
-         "SecurityCode":"123",
-         "Brand":"Visa",
-         "SaveCard":"false",
-         "Alias":"",
-         "CardOnFile":{
-            "Usage": "Used",
-            "Reason":"Unscheduled"
-         }
-      },
-      "Credentials":{  
-         "code":"9999999",
-         "key":"D8888888",
-         "password":"LOJA9999999",
-         "username":"#Braspag2018@NOMEDALOJA#",
-         "signature":"001"
-      },
-      "ExtraDataCollection":[  
-         {  
-            "Name":"NomeDoCampo",
-            "Value":"ValorDoCampo"
-         }
-      ]
-   }
-}
-        */
-        $fields = array (
-            'MerchantOrderId'   =>  $orderId,
-            'Customer'          =>  (object)array(
-                'Name'          =>  $user->first_name.' '.$user->last_name. ' ACCEPT',
-                "email"         =>  $user->email,
-                "Identity"      =>  $user->document,
-                "identitytype"  =>  $docType,
-                "Mobile"        =>  $phone,
-                "Phone"         =>  $phone,
-            ),
-            'Payment'           =>  (object)array(
-                'Type'          =>  $type,
-                'Amount'        =>  $totalAmount,
-                'Installments'  =>  1,
-                'Capture'       =>  $capture,
-                'SoftDescriptor'    =>  Settings::findByKey('website_title'),
-                'CreditCard'            =>  (object)array(
-                    'CardNumber'        =>  $payment->getCardNumber(),
-                    'Holder'            =>  $payment->getCardHolder(),
-                    'ExpirationDate'    =>  $expirationDate,
-                    'SecurityCode'      =>  $payment->getCardCvc(),
-                    'Brand'             =>  $brand,
-                    'SaveCard'          =>  false
-                ),
-                'fraudanalysis'     =>  (object)array(
-                    'provider'      =>  'cybersource',
-                    'Shipping'      =>  (object)array(
-                        'Addressee' =>  $user->first_name.' '.$user->last_name. ' ACCEPT'
-                    ),
-                    'browser'       =>  (object)array(
-                        'ipaddress'             =>  getIp(),
-                        'browserfingerprint'    =>  $orderId
-                    ),
-                    'totalorderamount'          =>  $totalAmount,
-                    'MerchantDefinedFields'     =>  array(
-                        (object)array(
-                            'id'    =>  1,
-                            'value' =>  'Guest'
-                        )
-                    ),
-                    
-
-                )
-            ),            
-        );
-
-        if (App::environment() != 'production') {
-            $fields['Payment']->Provider = 'Simulado';
-        }
-
-        if ($capture && $provider) {
-            $split = self::getSplitInfo($provider, $totalAmount);
-            $fields['SplitPayments'] = $split['SplitPayments'];
-        }
-
-        $body = json_encode($fields);
-
-        $requestType = self::POST_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-
-        return $apiRequest;
-    }
-
-    public static function captureWithSplit(Transaction $transaction, $provider, $totalAmount, $providerAmount)
-    {
-
-        $transactionToken = $transaction->gateway_transaction_id;
-
-        $url = sprintf('%s/sales/%s/capture', self::apiUrl(), $transactionToken);
-
-        $fields = self::getSplitInfo($provider, $transaction->gross_value);
-
-        $body = json_encode($fields);
-
-        // $body = null;
-
-        $header = self::getHeader();
-
-        $requestType = self::PUT_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-
-        return $apiRequest;
-        
-    }
-
-    public static function capture(Transaction $transaction, $amount)
-    {
-        $transactionToken = $transaction->gateway_transaction_id;
-
-        // $amount = 5;
-
-        $url = sprintf('%s/sales/%s/capture', self::apiUrl(), $transactionToken);
-
-        // if ($transaction->gross_value > $amount) {
-        //     $url = $url."?amount=".$amount;
-        // }
+        $url = sprintf('%ssales/%s/capture', $this->apiUrl, $transaction->gateway_transaction_id);
 
         $body = null;
 
-        $header = self::getHeader();
-
-        $requestType = self::PUT_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+        $apiRequest = $this->apiRequest($url, $body, "PUT");
 
         return $apiRequest;
     }
 
-    public static function refund(Transaction $transaction)
+    public function refund(Transaction $transaction)
     {
-        $transactionToken = $transaction->gateway_transaction_id;
-
-        $url = sprintf('%s/sales/%s/void', self::apiUrl(), $transactionToken);
+        $url = sprintf('%ssales/%s/void', $this->apiUrl, $transaction->gateway_transaction_id);
 
         $body = null;
 
-        $header = self::getHeader();
-
-        $requestType = self::PUT_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+        $apiRequest = $this->apiRequest($url, $body, "PUT");
 
         return $apiRequest;
     }
 
-    public static function retrieve($transaction)
+    public function retrieve($transaction)
     {
-        $transactionToken = $transaction->gateway_transaction_id;
-
-        $url = sprintf('%s/sales/%s', self::apiGetUrl(), $transactionToken);
+        $url = sprintf('%ssales/%s', $this->apiGetUrl, $transaction->gateway_transaction_id);
 
         $body = null;
 
-        $merchantId         = Settings::findObjectByKey('braspag_merchant_id');
-        $merchandtKey       = Settings::findObjectByKey('braspag_merchant_key');
-
-        $header = [
-            'Content-Type:  application/json',
-            'MerchantId: '.$merchantId->value, 
-            'MerchantKey: '.$merchandtKey->value       
-        ];
-
-        $requestType = self::GET_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
+        $apiRequest = $this->apiRequest($url, $body, "GET");
 
         return $apiRequest;
     }
 
-    public static function createOrUpdateAccount($ledgerBankAccount)
+    private function getOrderId()
     {
-        $url = sprintf('%s/api/subordinates/', self::apiSubordUrl());
-        $document = $ledgerBankAccount->document;
-        
-        $provider = Provider::find($ledgerBankAccount->provider_id);
+        list($microSeconds, $seconds) = explode(" ", microtime());
+        $orderId = $seconds.substr($microSeconds,2,-3);
 
-        $bankCode = Bank::getBankCode($ledgerBankAccount->bank_id);
-
-        $docType = ((strlen($document)) > 11) ? "CNPJ" : "CPF";
-
-        $phone = self::formatPhone($provider->phone);
-
-        $state = self::abbreviationState($provider->state);
-
-        if ($ledgerBankAccount->account_type == "conta_corrente") {
-            $accountType = "CheckingAccount";
-        } else {
-            $accountType = "SavingsAccount";
-        }
-
-        $fields = array(
-            'CorporateName' =>  $ledgerBankAccount->holder,
-            'FancyName'     =>  $ledgerBankAccount->holder,
-            'DocumentNumber'    =>  $ledgerBankAccount->document,
-            'DocumentType'      =>  $docType,
-            'MerchantCategoryCode'  =>  self::MCC,
-            'ContactName'           =>  $ledgerBankAccount->holder,
-            'ContactPhone'          =>  $phone,
-            'MailAddress'           =>  $provider->email,
-            'Website'               =>  '',
-            'BankAccount'           =>  (object)array(
-                'Bank'              =>  $bankCode,
-                'BankAccountType'   =>  $accountType,
-                'Number'            =>  $ledgerBankAccount->account,
-                'VerifierDigit'     =>  $ledgerBankAccount->account_digit,
-                'AgencyNumber'      =>  $ledgerBankAccount->agency,
-                'AgencyDigit'       =>  $ledgerBankAccount->agency_digit,
-                'DocumentNumber'    =>  $ledgerBankAccount->document,
-                'DocumentType'      =>  $docType
-            ),
-            'Address'               =>  (object)array(
-                'Street'            =>  $provider->address,
-                'Number'            =>  $provider->address_number,
-                'Complement'        =>  $provider->adress_complements,
-                'Neighborhood'      =>  $provider->address_neighbour,
-                'City'              =>  $provider->address_city,
-                'State'             =>  $state,
-                'ZipCode'           =>  $provider->zipcode
-            ),
-            'Agreement'             =>  (object)array(
-                'Fee'               =>  self::FEE,
-                'MerchantDiscountRates' =>  array(
-                    (object)array(
-                        'PaymentArrangement'    =>  (object)array(
-                            'Product'           =>  self::CREDIT_CARD,
-                            'Brand'             =>  self::MASTER
-                        ),
-                        'InitialInstallmentNumber'  =>  self::INITIAL_INSTALLMENT_NUMBER,
-                        'FinalInstallmentNumber'    =>  self::FINAL_INSTALLMENT_NUMBER,
-                        'Percent'                   =>  self::MASTER_PERCENT
-                    ),
-                    (object)array(
-                        'PaymentArrangement'    =>  (object)array(
-                            'Product'           =>  self::CREDIT_CARD,
-                            'Brand'             =>  self::VISA
-                        ),
-                        'InitialInstallmentNumber'  =>  self::INITIAL_INSTALLMENT_NUMBER,
-                        'FinalInstallmentNumber'    =>  self::FINAL_INSTALLMENT_NUMBER,
-                        'Percent'                   =>  self::VISA_PERCENT
-                    ),
-                    
-                ) 
-            ),
-            'Notification'          =>  (object)array(
-                'Url'               =>  self::NOTIFICATION_URL,
-                'Headers'           =>  array(
-                    (object)array(
-                        'Key'           =>  'Key1',
-                        'Value'         =>  'Value'
-                    )
-                    
-                )
-            )
-        );
-
-        $body = json_encode($fields);
-
-        $header = self::getHeader();
-
-        $requestType = self::POST_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-
-        return $apiRequest;
+        return $orderId;
     }
 
-    private static function getOrderId($time)
-    {
-        $value = str_replace(' ', '', $time);
-        $value = str_replace('-', '', $value);
-        $value = str_replace(':', '', $value);
-
-        return $value;
-    }
-
-    private static function formatPhone($phone)
-    {
-        $phone = str_replace('(', '', $phone);
-        $phone = str_replace(')', '', $phone);
-        $phone = str_replace('-', '', $phone);
-        $phone = str_replace('+', '', $phone);
-        $phone = str_replace(' ', '', $phone);
-        $phone = substr($phone, -11);
-
-        return $phone;
-    }
-
-    private static function getExpirationDate($payment)
+    private function getExpirationDate($payment)
     {
         $month = $payment->getCardExpirationMonth();
         $year = $payment->getCardExpirationYear();
-        $x = strlen($month);
+
         $retMonth = (strlen($month) < 2) ? '0'.$month : $month ;
-        $retYear = (strlen($year) < 4) ? '20'.$year : $year ;
+        $retYear = (strlen($year) < 4) ? $year += 2000 : $year ;
         $expDate = trim(sprintf("%s/%s", $retMonth, $retYear));
-        //$expDate = str_replace('\n', '', $expDate);
         
         return $expDate;
     }
 
-    private static function getBrand($payment)
+    private function getBrand($cardNumber)
     {
-        $brand = Payment::getBrand($payment);
-        $brand = strtolower($brand);
-        $brand = ucfirst($brand);
-
-        if ($brand == 'Mastercard') {
-            $brand = 'Master';
-        }
+        $brand = detectCardType($cardNumber);
+        $brand = strtolower($brand) == "mastercard" ? self::MASTER : ucfirst($brand);
 
         return $brand;
     }
 
-    public static function getBrasPagFee()
+    private function setHeader()
     {
-        return self::FEE;
-    }
+        try
+        {
+            $merchantId     =   Settings::findObjectByKey('braspag_merchant_id');
+            $merchantKey    =   Settings::findObjectByKey('braspag_merchant_key');
 
-    public static function checkProviderAccount($ledgerBankAccount)
-    {
-        $subordinateId = $ledgerBankAccount->recipient_id;
-
-        if ($subordinateId == '' || $subordinateId == 'empty') {
-            $response = self::createOrUpdateAccount($ledgerBankAccount);
-            
-        } else {
-            $response = self::getBrasPagAccount($subordinateId);
-        }
-        
-
-        if ($response->success) {
-            $result = (object)array(
-                'success'       => true,
-                'recipient_id'   => $ledgerBankAccount->recipient_id
-            );
-            $ledgerBankAccount->recipient_id = $response->data->MerchantId;
-            $ledgerBankAccount->save();
-        } else {
-            $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
-            if ($newAccount->success) {
-                $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
-                $ledgerBankAccount->save();
-                $result = (object)array(
-                    'success'       => true,
-                    'recipient_id'   => $ledgerBankAccount->recipient_id
-                );
-            } else {
-                $result = (object)array(
-                    'success'       => false,
-                    'recipient_id'   => ""
-                );
-            }
-        }
-
-        return $result;
-    }
-
-    public static function getBrasPagAccount($subordinateId)
-    {
-        $url = sprintf('%s/api/subordinates/%s', self::apiSubordUrl(), $subordinateId);
-
-        $header = self::getHeader();
-
-        $requestType = self::GET_REQUEST;
-
-        $body = null;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-
-        return $apiRequest;
-    }
-
-    private static function amountRound($amount)
-    {
-        $amount = $amount * self::ROUND_VALUE;
-        $type = gettype($amount);
-        $amount = (int)$amount;
-
-        return $amount;
-    }
-
-    private static function getSplitInfo($provider, $totalAmount)
-    {
-        $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $provider->id);
-
-        $totalAmount = self::amountRound($totalAmount);
-
-        $providerPercentage = Settings::findObjectByKey('provider_amount_for_each_request_in_percentage');
-        $percentage = 100 - (int)$providerPercentage->value;
-
-        $fields = array(
-            'SplitPayments'     =>  array(
-                (object)array(
-                    'SubordinateMerchantId'     =>  $ledgerBankAccount->recipient_id,
-                    'Amount'                    =>  $totalAmount,
-                    'Fares'                     =>  (object)array(
-                        'Mdr'           =>  $percentage,
-                        'Fee'           =>  0
-                    )
-                )
-            )
-        );
-
-        return $fields;
-    }
-
-    private static function getHeader()
-    {
-        $merchantId         = Settings::findObjectByKey('braspag_merchant_id');
-        $merchandtKey       = Settings::findObjectByKey('braspag_merchant_key');
-
-        if(self::isCieloEcommerce()) {
-            $token = self::makeToken();
-            $brasPagToken       = Settings::findObjectByKey('braspag_token');
-            $header = array (
-                'Content-Type: application/json; charset=UTF-8',
-                'Accept: application/json',
-                'Authorization: Bearer '.isset($brasPagToken) && isset($brasPagToken->token)  ? $brasPagToken->value : ""
+            $this->header   =   array (
+                'Content-Type: application/json',
+                'MerchantId: '.$merchantId->value,
+                'MerchantKey: '.$merchantKey->value
             );
         }
-        else {
-            $header = array (
-                'Content-Type: application/json; charset=UTF-8',
-                'Accept: application/json',
-                'MerchantId: '.$merchantId->value, 
-                'MerchantKey: '.$merchandtKey->value       
-            );
+        catch(Exception  $ex)
+        {
+            \Log::error($ex->getMessage());
         }
-
-        return $header;
     }
 
-    private static function getrequestMessage($result)
-    {
-        $type = gettype($result);
-        
-        if ($type == 'array') {
-            $response = array();
-            foreach ($result as $value) {
-                array_push($response, array(
-                    'code'      =>  $value->Code,
-                    'message'   =>  $value->Message
-                ));
-            }
-            $response = $response;
-        } else {
-            $x = $result->access_token;
-            if (isset($result->Payment->PaymentId)) {
-                $response = array(
-                    'success'           =>  true,
-                    'transaction_id'    =>  $result->Payment->PaymentId
-                );
-            } elseif (isset($result->access_token)) {
-                $response = array(
-                    'success'           =>  true,
-                    'transaction_id'    =>  $result->access_token
-                );
-            }
-            
-        }
-
-        return $response;
-    }
-
-    private static function makeToken()
-    {
-        $merchantId         = Settings::findObjectByKey('braspag_merchant_id');
-        $merchantKey       = Settings::findObjectByKey('braspag_merchant_key');
-
-        $concateString = base64_encode($merchantId->value.':'.$merchantKey->value);
-
-        $url = self::apiTokenUrl();
-
-        $fields = array(
-            'grant_type'    =>  'client_credentials'
-        );
-
-        $body = "grant_type=client_credentials";
-        
-        $header = array (
-            'Content-Type: application/x-www-form-urlencoded',
-            'Authorization: Basic '.$concateString, 
-        );
-
-        $requestType = self::POST_REQUEST;
-
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-
-
-        try {
-            $token = Settings::findObjectByKey('braspag_token');
-            $token->value = $apiRequest->data->access_token;
-            $token->save();
-        }
-        catch (Exception $ex){
-            \Log::error($ex->getMessage().$ex->getTraceAsString());
-        }
-
-        return $apiRequest;
-    }
-
-    public static function apiRequest($url, $fields, $header, $requestType)
+    public function apiRequest($url, $fields, $requestType)
     {
         try
         {
             $session = curl_init();
 
+            Log::debug('url:'.$url);
+
             curl_setopt($session, CURLOPT_URL, $url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($session, CURLOPT_CUSTOMREQUEST, $requestType );
-            
+
+            $indexHeader = array_search('Content-Length: 0', $this->header);
+            if($indexHeader !== false){
+                unset($this->header[$indexHeader]);
+            }
+
             if ($fields) {
                 curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
-            }	else {
-                array_push($header, 'Content-Length: 0');
-                // curl_setopt($session, CURLOPT_POSTFIELDS, json_encode(array()));
+            }   else {
+                array_push($this->header, 'Content-Length: 0');
             }
-            \
+
+            \Log::debug('fields:'.print_r($fields,1));
+            \Log::debug("header:".print_r($this->header,1));
             
             curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
-            curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
+            curl_setopt($session, CURLOPT_HTTPHEADER, $this->header);            
 
             $msg_chk = curl_exec($session);  
+
+            Log::debug('msg_chk'.$msg_chk);
             
             $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);  
 
             $result = json_decode($msg_chk);
-            
+            \Log::debug("result_braspag: ".print_r($result,1));
             if ($httpcode == 200 ||$httpcode ==  201 ||$httpcode ==  202) {
                 return (object)array (
                     'success'           =>  true,
@@ -830,11 +200,10 @@ class BrasPagApi
         {
             $return = (object)array(
                 "success" 					=> false ,
-                // "transaction_id"            => $result->paymentToken,
                 "message" 					=> $ex->getMessage()
             );
             
-            \Log::error(($ex));
+            \Log::error(($return->message));
 
             return $return;
         }
@@ -849,62 +218,116 @@ class BrasPagApi
 	 * @param string $boletoInstructions descrição no boleto
 	 * @return array
 	 */
-    public static function billetCharge ($amount, $client, $postbackUrl, $boletoExpirationDate, $boletoInstructions)
+    public function billetCharge ($amount, $client, $postbackUrl, $boletoExpirationDate, $boletoInstructions)
     {
-        $url = sprintf('%s/sales/', self::apiUrl());
-        $orderId = self::getOrderId(Carbon::now()->toDateTimeString());
+        // $url = sprintf('%ssales/', $this->apiUrl);
 
-        $fields = [
-            "MerchantOrderId" => $orderId,
-            "Customer" => [
-                "Name" => $client->getFullName(),
-                "Identity" => $client->getDocument(),
-                "IdentityType" => "CPF",
-                "Address" =>  [  
-                    "Street" => $client->getStreet(),
-                    "Number" => $client->getStreetNumber(),
-                    "Complement" => $client->address_complements,
-                    "ZipCode" => $client->zipcode,
-                    "City" => $client->address_city,
-                    "District" => $client->getNeighborhood()
-                ]
-            ],
-            "Payment" => [
-                "Type" => "Boleto",
-                "Amount" => self::amountRound($amount),
-                "ExpirationDate" => date('Y-m-d', strtotime($boletoExpirationDate)),
-                "Instructions" => $boletoInstructions
-            ]
-        ];
-        if (App::environment() != 'production') {
-            $fields['Payment']['Provider'] = 'Simulado';
-        }
-        $body = json_encode($fields);
+        // $fields = [
+        //     "MerchantOrderId" => $this->getOrderId(),
+        //     "Customer" => [
+        //         "Name" => $client->getFullName(),
+        //         "Identity" => $client->getDocument(),
+        //         "IdentityType" => "CPF",
+        //         "Address" =>  [  
+        //             "Street" => $client->getStreet(),
+        //             "Number" => $client->getStreetNumber(),
+        //             "Complement" => $client->address_complements,
+        //             "ZipCode" => $client->zipcode,
+        //             "City" => $client->address_city,
+        //             "State" => $client->state,
+        //             "Country" => $this->getCountrySlug($client->country),
+        //             "District" => $client->getNeighborhood()
+        //         ]
+        //     ],
+        //     "Payment" => [
+        //         "Provider" => "Simulado",
+        //         "Type" => "Boleto",
+        //         "Amount" => $amount,
+        //         "ExpirationDate" => date('Y-m-d', strtotime($boletoExpirationDate)),
+        //         "Instructions" => $boletoInstructions
+        //     ]
+        // ];
 
-        $merchantId         = Settings::findObjectByKey('braspag_merchant_id');
-        $merchandtKey       = Settings::findObjectByKey('braspag_merchant_key');
-        $header = [
-            'Content-Type:  application/json',
-            'MerchantId: '.$merchantId->value, 
-            'MerchantKey: '.$merchandtKey->value       
-        ];
+        // $body = json_encode($fields);
 
-        $requestType = self::POST_REQUEST;
+        // $apiRequest = $this->apiRequest($url, $body, "POST");
 
-        $apiRequest = self::apiRequest($url, $body, $header, $requestType);
-        return $apiRequest;
+        // return $apiRequest;
+        $return = (object)array(
+            "success" 					=> false ,
+            "message" 					=> 'not_implemented'
+        );
     }
-    private static function abbreviationState($state)
+
+    private function getBody($payment, $amount, $capture = false, $cardType, $user = null)
     {
-        $state = strtolower($state);
-        switch ($state) {
-            case 'minas gerais':
-                return "mg";
-                break;
-    
+        $expirationDate = $this->getExpirationDate($payment);
+
+        if(!$user)
+            $user = User::find($payment->user_id);
+
+        $cardNumber = $payment->getCardNumber();
+
+        $phone = preg_replace('/[^0-9]/', '', $user->phone);
+
+        $docType = ((strlen($user->document)) > 11) ? "CNPJ" : "CPF";
+
+        $orderId = $this->getOrderId();
+
+        $totalAmount = $amount;
+
+        $softDescriptor = strlen(Settings::findByKey('website_title')) >= 13 ? substr(Settings::findByKey('website_title'),0,12)."." : Settings::findByKey('website_title');
+
+        $fields = array(
+            "MerchantOrderId"  =>  $orderId,
+            "Customer"  => (object)array(
+                'Name'          =>  $user->first_name.' '.$user->last_name.$this->prefixAccept,
+                "Email"         =>  $user->email,
+                "Identity"      =>  $user->document,
+                "Identitytype"  =>  $docType,
+                "Mobile"        =>  $phone,
+                "Phone"         =>  $phone,
+            ),
+            "Payment"   => (object)array(
+                "Provider"       =>  $this->braspagProvider,
+                "Type"           =>  $cardType,
+                "Amount"         =>  $totalAmount,
+                "Currency"       =>  Settings::findByKey('generic_keywords_currency'),
+                "Country"        =>  $this->getCountrySlug($user->country),
+                "Installments"   =>  1,
+                "Capture"        =>  $capture,
+                "SoftDescriptor" =>  $softDescriptor,
+                $cardType        =>  (object)array(
+                   "CardNumber"      =>  $cardNumber,
+                   "Holder"          =>  $payment->getCardHolder(),
+                   "ExpirationDate"  =>  $expirationDate,
+                   "SecurityCode"    =>  $payment->getCardCvc(),
+                   "Brand"           =>  $this->getBrand($cardNumber),
+                   "SaveCard"        =>  false
+                )
+            )
+        );
+        // if(!isset($this->prefixAccept))
+        //     unset($fields["Payment"]->Provider);
+
+        return json_encode($fields);
+    }
+
+    public function getCountrySlug($country){
+        switch(strtolower($country))
+        {
+            case 'angola':
+                return 'ago';
+            case 'espanha':
+            case 'spain':
+            case 'paraguai':
+            case 'paraguay':
+                return 'esp';
+            case 'united states':
+            case 'estados unidos':
+                return 'usa';
             default:
-                return "mg";
-                break;
+                return 'bra';
         }
     }
 }

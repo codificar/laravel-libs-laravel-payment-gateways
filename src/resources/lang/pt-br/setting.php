@@ -52,6 +52,7 @@ return array(
 	'pagarapido'				=> 'Paga Rápido',
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
+	'ipag'						=> 'Ipag',
 
 	
 	
@@ -161,4 +162,7 @@ return array(
 	'cnpj_for_banco_inter'		=> 'CNPJ',
 	'banco_inter_crt'			=> 'Arquivo do Certificado',
 	'banco_inter_key'			=> 'Arquivo da Chave',
+	'ipag_api_id'				=> 'Ipag API Id',
+	'ipag_api_key'				=> 'Ipag API Key',
+	'ipag_token'				=> 'Ipag Token'
 );

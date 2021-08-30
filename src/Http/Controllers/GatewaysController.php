@@ -92,18 +92,21 @@ class GatewaysController extends Controller
         'braspag_cielo_ecommerce' => [
             'braspag_client_id',
             'braspag_client_secret'
-
         ],
         'pagarapido' => [
             'pagarapido_login',
             'pagarapido_password',
             'pagarapido_gateway_key',
             'pagarapido_production'
-
         ],
         'bancointer' => [
             'banco_inter_account',
             'cnpj_for_banco_inter'
+        ],
+        'ipag' => [
+            'ipag_api_id',
+            'ipag_api_key',
+            'ipag_token'
         ],
     ];
 
@@ -120,6 +123,7 @@ class GatewaysController extends Controller
         array('value' => 'transbank', 'name' => 'setting.transbank'),
         array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
         array('value' => 'adiq', 'name' => 'setting.adiq'),
+        array('value' => 'ipag', 'name' => 'setting.ipag'),
     );
 
 

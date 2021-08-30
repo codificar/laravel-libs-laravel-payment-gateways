@@ -52,6 +52,7 @@ return array(
 	'pagarapido'				=> 'Paga Rapido',
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
+	'ipag'						=> 'Ipag',
 
 	
 
@@ -152,6 +153,9 @@ return array(
     'thursday'					=> 'Thursday',
     'friday'					=> 'Friday',
 	'saturday'					=> 'Saturday',
+	'ipag_api_id'				=> 'Ipag API Id',
+	'ipag_api_key'				=> 'Ipag API Key',
+	'ipag_token'				=> 'Ipag Token',
 
 	'adiq_client_id'			=> 'Adiq Client Id',
 	'adiq_client_secret'		=> 'Adiq Client Secret',
