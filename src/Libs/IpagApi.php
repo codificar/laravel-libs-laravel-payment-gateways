@@ -127,7 +127,7 @@ class IpagApi
      *                      ?'message' //if it fails, with false success
      *                     }
      */
-    public static function captureWithSplit(Transaction $transaction, Provider $provider, $newAmount = null)
+    public static function captureWithSplit(Transaction $transaction, Provider $provider, $providerAmount, $newAmount = null)
     {
         $splitBody      =   null;
         $splitHeader    =   self::getHeader();
@@ -135,22 +135,22 @@ class IpagApi
         $splitRequest   =   self::apiRequest($splitUrl, $splitBody, $splitHeader, self::GET_REQUEST);
 
         if(
-            !isset($splitRequest->success) &&
-            !$splitRequest->success &&
-            !isset($splitRequest->data->data) &&
+            !isset($splitRequest->success) ||
+            !$splitRequest->success ||
+            !isset($splitRequest->data->data) ||
             !count($splitRequest->data->data)
         ){
-            $ruleResponse = self::setSplitRule($transaction, $provider->id, 'receiver_id');
+            $ruleResponse = self::setSplitRule($transaction, $provider->id, 'receiver_id', $providerAmount);
 
             if(
                 !$ruleResponse ||
                 !isset($ruleResponse->success) ||
                 !$ruleResponse->success
             ){
-                Log::error("Set split rule fail: " . print_r($ruleResponse, 1));
+                Log::error("Set split rule new fail: " . print_r($ruleResponse, 1));
                 return (object)array(
                     "success"   => false,
-                    "message"   => 'Set split rule fail'
+                    "message"   => 'Set split rule new fail'
                 );
             }
         }
@@ -171,17 +171,17 @@ class IpagApi
                     );
                 }
 
-                $ruleResponse = self::setSplitRule($transaction, $provider->id, 'receiver_id');
+                $ruleResponse = self::setSplitRule($transaction, $provider->id, 'receiver_id', $providerAmount);
 
                 if(
                     !$ruleResponse ||
                     !isset($ruleResponse->success) ||
                     !$ruleResponse->success
                 ){
-                    Log::error("Set split rule fail: " . print_r($ruleResponse, 1));
+                    Log::error("Set split rule change fail: " . print_r($ruleResponse, 1));
                     return (object)array(
                         "success"   => false,
-                        "message"   => 'Set split rule fail'
+                        "message"   => 'Set split rule change fail'
                     );
                 }
             }
@@ -235,7 +235,7 @@ class IpagApi
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $url = sprintf('%s/resources/sellers', self::apiUrl());
-        
+
         $phoneRemask    =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
@@ -277,6 +277,9 @@ class IpagApi
         $body       =   json_encode($fields);
         $accountRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
+        if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
+            self::activeSeller($accountRequest->data->id);
+
         return $accountRequest;
     }
 
@@ -313,7 +316,8 @@ class IpagApi
         {
             $result = (object)array(
                 'success'           =>  true,
-                'recipient_id'      =>  $ledgerBankAccount->recipient_id
+                'recipient_id'      =>  $response->data->id,
+                'is_active'         =>  $response->data->attributes->is_active
             );
             $ledgerBankAccount->recipient_id = $response->data->id;
             $ledgerBankAccount->save();
@@ -324,11 +328,12 @@ class IpagApi
             $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
             if($newAccount->success)
             {
-                $ledgerBankAccount->recipient_id = $newAccount->data->MerchantId;
+                $ledgerBankAccount->recipient_id = $newAccount->data->id;
                 $ledgerBankAccount->save();
                 $result = (object)array(
                     'success'       =>  true,
-                    'recipient_id'  =>  $ledgerBankAccount->recipient_id
+                    'recipient_id'  =>  $ledgerBankAccount->recipient_id,
+                    'is_active'     =>  $newAccount->data->attributes->is_active
                 );
             }
             else
@@ -339,6 +344,9 @@ class IpagApi
                 );
             }
         }
+
+        if(isset($result->is_active) && $result->is_active === false)
+            self::activeSeller($result['recipient_id']);
 
         return $result;
     }
@@ -371,12 +379,12 @@ class IpagApi
         return $pixRequest;
     }
 
-    public static function setSplitRule(Transaction $transaction, $providerId, $sellerIndex)
+    public static function setSplitRule(Transaction $transaction, $providerId, $sellerIndex, $providerAmount)
     {
         $ruleUrl       =   sprintf('%s/resources/split_rules?transaction=%s', self::apiUrl(), $transaction->gateway_transaction_id);
 
         $ruleHeader    =   self::getHeader();
-        $ruleBody      =   self::getSplitInfo($providerId, $transaction->provider_value, $sellerIndex);
+        $ruleBody      =   json_encode(self::getSplitInfo($providerId, $providerAmount, $sellerIndex));
         $ruleRequest   =   self::apiRequest($ruleUrl, $ruleBody, $ruleHeader, self::POST_REQUEST);
 
         return $ruleRequest;
@@ -391,6 +399,17 @@ class IpagApi
         $ruleRequest   =   self::apiRequest($ruleUrl, $ruleBody, $ruleHeader, self::POST_REQUEST);
 
         return $ruleRequest;
+    }
+
+    public static function activeSeller($sellerId)
+    {
+        $activeUrl       =   sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
+
+        $activeBody      =   json_encode(["is_active"=>true]);
+        $activeHeader    =   self::getHeader();
+        $activeRequest   =   self::apiRequest($activeUrl, $activeBody, $activeHeader, self::PUT_REQUEST);
+
+        return $activeRequest;
     }
 
     private static function getOrderId()
@@ -424,13 +443,13 @@ class IpagApi
         return $brand;
     }
 
-    public static function amountRound($amount)
-    {
-        $amount = $amount * self::ROUND_VALUE;
-        $amount = (int)$amount;
+    // public static function amountRound($amount)
+    // {
+    //     $amount = $amount * self::ROUND_VALUE;
+    //     $amount = (int)$amount;
 
-        return $amount;
-    }
+    //     return $amount;
+    // }
 
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
@@ -473,10 +492,9 @@ class IpagApi
         }
 
         $orderId        =   self::getOrderId();
-        $totalAmount    =   self::amountRound($amount);
 
         $fields         =   (object)array(
-            'amount'            =>  $totalAmount,
+            'amount'            =>  $amount,
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
@@ -517,7 +535,7 @@ class IpagApi
                 'products'  =>  (object)array(
                     (object)array(
                         'name'          =>  Settings::findByKey('website_title'),
-                        'unit_price'    =>  $totalAmount,
+                        'unit_price'    =>  $amount,
                         'quantity'      =>  1
                     )
                 )
@@ -530,7 +548,7 @@ class IpagApi
         if($capture && $provider && isset($provider->id) && $type == 'card')
         {
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
-            $fields->split_rules = $split;
+            $fields->split_rules = [$split];
         }
 
         return json_encode($fields);
@@ -548,15 +566,11 @@ class IpagApi
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             return false;
 
-        $providerAmount = self::amountRound($providerAmount);
-
-        $fields = array(
-            (object)array(
-                $sellerIndex            =>  $ledgerBankAccount->recipient_id,
-                'amount'                =>  floatval($providerAmount),
-                'liable'                =>  true,
-                'charge_processing_fee' =>  false
-            )
+        $fields = (object)array(
+            $sellerIndex            =>  $sellerId->recipient_id,
+            'amount'                =>  floatval($providerAmount),
+            'liable'                =>  true,
+            'charge_processing_fee' =>  true
         );
 
         return $fields;

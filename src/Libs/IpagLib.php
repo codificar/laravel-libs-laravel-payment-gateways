@@ -333,7 +333,6 @@ Class IpagLib implements IPayment
             $this->checkException($retrievedCharge, 'api_retrievecapture_split_error');
 
             $newAmount       =  null;
-            $totalAmount     =  IpagApi::amountRound($totalAmount);
 
             if($retrievedCharge['amount'] != $totalAmount)
                 $newAmount   =  $totalAmount;
@@ -343,7 +342,7 @@ Class IpagLib implements IPayment
             else
                 $amountParam =  $newAmount;
 
-			$response = IpagApi::captureWithSplit($transaction, $provider, $amountParam);
+			$response = IpagApi::captureWithSplit($transaction, $provider, $providerAmount, $amountParam);
 
 			if(
                 isset($response->success) && 
