@@ -391,7 +391,7 @@ Class IpagLib implements IPayment
      * Capture the payment of an existing, uncaptured, charge
      *
      * @param Transaction   $transaction
-     * @param Decimal       $totalAmount        A positive decimal representing how much to charge
+     * @param Decimal       $totalAmount        A positive decimal representing how much to capture
      * @param Payment       $payment     
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
@@ -400,10 +400,6 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $newCharge = $this->chargeToCapture($transaction, '', $payment, false);
-
-            $this->checkException($newCharge, 'api_chargecapture_error');
-
 			$response = IpagApi::capture($transaction, $amount);
 
             if(

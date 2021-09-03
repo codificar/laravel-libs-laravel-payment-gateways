@@ -101,9 +101,12 @@ class IpagApi
      *                      ?'message' //if it fails, with false success
      *                     }
      */
-    public static function capture(Transaction $transaction)
+    public static function capture(Transaction $transaction, $amount)
     {
         $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+
+        if($amount)
+            $url = sprintf('%s&valor=%s', $url, $amount);
 
         $body       =   null;
         $header     =   self::getHeader(true);
