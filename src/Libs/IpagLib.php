@@ -622,37 +622,23 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::getSeller($ledgerBankAccount->recipient_id);
+            $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
 
-            if($response->success && isset($response->data->id))
+            if($newAccount->success && isset($newAccount->data->id))
             {
-                $result = array(
-                    'success'           =>  true,
-                    'recipient_id'      =>  $ledgerBankAccount->recipient_id
-                );
-                $ledgerBankAccount->recipient_id = $response->data->id;
+                $ledgerBankAccount->recipient_id = $newAccount->data->id;
                 $ledgerBankAccount->save();
+                $result = array(
+                    'success'       =>  true,
+                    'recipient_id'  =>  $ledgerBankAccount->recipient_id
+                );
             }
             else
             {
-                $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
-
-                if($newAccount->success && isset($newAccount->data->id))
-                {
-                    $ledgerBankAccount->recipient_id = $newAccount->data->id;
-                    $ledgerBankAccount->save();
-                    $result = array(
-                        'success'       =>  true,
-                        'recipient_id'  =>  $ledgerBankAccount->recipient_id
-                    );
-                }
-                else
-                {
-                    $result = array(
-                        'success'       =>  false,
-                        'recipient_id'  =>  ""
-                    );
-                }
+                $result = array(
+                    'success'       =>  false,
+                    'recipient_id'  =>  ""
+                );
             }
 
             return $result;

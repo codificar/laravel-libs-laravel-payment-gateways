@@ -234,7 +234,25 @@ class IpagApi
 
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        $url = sprintf('%s/resources/sellers', self::apiUrl());
+        if(
+            $ledgerBankAccount->recipient_id != '' && 
+            $ledgerBankAccount->recipient_id != 'empty' && 
+            $ledgerBankAccount->recipient_id !== null
+        )
+            $response = self::getSeller($ledgerBankAccount->recipient_id);
+        else
+            $response = null;
+
+        if(!isset($response->data->id))
+        {
+            $url = sprintf('%s/resources/sellers', self::apiUrl());
+            $verb = self::POST_REQUEST;
+        }
+        else
+        {
+            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
+            $verb = self::PUT_REQUEST;
+        }
 
         $phoneRemask    =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
@@ -252,7 +270,6 @@ class IpagApi
             'login'         =>  (string)$ledgerBankAccount->provider_id.$ledgerBankAccount->document,
             'password'      =>  $ledgerBankAccount->document,
             'name'          =>  $ledgerBankAccount->holder,
-            'cpf_cnpj'      =>  self::remaskDocument($ledgerBankAccount->document), //document remask BR
             'email'         =>  $provider->mail,
             'phone'         =>  $phoneRemask,
             'bank'      =>  (object)array(
@@ -261,6 +278,9 @@ class IpagApi
                 'account'       =>  $ledgerBankAccount->account
             )
         );
+
+        if(!$response)
+            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument($ledgerBankAccount->document)]); //document remask BR
 
         //to juridical bank account
         $birthday = $ledgerBankAccount->birthday_date;
@@ -275,7 +295,7 @@ class IpagApi
 
         $header     =   self::getHeader();
         $body       =   json_encode($fields);
-        $accountRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $accountRequest = self::apiRequest($url, $body, $header, $verb);
 
         if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
