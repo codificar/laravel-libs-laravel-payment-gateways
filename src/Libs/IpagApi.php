@@ -278,7 +278,7 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
-            self::activeSeller($accountRequest->data->id);
+            $accountRequest = self::activeSeller($accountRequest->data->id);
 
         return $accountRequest;
     }
