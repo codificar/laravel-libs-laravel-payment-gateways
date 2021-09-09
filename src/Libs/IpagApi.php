@@ -544,7 +544,7 @@ class IpagApi
                     'description'   =>  "Prestação de serviço de mobilidade",
                     'unit_price'    =>  $amount,
                     'quantity'      =>  1,
-                    'sku'           =>  1
+                    'sku'           =>  '1'
                 )
             )
         );
