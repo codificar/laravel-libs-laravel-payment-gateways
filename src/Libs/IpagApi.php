@@ -518,13 +518,25 @@ class IpagApi
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
-                'cpf_cnpj'      =>  $client->document
+                'email'         =>  $client->email,
+                'phone'         =>  substr(preg_replace('/\D/', '', $client->phone), 2),
+                'cpf_cnpj'      =>  $client->document,
+                'billing_address'=>  (object)array(
+                    'street'    =>  $client->address,
+                    'number'    =>  $client->address_number,
+                    'district'  =>  $client->address_neighbour,
+                    'complement'=>  $client->address_complements,
+                    'city'      =>  $client->address_city,
+                    'state'     =>  $client->state,
+                    'zipcode'   =>  preg_replace('/\D/', '', $client->zipcode)
+                )
             ),
             'payment'           =>  (object)array(
                 'type'          =>  $type,
                 'capture'       =>  $capture,
                 'method'        =>  $method,
-                'installments'  =>  1
+                'installments'  =>  1,
+                'fraud_analysis'=>  true
             )
         );
 
