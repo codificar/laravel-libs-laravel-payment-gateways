@@ -679,7 +679,7 @@ Class IpagLib implements IPayment
      */      
     public function getGatewayTax()
     {
-
+        return 0.5;
     }
 
     /**
