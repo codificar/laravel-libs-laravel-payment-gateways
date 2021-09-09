@@ -275,7 +275,7 @@ class IpagApi
             'bank'      =>  (object)array(
                 'code'          =>  $bank->code,
                 'agency'        =>  $ledgerBankAccount->agency,
-                'account'       =>  $ledgerBankAccount->account
+                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
             )
         );
 
