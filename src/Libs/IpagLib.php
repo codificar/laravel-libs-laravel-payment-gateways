@@ -73,7 +73,7 @@ Class IpagLib implements IPayment
                 $response->success && 
                 isset($response->data) && 
                 isset($response->data->attributes->antifraud->status) &&
-                $response->data->attributes->antifraud->status == 'approved'
+                $response->data->attributes->antifraud->status == 'approved' && 
                 (
                     $response->data->attributes->status->message == 'CAPTURED' ||
                     $response->data->attributes->status->message == 'PRE-AUTHORIZED'
@@ -134,7 +134,7 @@ Class IpagLib implements IPayment
                 $response->success && 
                 isset($response->data) && 
                 isset($response->data->attributes->antifraud->status) &&
-                $response->data->attributes->antifraud->status == 'approved'
+                $response->data->attributes->antifraud->status == 'approved' && 
                 (
                     $response->data->attributes->status->message == 'CAPTURED' ||
                     $response->data->attributes->status->message == 'PRE-AUTHORIZED'
