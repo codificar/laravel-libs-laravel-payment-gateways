@@ -537,6 +537,15 @@ class IpagApi
                 'method'        =>  $method,
                 'installments'  =>  1,
                 'fraud_analysis'=>  true
+            ),
+            'products'          =>  array(
+                (object)array(
+                    'name'          =>  "Serviço de mobilidade",
+                    'description'   =>  "Prestação de serviço de mobilidade",
+                    'unit_price'    =>  $amount,
+                    'quantity'      =>  1,
+                    'sku'           =>  1
+                )
             )
         );
 
