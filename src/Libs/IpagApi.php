@@ -512,7 +512,7 @@ class IpagApi
         }
 
         $orderId        =   self::getOrderId();
-        $requestId      =   $provider ? $provider->getRequestInProgress()->id : $orderId;
+        $requestId      =   $client ? $client->getLastRequest()->id : $orderId;
 
         $fields         =   (object)array(
             'amount'            =>  $amount,
