@@ -66,6 +66,8 @@ Class IpagLib implements IPayment
     {
         try
         {
+            Log::error("capturew :".print_r($capture,1));
+            Log::error("test tracew :".print_r(debug_print_backtrace(),1));
             $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
 
             if (
@@ -127,6 +129,8 @@ Class IpagLib implements IPayment
     {
         try
         {
+            Log::error("capture :".print_r($capture,1));
+            Log::error("test trace :".print_r(debug_print_backtrace(),1));
             $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
 
 			if(
