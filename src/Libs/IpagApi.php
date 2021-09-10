@@ -512,6 +512,7 @@ class IpagApi
         }
 
         $orderId        =   self::getOrderId();
+        $requestId      =   $provider ? $provider->getRequestInProgress()->id : $orderId;
 
         $fields         =   (object)array(
             'amount'            =>  $amount,
@@ -540,11 +541,11 @@ class IpagApi
             ),
             'products'          =>  array(
                 (object)array(
-                    'name'          =>  "Serviço de mobilidade",
+                    'name'          =>  "Serviço de mobilidade - $requestId",
                     'description'   =>  "Prestação de serviço de mobilidade",
                     'unit_price'    =>  $amount,
                     'quantity'      =>  1,
-                    'sku'           =>  '1'
+                    'sku'           =>  "$requestId"
                 )
             )
         );
