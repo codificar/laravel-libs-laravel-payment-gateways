@@ -537,7 +537,7 @@ class IpagApi
                 'capture'       =>  $capture,
                 'method'        =>  $method,
                 'installments'  =>  1,
-                'fraud_analysis'=>  true
+                'fraud_analysis'=>  Settings::findByKey('ipag_antifraud')
             ),
             'products'          =>  array(
                 (object)array(
