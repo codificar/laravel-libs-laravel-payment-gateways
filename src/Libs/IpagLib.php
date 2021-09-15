@@ -67,13 +67,24 @@ Class IpagLib implements IPayment
         try
         {
             $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
+            $sysAntifraud = Settings::findByKey('ipag_antifraud');
 
             if (
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) && 
-                isset($response->data->attributes->antifraud->status) &&
-                $response->data->attributes->antifraud->status == 'approved' && 
+                (
+                    (
+                        $sysAntifraud &&
+                        isset($response->data->attributes->antifraud->status) &&
+                        $response->data->attributes->antifraud->status == 'approved'
+                    ) 
+                    ||
+                    (
+                        !$sysAntifraud
+                    )
+                )
+                && 
                 (
                     $response->data->attributes->status->message == 'CAPTURED' ||
                     $response->data->attributes->status->message == 'PRE-AUTHORIZED'
@@ -128,13 +139,24 @@ Class IpagLib implements IPayment
         try
         {
             $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $sysAntifraud = Settings::findByKey('ipag_antifraud');
 
 			if(
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) && 
-                isset($response->data->attributes->antifraud->status) &&
-                $response->data->attributes->antifraud->status == 'approved' && 
+                (
+                    (
+                        $sysAntifraud &&
+                        isset($response->data->attributes->antifraud->status) &&
+                        $response->data->attributes->antifraud->status == 'approved'
+                    ) 
+                    ||
+                    (
+                        !$sysAntifraud
+                    )
+                )
+                &&
                 (
                     $response->data->attributes->status->message == 'CAPTURED' ||
                     $response->data->attributes->status->message == 'PRE-AUTHORIZED'
