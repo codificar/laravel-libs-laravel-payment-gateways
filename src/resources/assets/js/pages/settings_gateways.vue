@@ -434,8 +434,8 @@ export default {
                       name="ipag_antifraud"
                       class="select form-control"
                     >
-                      <option value="true">{{ trans('setting.yes') }}</option>
-                      <option value="false">{{ trans('setting.no') }}</option>
+                      <option value="1">{{ trans('setting.yes') }}</option>
+                      <option value="0">{{ trans('setting.no') }}</option>
                     </select>
                   </div>
                 </div>

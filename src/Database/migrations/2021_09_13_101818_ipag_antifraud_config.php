@@ -14,7 +14,7 @@ class IpagAntifraudConfig extends Migration
     public function up()
     {
         Settings::updateOrCreate(array('key' => 'ipag_antifraud',
-            'value'         => 'false', 
+            'value'         => '0', 
             'tool_tip'      => '', 
             'page'          => '1',
             'category'      => '6',
