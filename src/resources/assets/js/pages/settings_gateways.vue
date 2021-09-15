@@ -413,6 +413,58 @@ export default {
                   </div>
                 </div>
               </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_antifraud_title") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.ipag_antifraud_title')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+
+                    <select
+                      v-model="gateways.ipag.ipag_antifraud"
+                      name="ipag_antifraud"
+                      class="select form-control"
+                    >
+                      <option value="true">{{ trans('setting.yes') }}</option>
+                      <option value="false">{{ trans('setting.no') }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_product_title") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.ipag_product_title')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-ipag"
+                      maxlength="80"
+                      v-model="gateways.ipag.ipag_product_title"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <!-- / Configurações do ipag-->

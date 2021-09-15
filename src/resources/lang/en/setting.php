@@ -155,7 +155,8 @@ return array(
 	'saturday'					=> 'Saturday',
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
-	'ipag_token'				=> 'Ipag Token',
+	'ipag_token'				=> 'Ipag Token',,
+	'ipag_antifraud_title'		=> 'Do you want to make transactions with anti-fraud?',
 
 	'adiq_client_id'			=> 'Adiq Client Id',
 	'adiq_client_secret'		=> 'Adiq Client Secret',

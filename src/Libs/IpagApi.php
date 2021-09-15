@@ -541,8 +541,8 @@ class IpagApi
             ),
             'products'          =>  array(
                 (object)array(
-                    'name'          =>  "Serviço de mobilidade - $requestId",
-                    'description'   =>  "Prestação de serviço de mobilidade",
+                    'name'          =>  substr((string) Settings::findByKey('ipag_product_title'), 0, 80)." - ".$requestId,
+                    'description'   =>  substr((string) Settings::findByKey('ipag_product_title'), 0, 254),
                     'unit_price'    =>  $amount,
                     'quantity'      =>  1,
                     'sku'           =>  "$requestId"

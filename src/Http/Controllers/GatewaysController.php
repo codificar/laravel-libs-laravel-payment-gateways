@@ -106,7 +106,9 @@ class GatewaysController extends Controller
         'ipag' => [
             'ipag_api_id',
             'ipag_api_key',
-            'ipag_token'
+            'ipag_token',
+            'ipag_antifraud',
+            'ipag_product_title'
         ],
     ];
 

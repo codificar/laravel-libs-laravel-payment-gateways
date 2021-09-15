@@ -164,4 +164,5 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
+	'ipag_antifraud_title'		=> '¿Quieres realizar transacciones con antifraude?'
 );

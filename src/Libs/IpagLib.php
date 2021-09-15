@@ -66,8 +66,6 @@ Class IpagLib implements IPayment
     {
         try
         {
-            Log::error("capturew :".print_r($capture,1));
-            Log::error("test tracew :".print_r(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2),1));
             $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
 
             if (
@@ -129,8 +127,6 @@ Class IpagLib implements IPayment
     {
         try
         {
-            Log::error("capture :".print_r($capture,1));
-            Log::error("test trace :".print_r(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2),1));
             $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
 
 			if(
@@ -192,7 +188,8 @@ Class IpagLib implements IPayment
     {
         try
         {
-            if(!Settings::findByKey('ipag_webhook_isset'))
+            //it's a system var, adm don't changes
+            if(!Settings::findByKey('ipag_webhook_isset')) // if null/false criates a new hook
             {
                 $responseHooks = IpagApi::retrieveHooks();
 
@@ -202,7 +199,7 @@ Class IpagLib implements IPayment
                     !isset($responseHooks->data->data) ||
                     !count($responseHooks->data->data)
                 ){
-                    $responseHook = IpagApi::registerHook($postbackUrl);
+                    $responseHook = IpagApi::registerHook($postbackUrl);//criates a new hook
 
                     if(
                         !isset($responseHook->success) ||
@@ -218,7 +215,7 @@ Class IpagLib implements IPayment
                         );
                 }
 
-                if($objectHook = Settings::findObjectByKey('ipag_webhook_isset'))
+                if($objectHook = Settings::findObjectByKey('ipag_webhook_isset'))// if have key save true
                 {
                     $objectHook->value = 1;
                     $objectHook->save();

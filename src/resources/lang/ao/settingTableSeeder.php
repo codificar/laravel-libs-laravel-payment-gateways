@@ -35,4 +35,6 @@ return array(
 	,'prepaid_tax_billet'					=> 'prepaid tax billet'
 	,'ipag_api_id'							=> 'Ipag API Id'
 	,'ipag_api_key'							=> 'Ipag API Key'
+	,'ipag_antifraud_title'					=> 'Transações com antifraude passam por validação prévia dos dados. Score precisa ser menor que 0.3'
+	,'ipag_product_title'					=> 'Nomenclatura do produto/serviço utilizada no gateway(ex.:Serviço de mobilidade)'
 );

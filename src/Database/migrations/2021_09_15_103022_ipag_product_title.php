@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class IpagAntifraudConfig extends Migration
+class IpagProductTitle extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class IpagAntifraudConfig extends Migration
      */
     public function up()
     {
-        Settings::updateOrCreate(array('key' => 'ipag_antifraud',
-            'value'         => 'false', 
+        Settings::updateOrCreate(array('key' => 'ipag_product_title',
+            'value'         => 'Serviço de mobilidade', 
             'tool_tip'      => '', 
             'page'          => '1',
             'category'      => '6',
@@ -29,9 +29,9 @@ class IpagAntifraudConfig extends Migration
      */
     public function down()
     {
-        $antifraud = Settings::findObjectByKey('ipag_antifraud');
+        $productTitle = Settings::findObjectByKey('ipag_product_title');
 
-        if($antifraud)
-            $antifraud->delete();
+        if($productTitle)
+            $productTitle->delete();
     }
 }
