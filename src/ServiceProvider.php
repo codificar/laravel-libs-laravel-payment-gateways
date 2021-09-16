@@ -22,6 +22,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->loadRoutesFrom(__DIR__ . '/routes/bancard.php');
         $this->loadRoutesFrom(__DIR__ . '/routes/bancoInter.php');
         $this->loadRoutesFrom(__DIR__ . '/routes/transbank.php');
+        $this->loadRoutesFrom(__DIR__ . '/routes/juno.php');
+
         // Load laravel views (Carregas as views do Laravel, blade)
         $this->loadViewsFrom(__DIR__ . '/resources/views', 'gateways');
 

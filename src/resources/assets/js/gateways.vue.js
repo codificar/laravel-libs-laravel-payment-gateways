@@ -8,7 +8,12 @@ import SettingsGateways from './pages/settings_gateways.vue';
 
 import VueSweetalert2 from 'vue-sweetalert2';
 
+import JunoAddCard from './pages/juno_add_card.vue';
+
 Vue.use(VueSweetalert2);
+
+import VueTheMask from 'vue-the-mask';
+Vue.use(VueTheMask)
 
 //Allows localization using trans()
 Vue.prototype.trans = (key) => {
@@ -28,7 +33,8 @@ new Vue({
     },
 
     components: {
-        settingsgateways: SettingsGateways
+        settingsgateways: SettingsGateways,
+        junoaddcard: JunoAddCard
     },
 
     created: function () {
