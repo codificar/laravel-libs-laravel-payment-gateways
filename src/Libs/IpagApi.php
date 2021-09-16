@@ -267,10 +267,10 @@ class IpagApi
             $phoneRemask = '(31) 99999-9999'; //if the phone has save error
 
         $fields = (object)array(
-            'login'         =>  $provider->mail,
+            'login'         =>  $provider->email,
             'password'      =>  $ledgerBankAccount->document,
             'name'          =>  $ledgerBankAccount->holder,
-            'email'         =>  $provider->mail,
+            'email'         =>  $provider->email,
             'phone'         =>  $phoneRemask,
             'bank'      =>  (object)array(
                 'code'          =>  $bank->code,
