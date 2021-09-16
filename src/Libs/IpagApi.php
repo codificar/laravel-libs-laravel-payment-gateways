@@ -268,7 +268,7 @@ class IpagApi
 
         $fields = (object)array(
             'login'         =>  $provider->email,
-            'password'      =>  $ledgerBankAccount->document,
+            'password'      =>  preg_replace('/\D/', '', $provider->document),
             'name'          =>  $ledgerBankAccount->holder,
             'email'         =>  $provider->email,
             'phone'         =>  $phoneRemask,
@@ -280,7 +280,7 @@ class IpagApi
         );
 
         if(!$response)
-            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument($ledgerBankAccount->document)]); //document remask BR
+            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
 
         //to juridical bank account
         $birthday = $ledgerBankAccount->birthday_date;
@@ -288,7 +288,7 @@ class IpagApi
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
-                'cpf'       =>  self::remaskDocument($provider->document), //document remask BR
+                'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
                 'phone'     =>  $phoneRemask,
                 'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
             );
