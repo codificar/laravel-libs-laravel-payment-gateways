@@ -10,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
-class GatewayUpdateDependenciesJob implements ShouldQueue
+class GatewayUpdateCardsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -34,6 +34,5 @@ class GatewayUpdateDependenciesJob implements ShouldQueue
     public function handle()
     {
         GatewaysLibModel::gatewayUpdateCards();
-        GatewaysLibModel::gatewayUpdateBankAccounts();
     }
 }

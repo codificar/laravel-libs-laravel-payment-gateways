@@ -8,7 +8,7 @@ use Illuminate\Pagination\Paginator;
 use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\PaymentFactory;
 use Eloquent;
-use Payment, Settings, LedgerBankAccount;
+use Payment, Settings;
 use DB;
 use Exception;
 
@@ -102,27 +102,30 @@ class GatewaysLibModel extends Eloquent
 		\Log::alert(print_r($sucCards, true));
 	}
 
-    public static function gatewayUpdateBankAccounts(){
-
-        foreach (LedgerBankAccount::all() as $ledgerBankAccount)
+    public static function gatewayUpdateBankAccounts($ledgerBankAccounts)
+    {
+        if(
+            Settings::findByKey('payment_card') == 1 || 
+            Settings::findByKey('payment_debitCard') == 1 ||
+            Settings::findByKey('payment_carto') == 1 ||
+            Settings::findByKey('payment_crypt') == 1
+        )
         {
-            try
+            foreach ($ledgerBankAccounts as $ledgerBankAccount)
             {
-                if(
-                    Settings::findByKey('payment_card') == 1 || 
-                    Settings::findByKey('payment_debitCard') == 1 ||
-                    Settings::findByKey('payment_carto') == 1 ||
-                    Settings::findByKey('payment_crypt') == 1
-                )
+                try
                 {
                     $return = PaymentFactory::createGateway()->createOrUpdateAccount($ledgerBankAccount);
                     $ledgerBankAccount->recipient_id = $return['recipient_id'];
+                    
+                    $ledgerBankAccount->save();
+                } catch (Exception $e) {
+                    \Log::error(
+                        "Change gateway update recip fail: " . print_r($ledgerBankAccount, 1) . 
+                        " Error: " . $e->getMessage()
+                    );
+                    continue;
                 }
-                
-                $ledgerBankAccount->save();
-            } catch (Exception $e) {
-                \Log::error("Change gateway update recip: ".print_r($e->getMessage(),1));
-                continue;
             }
         }
     }

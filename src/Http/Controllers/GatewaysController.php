@@ -277,7 +277,10 @@ class GatewaysController extends Controller
             $estimateUpdateCards = GatewaysLibModel::getUpdateCardsEstimateTime();
 
             //Call the job to update the cards
-            GatewayUpdateDependenciesJob::dispatch();
+            GatewayUpdateCardsJob::dispatch();
+
+            //Call the job to update the recipients of the providers
+            GatewayUpdateRecipientJob::dispatch(LedgerBankAccount::all());
         }
 
         //Salva o gateway de cartao de credito escolhido
