@@ -53,7 +53,7 @@ return array(
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
-
+	'juno'						=> 'Juno',
 	
 
 	
@@ -167,4 +167,11 @@ return array(
 	'cnpj_for_banco_inter'		=> 'CNPJ',
 	'banco_inter_crt'			=> 'Certificate',
 	'banco_inter_key'			=> 'Key',
+
+	'juno_settings'				=> 'Juno',
+	'juno_client_id'			=> 'Client ID',
+	'juno_secret'				=> 'Secret (Client Secret)',
+	'juno_resource_token'		=> 'Private token',
+	'juno_public_token'			=> 'Public token',
+	'juno_sandbox'				=> 'Operation Mode'
 );

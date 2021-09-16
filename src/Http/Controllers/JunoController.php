@@ -38,19 +38,27 @@ class JunoController extends Controller
     public function saveCardJuno()
     {
         $userId = Input::get('user_id');
+        $last_four = Input::get('last_four');
+        $card_type = Input::get('card_type');
+        $creditCardHash = Input::get('credit_card_hash');
 
-        $payment = new Payment ;
-		$payment->user_id = $userId ;
-		$return = ['error' => null] ;
-		
-		//uso da factory internamente
-		$return = $payment->createCard($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvv, $cardHolder, $cardPassword);
+        $gateway = PaymentFactory::createGateway();
+		$cardToken = $gateway->createCardToken($creditCardHash);
+        if(!$cardToken) {
+            return Response::json(array('success' => false));
+        }
+        else {
+            $payment = new Payment;
+            $payment->user_id = $userId;
+            $payment->gateway = "juno";
+            $payment->last_four = $last_four;
+            $payment->card_type = $card_type;
+            $payment->is_active = 1;
+            $payment->card_token = $cardToken;
+            $payment->customer_id = $cardToken;
+		    $payment->save();
 
-		$return['payment'] = $payment ;
-        
-        $json = array(
-            'success'=>false
-        );
-		return Response::json($json);
+            return Response::json(array('success' => true));
+        }
     }
 }

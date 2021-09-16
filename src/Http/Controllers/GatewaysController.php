@@ -110,6 +110,15 @@ class GatewaysController extends Controller
             'ipag_antifraud',
             'ipag_product_title'
         ],
+        'juno' => [
+            'juno_client_id',
+            'juno_secret',
+            'juno_resource_token',
+            'juno_public_token',
+            'juno_auth_token',
+            'juno_auth_token_expiration_date',
+            'juno_sandbox'
+        ],
     ];
 
     public $payment_gateways =  array(
@@ -126,6 +135,7 @@ class GatewaysController extends Controller
         array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
         array('value' => 'adiq', 'name' => 'setting.adiq'),
         array('value' => 'ipag', 'name' => 'setting.ipag'),
+        array('value' => 'juno', 'name' => 'setting.juno'),
     );
 
 

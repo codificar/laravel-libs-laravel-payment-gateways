@@ -50,8 +50,11 @@ return array(
 	'bancard'					=> 'Bancard',
 	'transbank'					=> 'Transbank',
 	'pagarapido'				=> 'Paga Rápido',
+	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
+	'juno'						=> 'Juno',
+	
 	
 	//Chaves dos gateways
 	'pagarme_settings'			=> 'Pagar.me Configurações',
@@ -150,14 +153,24 @@ return array(
     'friday'					=> 'Sexta-feira',
 	'saturday'					=> 'Sábado',
 
+	'adiq_client_id'			=> 'ID do cliente Adiq',
+	'adiq_client_secret'		=> 'Segredo do cliente Adiq',
+	'adiq_token'				=> 'Token de transação Adiq',
+
 	'banco_inter_settings'		=> 'Configurações Banco Inter',
 	'banco_inter_account'		=> 'Numero da conta do Banco Inter',
 	'cnpj_for_banco_inter'		=> 'CNPJ',
 	'banco_inter_crt'			=> 'Arquivo do Certificado',
 	'banco_inter_key'			=> 'Arquivo da Chave',
-
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
-	'ipag_antifraud_title'		=> 'Deseja fazer transações com antifraude?'
+	'ipag_antifraud_title'		=> 'Deseja fazer transações com antifraude?',
+
+	'juno_settings'				=> 'Juno Configurações',
+	'juno_client_id'			=> 'Client ID',
+	'juno_secret'				=> 'Secret (Client Secret)',
+	'juno_resource_token'		=> 'Token de recurso (token privado)',
+	'juno_public_token'			=> 'Token Público',
+	'juno_sandbox'				=> 'Modo de Operação'
 );

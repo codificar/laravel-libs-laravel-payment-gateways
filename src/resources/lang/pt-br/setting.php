@@ -53,7 +53,7 @@ return array(
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
-
+	'juno'						=> 'Juno',
 	
 	
 	//Chaves dos gateways
@@ -165,5 +165,12 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
-	'ipag_antifraud_title'		=> 'Deseja fazer transações com antifraude?'
+	'ipag_antifraud_title'		=> 'Deseja fazer transações com antifraude?',
+
+	'juno_settings'				=> 'Juno Configurações',
+	'juno_client_id'			=> 'Client ID',
+	'juno_secret'				=> 'Secret (Client Secret)',
+	'juno_resource_token'		=> 'Token de recurso (token privado)',
+	'juno_public_token'			=> 'Token Público',
+	'juno_sandbox'				=> 'Modo de Operação'
 );
