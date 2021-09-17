@@ -34,7 +34,9 @@ export default {
                             text: "O cartão de crédito foi cadastrado com sucesso!",
                             type: "success",
                         }).then((result) => {
-                            window.postMessage("Sucesso");    
+                            console.log("Avisa o app");
+                            window.postMessage("Sucesso");
+                            window.ReactNativeWebView.postMessage("Sucesso");    
                         });
                     } else {
                         this.$swal({
