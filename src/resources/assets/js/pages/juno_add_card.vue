@@ -30,13 +30,7 @@ export default {
                 })
                 .then((response) => {
                     if (response.data.success) {
-                        this.$swal({
-                            title: "Sucesso",
-                            text: "O cartão de crédito foi cadastrado com sucesso!",
-                            type: "success",
-                        }).then((result) => {
-                            this.show_card_added_msg = true;
-                        });
+                        this.show_card_added_msg = true;
                     } else {
                         this.$swal({
                             title: "Cartão Recusado",
@@ -147,7 +141,7 @@ export default {
         <div class="row">
             <div class="col-12 col-sm-12">
                 <div v-if="show_card_added_msg">
-                    <h4 style="margin-top: 50px; text-align: center; color:grey;">Cartão de crédito adicionado com sucesso! Você pode voltar ou adicionar mais um cartão clicando no botão abaixo</h4 style="text-align: center; color:grey;">
+                    <h4 style="margin-top: 50px; text-align: center; color:grey;">Cartão adicionado com sucesso! Volte ou adicione um novo cartão</h4 style="text-align: center; color:grey;">
                     <br>
                     <div class="col-md-4 text-center"> 
                         <button class="btn btn-sm btn-success" @click="addMoreCard"><i class="mdi mdi-gamepad-circle"></i> Adicionar mais um cartão</button>
@@ -168,7 +162,7 @@ export default {
                             <div class="col-12 col-sm-6">
                                 <div class="form-group">
                                     <label>Número do cartão</label>
-                                    <input v-model="cardNumber" v-mask="['#### #### #### ####']" class="form-control" id="card_number" type="text">
+                                    <input type="tel" v-model="cardNumber" v-mask="['#### #### #### ####']" class="form-control" id="card_number">
                                 </div>
                             </div>
                         </div>
@@ -183,13 +177,13 @@ export default {
                             <div class="col-6 col-sm-6 col-md-4">
                                 <div class="form-group">
                                     <label>Ano de Validade</label>
-                                    <input v-model="expirationYear" v-mask="['####']" class="form-control" id="card_year" type="text">
+                                    <input type="tel" v-model="expirationYear" v-mask="['####']" class="form-control" id="card_year">
                                 </div>
                             </div>
                             <div class="col-12 col-sm-12 col-md-4">
                                 <div class="form-group">
                                     <label>CVV</label>
-                                    <input v-model="securityCode" v-mask="['###']" class="form-control" id="card_cvv" type="text">
+                                    <input type="tel" v-model="securityCode" v-mask="['###']" class="form-control" id="card_cvv">
                                 </div>
                             </div>
                         </div>
