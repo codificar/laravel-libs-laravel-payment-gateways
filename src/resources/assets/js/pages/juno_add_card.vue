@@ -12,7 +12,8 @@ export default {
             holderName: "",
             securityCode: "",
             expirationMonth: "",
-            expirationYear: ""
+            expirationYear: "",
+            show_card_added_msg: false
         };
     },
     methods: {
@@ -34,9 +35,7 @@ export default {
                             text: "O cartão de crédito foi cadastrado com sucesso!",
                             type: "success",
                         }).then((result) => {
-                            console.log("Avisa o app");
-                            window.postMessage("Sucesso");
-                            window.ReactNativeWebView.postMessage("Sucesso");    
+                            this.show_card_added_msg = true;
                         });
                     } else {
                         this.$swal({
@@ -108,11 +107,23 @@ export default {
             }
             return result;
         },
+
+        addMoreCard() {
+            //when button "add more card" was clicked, so reset all card data
+            this.show_card_added_msg = false;
+            this.cardNumber = "";
+            this.holderName = "";
+            this.securityCode = "";
+            this.expirationMonth = "";
+            this.expirationYear = "";
+        },
         getRouteParams() {
             this.holder_id = this.findGetParameter("holder_id");
             this.holder_type = this.findGetParameter("holder_type");
             this.holder_token = this.findGetParameter("holder_token");
-            if(!this.holder_id || !this.holder_type || !this.holder_token) {
+
+            //if is not admin, check if has token and id
+            if(this.holder_type != "admin" && (!this.holder_id || !this.holder_type || !this.holder_token)) {
                 this.$swal({
                     title: "Usuário não autenticado",
                     type: 'error'
@@ -135,7 +146,14 @@ export default {
       <div class="container" style="margin-top: 20px;">
         <div class="row">
             <div class="col-12 col-sm-12">
-                <div class="card">
+                <div v-if="show_card_added_msg">
+                    <h4 style="margin-top: 50px; text-align: center; color:grey;">Cartão de crédito adicionado com sucesso! Você pode voltar ou adicionar mais um cartão clicando no botão abaixo</h4 style="text-align: center; color:grey;">
+                    <br>
+                    <div class="col-md-4 text-center"> 
+                        <button class="btn btn-sm btn-success" @click="addMoreCard"><i class="mdi mdi-gamepad-circle"></i> Adicionar mais um cartão</button>
+                    </div>
+                </div>
+                <div v-else class="card">
                     <div class="card-header">
                         <strong>Cartão de crédito</strong>
                     </div>

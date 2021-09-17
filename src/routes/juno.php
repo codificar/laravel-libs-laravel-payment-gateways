@@ -15,5 +15,10 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
     Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.user_api:api'], function () {
         Route::post('/user', array('as' => 'saveCardJunoUser', 'uses' => 'JunoController@saveCardJuno'));
     });
+
+    // Admin routes
+    Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.admin'], function () {
+        Route::post('/admin', array('as' => 'saveCardJunoAdmin', 'uses' => 'JunoController@saveCardJuno'));
+    });
 });
 
