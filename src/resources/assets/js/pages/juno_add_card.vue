@@ -33,6 +33,8 @@ export default {
                             title: "Sucesso",
                             text: "O cartão de crédito foi cadastrado com sucesso!",
                             type: "success",
+                        }).then((result) => {
+                            window.postMessage("Sucesso");    
                         });
                     } else {
                         this.$swal({
