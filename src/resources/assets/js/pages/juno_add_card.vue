@@ -5,6 +5,9 @@ export default {
     props: ["JunoSandbox", "PublicToken"],
     data() {
         return {
+            holder_id: "",
+            holder_type: "",
+            holder_token: "",
             cardNumber: "",
             holderName: "",
             securityCode: "",
@@ -13,6 +16,42 @@ export default {
         };
     },
     methods: {
+        saveCardApi(hashCard, cardType, lastFour) {
+            new Promise((resolve, reject) => {
+                axios
+                .post('/libs/gateways/juno/add_card/' + this.holder_type, {
+                    id: this.holder_id,
+                    token: this.holder_token,
+                    holder_type: this.holder_type,
+                    last_four: lastFour,
+                    card_type: cardType,
+                    credit_card_hash: hashCard
+                })
+                .then((response) => {
+                    if (response.data.success) {
+                        this.$swal({
+                            title: "Sucesso",
+                            text: "O cartão de crédito foi cadastrado com sucesso!",
+                            type: "success",
+                        });
+                    } else {
+                        this.$swal({
+                            title: "Cartão Recusado",
+                            type: 'error'
+                        });
+                    }
+                })
+                .catch((error) => {
+                    this.$swal({
+                        title: "Cartão Recusado",
+                        type: 'error'
+                    });
+                    console.log(error);
+                    reject(error);
+                    return false;
+                });
+            });
+        },
         addCard() {
             if(!this.cardNumber || !this.holderName || !this.securityCode || !this.expirationMonth || !this.expirationYear) {
                 this.$swal({
@@ -21,7 +60,7 @@ export default {
                 });
             } else {
 
-                if(this.JunoSandbox) {
+                if(this.JunoSandbox.toString() == "1") {
                     var checkout = new DirectCheckout(this.PublicToken, false);
                 } else {
                     var checkout = new DirectCheckout(this.PublicToken); 
@@ -34,12 +73,10 @@ export default {
                     expirationMonth: this.expirationMonth,
                     expirationYear: this.expirationYear.length == 2 ? "20" + this.expirationYear : this.expirationYear
                 };
-                console.log(cardData);
                 var that = this;
                 checkout.getCardHash(cardData, function(cardHash) {
                     var cardType = checkout.getCardType(cardData.cardNumber);
-                    console.log("Carttao hashado: ", cardHash);
-                    console.log("bandeira: ", cardType);
+                    that.saveCardApi(cardHash, cardType, cardData.cardNumber.slice(-4));
                 }, function(error) {
                     that.$swal({
                         title: "Dados do cartão inválido",
@@ -47,21 +84,45 @@ export default {
                     });
                 });
             }
+        },
+        loadJunoScripts() {
+            let recaptchaScript = document.createElement('script');
+            if(this.JunoSandbox.toString() == "1") {
+                recaptchaScript.setAttribute('src', 'https://sandbox.boletobancario.com/boletofacil/wro/direct-checkout.min.js');
+            }
+            else {
+                recaptchaScript.setAttribute('src', 'https://www.boletobancario.com/boletofacil/wro/direct-checkout.min.js');
+            }
+            document.head.appendChild(recaptchaScript);
+        },
+        findGetParameter(parameterName) {
+            var result = null, tmp = [];
+            var items = location.search.substr(1).split("&");
+            for (var index = 0; index < items.length; index++) {
+                tmp = items[index].split("=");
+                if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+            }
+            return result;
+        },
+        getRouteParams() {
+            this.holder_id = this.findGetParameter("holder_id");
+            this.holder_type = this.findGetParameter("holder_type");
+            this.holder_token = this.findGetParameter("holder_token");
+            if(!this.holder_id || !this.holder_type || !this.holder_token) {
+                this.$swal({
+                    title: "Usuário não autenticado",
+                    type: 'error'
+                });
+            }
         }
+        
     },
     created() {
 
     },
     mounted() {
-
-        let recaptchaScript = document.createElement('script');
-        if(this.JunoSandbox) {
-            recaptchaScript.setAttribute('src', 'https://sandbox.boletobancario.com/boletofacil/wro/direct-checkout.min.js');
-        }
-        else {
-            recaptchaScript.setAttribute('src', 'https://www.boletobancario.com/boletofacil/wro/direct-checkout.min.js');
-        }
-        document.head.appendChild(recaptchaScript);
+        this.getRouteParams();
+        this.loadJunoScripts();
     }
 };
 </script>
@@ -113,7 +174,6 @@ export default {
                     </div>
                     <div class="card-footer">
                         <button class="btn btn-sm btn-success float-right" type="submit" @click="addCard"><i class="mdi mdi-gamepad-circle"></i> Cadastrar Cartão</button>
-                        <button class="btn btn-sm btn-danger" type="reset"><i class="mdi mdi-lock-reset"></i> Sair</button>
                     </div>
                 </div>
             </div>

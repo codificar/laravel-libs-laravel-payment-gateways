@@ -1693,8 +1693,8 @@ export default {
                       class="select form-control"
                       required
                     >
-                      <option value="0"> {{ trans("setting.Sandbox") }} </option>
-                      <option value="1">{{ trans("setting.production") }}</option>
+                      <option value="0">{{ trans("setting.production") }}</option>
+                      <option value="1"> {{ trans("setting.Sandbox") }} </option>
                     </select>
                   </div>
                 </div>

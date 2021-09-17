@@ -31,7 +31,8 @@ class JunoApi {
     //return true if success or false if error
     public function setHeaders() {
         //check if auth token is expired. If yes, generate a new auth token
-        if(Settings::findByKey("juno_auth_token_expiration_date")) { // #TODO ajustar verificacao de data de expiracao
+        $auth_exp = Settings::findByKey("juno_auth_token_expiration_date");
+        if(!$auth_exp || $auth_exp <= date('Y-m-d H:i:s')) { // se nao tiver data de expiracao ou se ja estiver expirado, gera um novo token
             try {
                 $response = $this->guzzle->request('POST', '/authorization-server/oauth/token', [
                     'auth' => [
@@ -42,9 +43,10 @@ class JunoApi {
                         'grant_type' => "client_credentials"
                     ]
                 ]);
-                if($response->getStatusCode() == 200 && $response->getBody() && $response->getBody()->access_token) {
-                    Settings::where('key', 'juno_auth_token')->update(['value' => $response->getBody()->access_token]);
-                    // #TODO - atualizar data vencimento do auth token
+                if($response->getStatusCode() == 200 && $response->getBody()) {
+                    $res = json_decode($response->getBody());
+                    Settings::where('key', 'juno_auth_token')->update(['value' => $res->access_token]);
+                    Settings::where('key', 'juno_auth_token_expiration_date')->update(['value' => date('Y-m-d H:i:s', strtotime('1 hour'))]); //validade do token e de uma hora
                 } else {
                     return false;
                 }
@@ -67,16 +69,13 @@ class JunoApi {
         try {
             $headersOk = $this->setHeaders();
             if($headersOk) {
-                $response = $this->guzzle->request('POST', 'api-integration/credit-cards/tokenization', [
+                $response = $this->guzzle->request('POST', '/api-integration/credit-cards/tokenization', [
                     'headers' => $this->headers, 
-                    'form_params' => [
+                    'json' => [
                         'creditCardHash' => $creditCardHash
                     ]
                 ]);
-                \Log::debug("resposta");
-                \Log::debug(print_r($response, true));
                 if($response->getStatusCode() == 200) {
-                    \Log::debug(print_r($response->getBody(), true));
                     return json_decode($response->getBody());
                 } else {
                     return null;

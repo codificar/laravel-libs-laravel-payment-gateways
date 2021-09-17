@@ -11,6 +11,10 @@ use Response;
 use Document;
 use Log;
 use View;
+use Input;
+
+use Settings, PaymentFactory, Payment;
+use Codificar\PaymentGateways\Libs\JunoLib;
 
 class JunoController extends Controller
 {
@@ -24,8 +28,8 @@ class JunoController extends Controller
         //retorna view
         return View::make('gateways::juno')
             ->with([
-                'juno_sandbox' => false,
-                'public_token' => "80F17BE20F828204BD9C382DD784F5DBDA8E2838000D8E28A562E502FA7DC998"
+                'juno_sandbox' => (int)Settings::findByKey("juno_sandbox"),
+                'public_token' => Settings::findByKey("juno_public_token")
             ]);
     }
 
@@ -37,13 +41,12 @@ class JunoController extends Controller
 
     public function saveCardJuno()
     {
-        $userId = Input::get('user_id');
+        $userId = Input::get('id');
         $last_four = Input::get('last_four');
         $card_type = Input::get('card_type');
         $creditCardHash = Input::get('credit_card_hash');
 
-        $gateway = PaymentFactory::createGateway();
-		$cardToken = $gateway->createCardToken($creditCardHash);
+		$cardToken = JunoLib::createCardToken($creditCardHash);
         if(!$cardToken) {
             return Response::json(array('success' => false));
         }
@@ -54,6 +57,7 @@ class JunoController extends Controller
             $payment->last_four = $last_four;
             $payment->card_type = $card_type;
             $payment->is_active = 1;
+            $payment->is_default = 1;
             $payment->card_token = $cardToken;
             $payment->customer_id = $cardToken;
 		    $payment->save();

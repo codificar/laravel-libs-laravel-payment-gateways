@@ -115,13 +115,13 @@ Class JunoLib implements IPayment
         );
     }
 
-    public function createCardToken($creditCardHash)
+    public static function createCardToken($creditCardHash)
     {
         try {
             $juno = new JunoApi();
             $response = $juno->createCardToken($creditCardHash);
-            if($response && $response['creditCardId']) {
-                return $response['creditCardId'];
+            if($response && $response->creditCardId) {
+                return $response->creditCardId;
             } else {
                 return null;
             }

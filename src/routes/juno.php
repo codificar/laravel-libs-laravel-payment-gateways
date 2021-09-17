@@ -3,7 +3,17 @@
 Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
     Route::group(['prefix' => 'libs/gateways/juno'], function () {
         // Rota publica, para cadastro de cartao de credito na webview
-        Route::get('/add_card_juno', array('as' => 'addCardJuno', 'uses' => 'JunoController@addCardJuno'));
-        Route::post('/add_card_juno/save', array('as' => 'saveCardJuno', 'uses' => 'JunoController@saveCardJuno'));
+        Route::get('/add_card', array('as' => 'addCardJuno', 'uses' => 'JunoController@addCardJuno'));
+    });
+
+    // Provider routes
+    Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.provider_api:api'], function () {
+        Route::post('/provider', array('as' => 'saveCardJunoProvider', 'uses' => 'JunoController@saveCardJuno'));
+    });
+
+    // Provider routes
+    Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.user_api:api'], function () {
+        Route::post('/user', array('as' => 'saveCardJunoUser', 'uses' => 'JunoController@saveCardJuno'));
     });
 });
+
