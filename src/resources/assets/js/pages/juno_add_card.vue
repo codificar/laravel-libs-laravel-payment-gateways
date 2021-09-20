@@ -221,7 +221,7 @@ export default {
                             </div>
                             <div class="col-6 col-sm-6 col-md-4">
                                 <div class="form-group">
-                                    <label>{{ trans("setting.exp_month") }}</label>
+                                    <label>{{ trans("setting.exp_year") }}</label>
                                     <input type="tel" v-model="expirationYear" v-mask="['####']" class="form-control" id="card_year">
                                 </div>
                             </div>
