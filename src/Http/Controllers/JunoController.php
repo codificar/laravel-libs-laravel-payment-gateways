@@ -42,27 +42,27 @@ class JunoController extends Controller
     public function saveCardJuno()
     {
         $userId = Input::get('id');
-        $last_four = Input::get('last_four');
-        $card_type = Input::get('card_type');
         $creditCardHash = Input::get('credit_card_hash');
-
-		$cardToken = JunoLib::createCardToken($creditCardHash);
-        if(!$cardToken) {
+        $cardId = Input::get('card_id');
+        
+        //check if cardId is from user (for security)
+        $payment = Payment::find($cardId);
+        if($payment->user_id != $userId) {
             return Response::json(array('success' => false));
-        }
-        else {
-            $payment = new Payment;
-            $payment->user_id = $userId;
-            $payment->gateway = "juno";
-            $payment->last_four = $last_four;
-            $payment->card_type = $card_type;
-            $payment->is_active = 1;
-            $payment->is_default = 1;
-            $payment->card_token = $cardToken;
-            $payment->customer_id = $cardToken;
-		    $payment->save();
+        } else {
+            $cardToken = JunoLib::createCardToken($creditCardHash);
+            if(!$cardToken) {
+                //se der erro na tokenizacao, entao deleta o cartao do banco de dados
+                $payment->delete();
+                return Response::json(array('success' => false));
+            }
+            else {
+                $payment->card_token = $cardToken;
+                $payment->customer_id = $cardToken;
+                $payment->save();
 
-            return Response::json(array('success' => true));
+                return Response::json(array('success' => true));
+            }
         }
     }
 }

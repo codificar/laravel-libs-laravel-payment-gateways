@@ -171,5 +171,22 @@ return array(
 	'juno_secret'				=> 'Secret (Client Secret)',
 	'juno_resource_token'		=> 'Token de recurso (token privado)',
 	'juno_public_token'			=> 'Token Público',
-	'juno_sandbox'				=> 'Operation Mode'
+	'juno_sandbox'				=> 'Operation Mode',
+	
+	'credit_card' 				=> 'Tarjeta de crédito',
+	'holder_name' 				=> 'nombre del titular',
+	'card_number' 				=> 'Número de tarjeta',
+	'exp_month' 				=> 'Mes válido',
+	'exp_year' 					=> 'Año de vencimiento',
+	'cvv'						=> 'CVV',
+	'create_card' 				=> 'Registrar tarjeta',
+	'card_added_msg'		 	=> '¡Tarjeta agregada correctamente! Regrese para ver la lista de tarjetas. ',
+	'user_not_auth' 			=> 'Usuario no autenticado',
+	'invalid_card' 				=> 'Detalles de tarjeta inválidos',
+	'expired_card' 				=> 'Tarjeta caducada',
+	'invalid_cvv' 				=> 'CVV no es válido',
+	'invalid_card_number' 		=> 'El número de tarjeta no es válido',
+	'fill_the_field' 			=> 'Rellena el campo',
+	'refused_card '				=>' Tarjeta rechazada ',
+	'card_success_added' 		=> '¡Tarjeta agregada correctamente!'
 );

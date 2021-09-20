@@ -5,6 +5,7 @@ export default {
     props: ["JunoSandbox", "PublicToken"],
     data() {
         return {
+            isLoading: false,
             holder_id: "",
             holder_type: "",
             holder_token: "",
@@ -13,50 +14,93 @@ export default {
             securityCode: "",
             expirationMonth: "",
             expirationYear: "",
-            show_card_added_msg: false
+            show_content: false // quando um cartao e adicionado, o usuario e redirecionado para uma pagina sem conteudo. Dessa forma, basta que o iframe (ou webview) tenha o evento de troca de url para saber quando um cartao foi adicionado 
         };
     },
     methods: {
-        saveCardApi(hashCard, cardType, lastFour) {
+        saveCardApi(hashCard) {
             new Promise((resolve, reject) => {
                 axios
-                .post('/libs/gateways/juno/add_card/' + this.holder_type, {
+                .post("/libs/finance/" + this.holder_type + "/add_credit_card", {
                     id: this.holder_id,
+                    provider_id: this.holder_id,
+                    user_id: this.holder_id,
                     token: this.holder_token,
-                    holder_type: this.holder_type,
-                    last_four: lastFour,
-                    card_type: cardType,
-                    credit_card_hash: hashCard
+                    card_holder: this.holderName,
+                    card_number: this.cardNumber.replace(/\s/g, ''),
+                    card_cvv: this.securityCode,
+                    card_expiration_year: this.expirationYear,
+                    card_expiration_month:this.expirationMonth
                 })
                 .then((response) => {
                     if (response.data.success) {
-                        this.show_card_added_msg = true;
+                        console.log("Resposta", response.data);
+                        this.tokenizationCard(hashCard, response.data.data[0].card_id);
                     } else {
-                        this.$swal({
-                            title: "Cartão Recusado",
-                            type: 'error'
-                        });
+                        this.isLoading = false;
+                        this.showAlert(this.trans('setting.refused_card'), "error");
                     }
                 })
                 .catch((error) => {
-                    this.$swal({
-                        title: "Cartão Recusado",
-                        type: 'error'
-                    });
+                    this.isLoading = false;
+                    this.showAlert(this.trans('setting.refused_card'), "error");
                     console.log(error);
                     reject(error);
                     return false;
                 });
             });
         },
-        addCard() {
-            if(!this.cardNumber || !this.holderName || !this.securityCode || !this.expirationMonth || !this.expirationYear) {
-                this.$swal({
-                    title: "Preencha todos os campos",
-                    type: 'warning'
-                });
-            } else {
+        tokenizationCard(hashCard, card_id) {
+            new Promise((resolve, reject) => {
+                axios
+                .post('/libs/gateways/juno/add_card/' + this.holder_type, {
+                    id: this.holder_id,
+                    token: this.holder_token,
+                    credit_card_hash: hashCard,
+                    card_id: card_id
+                })
+                .then((response) => {
+                    this.isLoading = false;
+                    if (response.data.success) {
+                        //change url
+                        this.$swal({
+                            title: this.trans('setting.card_success_added'),
+                            type: 'success'
+                        }).then((result) => {
+                            location.reload();
+                            document.location.href = "add_card#hide_content";
+                        }); 
 
+                    } else {
+                        this.showAlert(this.trans('setting.refused_card'), "error");
+                    }
+                })
+                .catch((error) => {
+                    this.isLoading = false;
+                    this.showAlert(this.trans('setting.refused_card'), "error");
+                    console.log(error);
+                    reject(error);
+                    return false;
+                });
+            });
+        },
+        showAlert(msg, type = 'warning') {
+            this.$swal({
+                title: msg,
+                type: type
+            });
+        },
+        addCard() {
+            var emptyInput = 
+                !this.holderName ? this.trans('setting.holder_name') :
+                !this.cardNumber ? this.trans('setting.card_number') :
+                !this.expirationMonth ? this.trans('setting.exp_month') :
+                !this.expirationYear ? this.trans('setting.exp_year') :
+                !this.securityCode ? this.trans('setting.cvv') : "";
+
+            if(emptyInput) {
+                this.showAlert(this.trans('setting.fill_the_field') + " " + emptyInput);
+            } else {
                 if(this.JunoSandbox.toString() == "1") {
                     var checkout = new DirectCheckout(this.PublicToken, false);
                 } else {
@@ -70,16 +114,23 @@ export default {
                     expirationMonth: this.expirationMonth,
                     expirationYear: this.expirationYear.length == 2 ? "20" + this.expirationYear : this.expirationYear
                 };
-                var that = this;
-                checkout.getCardHash(cardData, function(cardHash) {
-                    var cardType = checkout.getCardType(cardData.cardNumber);
-                    that.saveCardApi(cardHash, cardType, cardData.cardNumber.slice(-4));
-                }, function(error) {
-                    that.$swal({
-                        title: "Dados do cartão inválido",
-                        type: 'error'
+                if(!checkout.isValidCardNumber(cardData.cardNumber)) {
+                    this.showAlert(this.trans('setting.invalid_card_number'));
+                } else if(!checkout.isValidSecurityCode(cardData.cardNumber, cardData.securityCode)) {
+                    this.showAlert(this.trans('setting.invalid_cvv'));
+                } else if (!checkout.isValidExpireDate(cardData.expirationMonth, cardData.expirationYear)) {
+                    this.showAlert(this.trans('setting.expired_card'));
+                } else {
+                    var that = this;
+                    that.isLoading = true;
+                    checkout.getCardHash(cardData, function(cardHash) {
+                        var cardType = checkout.getCardType(cardData.cardNumber);
+                        that.saveCardApi(cardHash);
+                    }, function(error) {
+                        that.isLoading = false;
+                        that.showAlert(this.trans('setting.invalid_card'), 'error');
                     });
-                });
+                } 
             }
         },
         loadJunoScripts() {
@@ -101,28 +152,19 @@ export default {
             }
             return result;
         },
-
-        addMoreCard() {
-            //when button "add more card" was clicked, so reset all card data
-            this.show_card_added_msg = false;
-            this.cardNumber = "";
-            this.holderName = "";
-            this.securityCode = "";
-            this.expirationMonth = "";
-            this.expirationYear = "";
-        },
         getRouteParams() {
-            this.holder_id = this.findGetParameter("holder_id");
-            this.holder_type = this.findGetParameter("holder_type");
-            this.holder_token = this.findGetParameter("holder_token");
 
-            //if is not admin, check if has token and id
-            if(this.holder_type != "admin" && (!this.holder_id || !this.holder_type || !this.holder_token)) {
-                this.$swal({
-                    title: "Usuário não autenticado",
-                    type: 'error'
-                });
-            }
+            if(window.location.hash != "#hide_content" && window.location.hash != "hide_content") {
+                this.show_content = true;
+
+                this.holder_id = this.findGetParameter("holder_id");
+                this.holder_type = this.findGetParameter("holder_type");
+                this.holder_token = this.findGetParameter("holder_token");
+
+                if(!this.holder_id || !this.holder_type || !this.holder_token) {
+                    this.showAlert(this.trans('setting.user_not_auth'), "error");
+                }
+            }        
         }
         
     },
@@ -137,31 +179,34 @@ export default {
 </script>
 <template>
   <div>
+
+    <!-- loading -->
+    <loading 
+        :active.sync="isLoading" 
+        :is-full-page="true"
+        :loader="'dots'"
+        :color="'#007bff'"
+    ></loading>
+    <!-- loading -->
+
       <div class="container" style="margin-top: 20px;">
         <div class="row">
             <div class="col-12 col-sm-12">
-                <div v-if="show_card_added_msg">
-                    <h4 style="margin-top: 50px; text-align: center; color:grey;">Cartão adicionado com sucesso! Volte ou adicione um novo cartão</h4 style="text-align: center; color:grey;">
-                    <br>
-                    <div class="col-md-4 text-center"> 
-                        <button class="btn btn-sm btn-success" @click="addMoreCard"><i class="mdi mdi-gamepad-circle"></i> Adicionar mais um cartão</button>
-                    </div>
-                </div>
-                <div v-else class="card">
+                <div v-if="show_content" class="card">
                     <div class="card-header">
-                        <strong>Cartão de crédito</strong>
+                        <strong>{{ trans("setting.credit_card") }}</strong>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-12 col-sm-6">
                                 <div class="form-group">
-                                    <label for="name">Nome do titular</label>
+                                    <label for="name">{{ trans("setting.holder_name") }}</label>
                                     <input v-model="holderName" class="form-control" id="card_name" type="text">
                                 </div>
                             </div>
                             <div class="col-12 col-sm-6">
                                 <div class="form-group">
-                                    <label>Número do cartão</label>
+                                    <label>{{ trans("setting.card_number") }}</label>
                                     <input type="tel" v-model="cardNumber" v-mask="['#### #### #### ####']" class="form-control" id="card_number">
                                 </div>
                             </div>
@@ -169,27 +214,27 @@ export default {
 
                         <div class="row">
                             <div class="form-group col-6 col-sm-6 col-md-4">
-                                <label for="ccmonth">Mês de Validade</label>
+                                <label for="ccmonth">{{ trans("setting.exp_month") }}</label>
                                 <select v-model="expirationMonth" class="form-control" id="card_month">
                                     <option v-for="op in ['', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']">{{op}}</option>
                                 </select>
                             </div>
                             <div class="col-6 col-sm-6 col-md-4">
                                 <div class="form-group">
-                                    <label>Ano de Validade</label>
+                                    <label>{{ trans("setting.exp_month") }}</label>
                                     <input type="tel" v-model="expirationYear" v-mask="['####']" class="form-control" id="card_year">
                                 </div>
                             </div>
                             <div class="col-12 col-sm-12 col-md-4">
                                 <div class="form-group">
-                                    <label>CVV</label>
+                                    <label>{{ trans("setting.cvv") }}</label>
                                     <input type="tel" v-model="securityCode" v-mask="['###']" class="form-control" id="card_cvv">
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-sm btn-success float-right" type="submit" @click="addCard"><i class="mdi mdi-gamepad-circle"></i> Cadastrar Cartão</button>
+                        <button class="btn btn-sm btn-success float-right" type="submit" @click="addCard"><i class="mdi mdi-gamepad-circle"></i> {{ trans("setting.create_card") }} </button>
                     </div>
                 </div>
             </div>

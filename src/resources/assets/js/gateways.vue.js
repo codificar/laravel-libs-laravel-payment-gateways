@@ -12,6 +12,11 @@ import JunoAddCard from './pages/juno_add_card.vue';
 
 Vue.use(VueSweetalert2);
 
+import Loading from 'vue-loading-overlay';
+import 'vue-loading-overlay/dist/vue-loading.css';
+Vue.use(Loading);
+Vue.component('loading', Loading);
+
 import VueTheMask from 'vue-the-mask';
 Vue.use(VueTheMask)
 

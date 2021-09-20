@@ -100,19 +100,21 @@ Class JunoLib implements IPayment
 		
     }
      
-    //Metodo de criar cartao do juno nao e aqui, pois o fluxo de criacao e diferente. Deve ser criado em JunoController
-    //Method of creating Juno Card is not here, as the creation flow is different. Must be created in JunoController
     public function createCard(Payment $payment, User $user = null)
     {
-        \Log::error('create_card_error: Juno Create Card method is not here, is from JunoController');
+        $cardNumber = $payment->getCardNumber();
 
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_card_error' ,
-            "code" 				=> 'api_card_error',
-            "message" 			=> 'Juno Create Card method is not here, is from JunoController',
-            "transaction_id" 	=> ''
-        );
+		$result = array(
+			'success'		=>	true,
+			'customer_id'	=>	'',
+			'last_four'		=>	substr($cardNumber, -4),
+			'card_type'		=>	strtolower(detectCardType($cardNumber)),
+            'card_token'	=>	'',
+            'token'	        =>	'',
+            'gateway'       => 'juno'
+		);
+
+		return $result;
     }
 
     public static function createCardToken($creditCardHash)

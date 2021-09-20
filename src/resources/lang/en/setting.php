@@ -173,5 +173,22 @@ return array(
 	'juno_secret'				=> 'Secret (Client Secret)',
 	'juno_resource_token'		=> 'Private token',
 	'juno_public_token'			=> 'Public token',
-	'juno_sandbox'				=> 'Operation Mode'
+	'juno_sandbox'				=> 'Operation Mode',
+
+	'credit_card' 				=> 'Credit Card',
+	'holder_name'			 	=> 'Holder Name',
+	'card_number' 				=> 'Card number',
+	'exp_month' 				=> 'Expiration month',
+	'exp_year' 					=> 'Expiration Year',
+	'cvv' 						=> 'CVV',
+	'create_card' 				=> 'Create Card',
+	'card_added_msg' 			=> 'Card successfully added! Go back to see the list of cards.',
+	'user_not_auth' 			=> 'Unauthenticated User',
+	'invalid_card' 				=> 'Invalid card data',
+	'expired_card' 				=> 'The card is expired',
+	'invalid_cvv' 				=> 'Invalid CVV',
+	'invalid_card_number' 		=> 'Invalid Card Number',
+	'fill_the_field' 			=> 'Fill the field',
+	'refused_card' 				=> 'Refused card',
+	'card_success_added'		=> 'Card Sucess Added'
 );
