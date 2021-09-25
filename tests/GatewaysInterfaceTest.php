@@ -17,6 +17,14 @@ class GatewaysInterfaceTest {
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
 		
+		//o gateway da juno precisa de webview (iframe) para cadastrar cartao. Entao para prosseguir com os testes, foi colocado o token do cartao manualmente
+		if(Settings::findByKey('default_payment') == 'juno') {
+			$payment = Payment::find($response['payment']['id']);
+			$payment->customer_id = "552fa250-f7e6-42a1-89b7-149cb2e034fe";
+			$payment->card_token = "552fa250-f7e6-42a1-89b7-149cb2e034fe";
+			$payment->save();
+		}
+
 		return($response);
     }
 
@@ -199,8 +207,10 @@ class GatewaysInterfaceTest {
 			$newUser->address_number= 375;
 			$newUser->address_neighbour = 'Centro';
 			$newUser->address_city  = 'Belo Horizonte';
-			$newUser->birthdate		= '1999-12-12';
-
+			if(isset($newUser->birthdate)) {
+				$newUser->birthdate = '1999-12-12';
+			}
+			
 			$newUser->save();
 
 			return $newUser;

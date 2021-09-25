@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\JunoApi;
 
 use ApiErrors;
+use Exception;
 
 //Models do sistema
 use Payment;
@@ -32,13 +33,89 @@ Class JunoLib implements IPayment
     
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
-
+        try {
+            $juno = new JunoApi();
+            $response = $juno->charge($payment, $amount, $description, $capture);
+            \Log::debug("response aqui: ");
+            \Log::debug(print_r($response, true));
+            if($response && $response->payments && $response->payments[0] && $response->payments[0]->id) {
+                return array (
+                    'success' => true,
+                    'captured' => $capture,
+                    'paid' => $capture ? true : false,
+                    'status' => $capture ? 'paid' : 'authorized',
+                    'transaction_id' => strval($response->payments[0]->id)
+                );
+            } else {
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_charge_error' ,
+                    "code" 						=> 'api_charge_error',
+                    "message" 					=> "paymentError",
+                    "transaction_id"			=> ''
+                );
+            }
+        } catch (Exception $th) {
+			\Log::error('Error juno charge');
+			return array(
+                "success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $th->getMessage(),
+				"message" 					=> "paymentError",
+				"transaction_id"			=> ''
+            );
+		}
        
     }
 
-    public function billetCharge($amount, $client, $postbackUrl = null, $billetExpirationDate, $billetInstructions)
+    /**
+	 * Função para gerar boletos de pagamentos
+	 * @param int $amount valor do boleto
+	 * @param User/Provider $client instância do usuário ou prestador
+	 * @param string $postbackUrl url para receber notificações do status do pagamento
+	 * @param string $billetExpirationDate data de expiração do boleto
+	 * @param string $billetInstructions descrição no boleto
+	 * @return array
+	 */
+	public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions = "")
     {
-        
+        try {
+            $juno = new JunoApi();
+            $response = $juno->billetCharge($client, $amount, $billetInstructions,  $billetExpirationDate);
+            \Log::debug("response aqui: ");
+            \Log::debug(print_r($response, true));
+            if($response) {
+                return array (
+                    'success' => true,
+                    // 'captured' => true,
+                    // 'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
+                    // 'status' => $pagarMeTransaction->status,
+                    // 'transaction_id' => $pagarMeTransaction->id,
+                    // 'billet_url' => $pagarMeTransaction->boleto_url,
+                    // 'digitable_line' => $pagarMeTransaction->boleto_barcode,
+                    // 'billet_expiration_date' => $pagarMeTransaction->boleto_expiration_date
+                );
+            } else {
+                return array(
+                    "success" 				=> false ,
+                    "type" 					=> 'api_billet_charge_error',
+                    "code" 					=> 'api_billet_charge_error',
+                    "message" 				=> 'api_billet_charge_error',
+                    "transaction_id"		=> ''
+                );
+            }
+        } catch (Exception $th) {
+            \Log::debug("next error");
+            \Log::error($th->getMessage());
+            \Log::debug("finish error");
+			return array(
+                "success" 				=> false ,
+                "type" 					=> 'api_billet_charge_error',
+                "code" 					=> 'api_billet_charge_error',
+                "message" 				=> 'api_billet_charge_error',
+                "transaction_id"		=> ''
+            );
+		}
     }
 
     /**
@@ -63,15 +140,42 @@ Class JunoLib implements IPayment
     }
     
     public function capture(Transaction $transaction, $amount, Payment $payment = null) {
-        \Log::error('capture_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_capture_error' ,
-            "code" 				=> 'api_capture_error',
-            "message" 			=> 'capture_not_implementd',
-            "transaction_id" 	=> ''
-        );
+        try {
+            //valor a ser capturado nao pode ser maior que valor pre-autorizado. A responsabilidade de entrar com o valor certo e o projeto que utiliza essa biblioteca
+            if($amount > $transaction->gross_value) {
+                $amount = $transaction->gross_value;
+            }
+            
+            $juno = new JunoApi();
+            $response = $juno->capturePaymentCard($transaction->gateway_transaction_id, $amount);
+            if($response) {
+                return array (
+                    'success' => true,
+                    'status' => 'paid',
+                    'captured' => true,
+                    'paid' => true,
+                    'transaction_id' => strval($transaction->gateway_transaction_id)
+                );
+            } else {
+                return array(
+                    "success" 					=> false ,
+                    "type" 						=> 'api_capture_error',
+                    "code" 						=> 'api_capture_error',
+                    "message" 					=> 'api_capture_error',
+                    "transaction_id"			=> $transaction->gateway_transaction_id
+                );	
+            }
+        } catch (Exception $th) {
+            \Log::error('Error juno capture');
+            return array(
+                "success" 					=> false ,
+                "type" 						=> 'api_capture_error',
+                "code" 						=> 'api_capture_error',
+                "message" 					=> 'api_capture_error',
+                "transaction_id"			=> $transaction->gateway_transaction_id
+            );
+        }
+        
     }
    
     public function refundWithSplit(Transaction $transaction, Payment $payment)
@@ -90,14 +194,48 @@ Class JunoLib implements IPayment
     public function refund(Transaction $transaction, Payment $payment)
     {
         
-		
+		try {
+            $juno = new JunoApi();
+            $refundStatus = $juno->refundCard($transaction->gateway_transaction_id);
+
+			if($refundStatus) {
+				return array(
+					"success" 			=> true ,
+					"status" 			=> 'refunded',
+					"transaction_id" 	=> $transaction->gateway_transaction_id,
+				);
+			} else {
+                return array(
+                    "success" 			=> false ,
+                    "type" 				=> 'api_refund_error' ,
+                    "code" 				=> 'api_refund_error',
+                    "message" 			=> 'api_refund_error',
+                    "transaction_id" 	=> $transaction->gateway_transaction_id
+                );
+            }
+		} catch (Exception $th) {
+			\Log::error('Error Pagarapido refund 2 ');
+			return array(
+                "success" 					=> false ,
+				"type" 						=> 'api_refund_error' ,
+				"code" 						=> $th->getMessage(),
+				"message" 					=> "api_refund_error",
+				"transaction_id"			=> $transaction->gateway_transaction_id
+            );
+            
+		}
     }
       
     public function retrieve(Transaction $transaction, Payment $payment = null)
     {
-       
-
-		
+		return array(
+			'success' => true,
+			'transaction_id' => strval($transaction->gateway_transaction_id),
+			'amount' => $transaction->gross_value,
+			'destination' => '',
+			'status' => $transaction->status,
+			'card_last_digits' => $payment ? $payment->last_four : '',
+		);
     }
      
     public function createCard(Payment $payment, User $user = null)

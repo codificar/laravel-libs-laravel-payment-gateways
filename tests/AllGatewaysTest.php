@@ -11,6 +11,22 @@ use Tests\libs\gateways\GatewaysInterfaceTest;
 
 class AllGatewaysTest extends TestCase
 {
+
+	public function testJuno() {
+		$gateway = 'juno';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'juno_client_id')->update(['value' => 'cOl1gRnf2twWH2IT']);
+		Settings::where('key', 'juno_secret')->update(['value' => 'J9?+Y+Gy8fFZXiDJ?8LY20=gS_Y2{S<T']);
+		Settings::where('key', 'juno_resource_token')->update(['value' => 'F3F843CBE1C9F52528BEC2C8DB6B172C6A763C26CB16757B79B39F7F83DBDA1A']);
+		Settings::where('key', 'juno_public_token')->update(['value' => '80F17BE20F828204BD9C382DD784F5DBDA8E2838000D8E28A562E502FA7DC998']);
+		Settings::where('key', 'juno_sandbox')->update(['value' => '1']);
+
+		$this->runInterfaceGateways($gateway, '4111111111111111');
+	}
+
 	public function testIpag() {
 		$gateway = 'ipag';
 		//Update the gateway selected

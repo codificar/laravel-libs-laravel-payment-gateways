@@ -9,13 +9,16 @@ use GuzzleHttp\Psr7;
 
 use Codificar\PaymentGateways\Libs\CardFlag;
 
-use Settings;
+use Settings, Payment;
 
 
 class JunoApi {
 
-    const URL_SANDBOX = 'https://sandbox.boletobancario.com';
-    const URL_PROD = 'https://api.juno.com.br';
+    const URL_SANDBOX = 'https://sandbox.boletobancario.com/api-integration/';
+    const URL_PROD = 'https://api.juno.com.br/';
+
+    const URL_AUTH_SANDBOX = 'https://sandbox.boletobancario.com/authorization-server/';
+    const URL_AUTH_PROD = 'https://api.juno.com.br/authorization-server/';
 
     private $guzzle;
     private $headers;
@@ -33,8 +36,14 @@ class JunoApi {
         //check if auth token is expired. If yes, generate a new auth token
         $auth_exp = Settings::findByKey("juno_auth_token_expiration_date");
         if(!$auth_exp || $auth_exp <= date('Y-m-d H:i:s')) { // se nao tiver data de expiracao ou se ja estiver expirado, gera um novo token
+            \Log::debug("entrou aqui 1");
             try {
-                $response = $this->guzzle->request('POST', '/authorization-server/oauth/token', [
+                $isSandbox = Settings::findByKey('juno_sandbox');
+                $guzzleAuth = new Client([
+                    'base_uri' => (int)$isSandbox ? self::URL_AUTH_SANDBOX : self::URL_AUTH_PROD,
+                    'timeout'  => 120, // two minutes timeout
+                ]);
+                $response = $guzzleAuth->request('POST', 'oauth/token', [
                     'auth' => [
                         Settings::findByKey("juno_client_id"), 
                         Settings::findByKey("juno_secret")
@@ -48,9 +57,13 @@ class JunoApi {
                     Settings::where('key', 'juno_auth_token')->update(['value' => $res->access_token]);
                     Settings::where('key', 'juno_auth_token_expiration_date')->update(['value' => date('Y-m-d H:i:s', strtotime('1 hour'))]); //validade do token e de uma hora
                 } else {
+                    \Log::debug("deu erro!!!!");
                     return false;
                 }
             } catch (RequestException $e) {
+                \Log::debug("caiu no catch 1" . self::URL_AUTH_SANDBOX);
+                \Log::debug(print_r($guzzleAuth, true));
+                \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
                 return false;
             }
         }
@@ -69,7 +82,7 @@ class JunoApi {
         try {
             $headersOk = $this->setHeaders();
             if($headersOk) {
-                $response = $this->guzzle->request('POST', '/api-integration/credit-cards/tokenization', [
+                $response = $this->guzzle->request('POST', 'credit-cards/tokenization', [
                     'headers' => $this->headers, 
                     'json' => [
                         'creditCardHash' => $creditCardHash
@@ -88,5 +101,239 @@ class JunoApi {
             return null;
         }
     }
+
+    public function billetCharge($client, $amount, $billetInstructions,  $billetExpirationDate) {
+        try {
+            \Log::debug("aqui foi11");
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                \Log::debug("111111111111 ok");
+                $response = $this->guzzle->request('POST', 'charges', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'charge' => array(
+                            "description" => $billetInstructions ? $billetInstructions : "Cobrança por prestação de serviço",
+                            "amount" => $amount,
+                            "dueDate" => $billetExpirationDate,
+                            "paymentTypes" => ["BOLETO"]
+                        ),
+                        'billing' => $this->getCustomer($client)
+                    ]
+                ]);
+                \Log::debug("here???? ok");
+                if($response->getStatusCode() == 200) {
+                    $res = json_decode($response->getBody());
+                    \Log::debug("deu bom");
+                    return $res;
+                } 
+                else {
+                    \Log::debug("boleto aq");
+                    return null;
+                }
+            }
+            
+        } catch (Exception $e) {
+            \Log::debug("caiu no catch");
+            \Log::error("Juno create charge error.");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return null;
+        }
+    }
+
+    /**
+     * A cobranca no cartao da juno passa por duas etapas:
+     * 1º: e criado uma cobranca generica, com os dados do usuario. O pagamento nao e realizado ainda, portanto o status fica "pendente". Rota: "/charges"
+     * 2º: e realizado o pagamento da cobranca gerada anteriormente com o cartao. Rota: "payments"
+     */
+    public function charge(Payment $payment, $amount, $description, $capture) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $holder = $payment->user_id ? $payment->User : $payment->Provider;
+                $response = $this->guzzle->request('POST', 'charges', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'charge' => array(
+                            "description" => $description ? $description : "Cobrança por prestação de serviço",
+                            "amount" => $amount,
+                            "installments" => 1,
+                            "paymentTypes" => ["CREDIT_CARD"]
+                        ),
+                        'billing' => $this->getCustomer($holder)
+                    ]
+                ]);
+                if($response->getStatusCode() == 200) {
+                    //agora que a primeira etapa (criar cobranca) deu certo, vamos realizar o pagamento com cartao
+                    $res = json_decode($response->getBody());
+                    \Log::debug("Aqui foi!!!");
+                    return $this->doPaymentCard($payment, $capture, $res->_embedded->charges[0]->id);
+                } 
+                else {
+                    return null;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("Juno create charge error.");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return null;
+        }
+    }
+
+    /**
+     * cancel charge - cancela apenas cobrancas que ainda nao foram realizados o pagamento
+     */
+    public function cancelCharge($chargeId) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('PUT', 'charges/' . $chargeId . '/cancelation', [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 204 || $response->getStatusCode() == 200) {
+                    return true;
+                } 
+                else {
+                    return false;
+                }
+            }
+        } catch (RequestException $e) {
+            \Log::error("Juno cancel charge error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    private function doPaymentCard(Payment $payment, $capture, $chargeId) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                \Log::debug(print_r($payment, true));
+                \Log::debug("card otken: " . $payment->card_token);
+                \Log::debug("chargeId: " . $chargeId);
+                $holder = $payment->user_id ? $payment->User : $payment->Provider;
+                $response = $this->guzzle->request('POST', 'payments', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'chargeId' => $chargeId,
+                        'billing' => array(
+                            'email' => $holder->email,
+                            'address' => $this->getCustomerAddress($holder),
+                            'delayed' => $capture ? false : true
+                        ),
+                        'creditCardDetails' => array(
+                            'creditCardId' => $payment->card_token
+                        )
+                    ]
+                ]);
+                if($response->getStatusCode() == 200) {
+                    \Log::debug("cobrou no cartao");
+                    \Log::debug(print_r(json_decode($response->getBody()), true));
+                    return json_decode($response->getBody());
+                } else {
+                    // se deu erro com cartao, entao cancela cobranca
+                    $this->cancelCharge($chargeId);
+                    \Log::debug("erro juno 100");
+                    return null;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            // se deu erro com cartao, entao cancela cobranca
+            $this->cancelCharge($chargeId);
+            
+            \Log::error("Erro ao cobrar no cartao de credito");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return null;
+        }
+    }
+
+    public function refundCard($payId) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('POST', 'payments/' . $payId . '/refunds', [
+                    'headers' => $this->headers, 
+                    'json' => []
+                ]);
+                if($response->getStatusCode() == 200) {
+                    \Log::debug("refund com sucesso!");
+                    \Log::debug(print_r(json_decode($response->getBody()), true));
+                    return true;
+                } 
+                else {
+                    \Log::debug("refund deu ruim");
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("Juno refund error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+
+    public function capturePaymentCard($payId, $amount) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('POST', 'payments/' . $payId . '/capture', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'amount' => $amount
+                    ]
+                ]);
+                if($response->getStatusCode() == 200) {
+                    \Log::debug("capturado com sucesso!");
+                    \Log::debug(print_r(json_decode($response->getBody()), true));
+                    return true;
+                } 
+                else {
+                    \Log::debug("capturado deu ruim");
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("Juno capture error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    private function getCustomer($holder){
+		$customer = array(
+            "name" => $holder->getFullName(),
+            "document" => $this->cleanWord($holder->document),
+            "email" => $holder->email,
+            "address" => $this->getCustomerAddress($holder),
+            "notify" => false
+		);
+
+		return $customer ;
+	}
+
+    private function getCustomerAddress($holder) {
+        return array (
+            "street" => $holder->getStreet(),
+            "number" => $holder->getStreetNumber(),
+            "neighborhood" => $holder->getNeighborhood(),
+            "city" => $holder->address_city,
+            "state" => $holder->state,
+            "postCode" => $this->cleanWord($holder->getZipcode())
+        );
+    }
+
+    public function cleanWord($word)
+	{
+		$word = str_replace(".", "", $word);
+		$word = str_replace("-", "", $word);
+		$word = str_replace("/", "", $word);
+		$word = str_replace("/n", "", $word);
+
+		return $word;
+	}
     
 }
