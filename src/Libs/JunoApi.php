@@ -102,13 +102,14 @@ class JunoApi {
         try {
             $headersOk = $this->setHeaders();
             if($headersOk) {
+                $exp = (new DateTime($billetExpirationDate))->format('Y-m-d');
                 $response = $this->guzzle->request('POST', 'charges', [
                     'headers' => $this->headers, 
                     'json' => [
                         'charge' => array(
                             "description" => $billetInstructions ? $billetInstructions : "Cobrança por prestação de serviço",
                             "amount" => $amount,
-                            "dueDate" => $billetExpirationDate,
+                            "dueDate" => $exp,
                             "paymentTypes" => ["BOLETO"]
                         ),
                         'billing' => $this->getCustomer($client)
@@ -123,7 +124,7 @@ class JunoApi {
                 }
             }
             
-        } catch (Exception $e) {
+        } catch (RequestException $e) {
             \Log::error("Juno create charge error.");
             \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
             return null;
