@@ -36,7 +36,6 @@ class JunoApi {
         //check if auth token is expired. If yes, generate a new auth token
         $auth_exp = Settings::findByKey("juno_auth_token_expiration_date");
         if(!$auth_exp || $auth_exp <= date('Y-m-d H:i:s')) { // se nao tiver data de expiracao ou se ja estiver expirado, gera um novo token
-            \Log::debug("entrou aqui 1");
             try {
                 $isSandbox = Settings::findByKey('juno_sandbox');
                 $guzzleAuth = new Client([
@@ -57,12 +56,9 @@ class JunoApi {
                     Settings::where('key', 'juno_auth_token')->update(['value' => $res->access_token]);
                     Settings::where('key', 'juno_auth_token_expiration_date')->update(['value' => date('Y-m-d H:i:s', strtotime('1 hour'))]); //validade do token e de uma hora
                 } else {
-                    \Log::debug("deu erro!!!!");
                     return false;
                 }
             } catch (RequestException $e) {
-                \Log::debug("caiu no catch 1" . self::URL_AUTH_SANDBOX);
-                \Log::debug(print_r($guzzleAuth, true));
                 \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
                 return false;
             }
@@ -104,10 +100,8 @@ class JunoApi {
 
     public function billetCharge($client, $amount, $billetInstructions,  $billetExpirationDate) {
         try {
-            \Log::debug("aqui foi11");
             $headersOk = $this->setHeaders();
             if($headersOk) {
-                \Log::debug("111111111111 ok");
                 $response = $this->guzzle->request('POST', 'charges', [
                     'headers' => $this->headers, 
                     'json' => [
@@ -120,20 +114,16 @@ class JunoApi {
                         'billing' => $this->getCustomer($client)
                     ]
                 ]);
-                \Log::debug("here???? ok");
                 if($response->getStatusCode() == 200) {
                     $res = json_decode($response->getBody());
-                    \Log::debug("deu bom");
                     return $res;
                 } 
                 else {
-                    \Log::debug("boleto aq");
                     return null;
                 }
             }
             
         } catch (Exception $e) {
-            \Log::debug("caiu no catch");
             \Log::error("Juno create charge error.");
             \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
             return null;
@@ -165,7 +155,6 @@ class JunoApi {
                 if($response->getStatusCode() == 200) {
                     //agora que a primeira etapa (criar cobranca) deu certo, vamos realizar o pagamento com cartao
                     $res = json_decode($response->getBody());
-                    \Log::debug("Aqui foi!!!");
                     return $this->doPaymentCard($payment, $capture, $res->_embedded->charges[0]->id);
                 } 
                 else {
@@ -208,9 +197,6 @@ class JunoApi {
         try {
             $headersOk = $this->setHeaders();
             if($headersOk) {
-                \Log::debug(print_r($payment, true));
-                \Log::debug("card otken: " . $payment->card_token);
-                \Log::debug("chargeId: " . $chargeId);
                 $holder = $payment->user_id ? $payment->User : $payment->Provider;
                 $response = $this->guzzle->request('POST', 'payments', [
                     'headers' => $this->headers, 
@@ -227,13 +213,10 @@ class JunoApi {
                     ]
                 ]);
                 if($response->getStatusCode() == 200) {
-                    \Log::debug("cobrou no cartao");
-                    \Log::debug(print_r(json_decode($response->getBody()), true));
                     return json_decode($response->getBody());
                 } else {
                     // se deu erro com cartao, entao cancela cobranca
                     $this->cancelCharge($chargeId);
-                    \Log::debug("erro juno 100");
                     return null;
                 }
             }
@@ -248,29 +231,36 @@ class JunoApi {
         }
     }
 
-    public function refundCard($payId) {
-        try {
-            $headersOk = $this->setHeaders();
-            if($headersOk) {
-                $response = $this->guzzle->request('POST', 'payments/' . $payId . '/refunds', [
-                    'headers' => $this->headers, 
-                    'json' => []
-                ]);
-                if($response->getStatusCode() == 200) {
-                    \Log::debug("refund com sucesso!");
-                    \Log::debug(print_r(json_decode($response->getBody()), true));
-                    return true;
-                } 
-                else {
-                    \Log::debug("refund deu ruim");
-                    return false;
-                }
+    // payIsConfirmed: se o pagamento ja foi confirmado (ou seja, se ja foi capturado)
+    public function refundCard($chargeId, $payId, $payIsConfirmed) {
+        //se o pagamento nao foi confirmado, entao deve ser feito o cancelamento da cobranca, nao do pagamento
+        if(!$payIsConfirmed) {
+            try {
+                $cancel = $this->cancelCharge($chargeId);
+                return $cancel;
+            } catch (Exception $e) {
+                return false;
             }
-            
-        } catch (RequestException $e) {
-            \Log::error("Juno refund error");
-            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
-            return false;
+        } else {
+            try {
+                $headersOk = $this->setHeaders();
+                if($headersOk) {
+                    $response = $this->guzzle->request('POST', 'payments/' . $payId . '/refunds', [
+                        'headers' => $this->headers
+                    ]);
+                    if($response->getStatusCode() == 200) {
+                        return true;
+                    } 
+                    else {
+                        return false;
+                    }
+                }
+                
+            } catch (RequestException $e) {
+                \Log::error("Juno refund error");
+                \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+                return false;
+            }
         }
     }
 
@@ -286,18 +276,37 @@ class JunoApi {
                     ]
                 ]);
                 if($response->getStatusCode() == 200) {
-                    \Log::debug("capturado com sucesso!");
-                    \Log::debug(print_r(json_decode($response->getBody()), true));
                     return true;
                 } 
                 else {
-                    \Log::debug("capturado deu ruim");
                     return false;
                 }
             }
             
         } catch (RequestException $e) {
             \Log::error("Juno capture error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    public function retrieve($chargeId) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('GET', 'charges/' . $chargeId, [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200) {
+                    return json_decode($response->getBody());
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("retrieve juno error");
             \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
             return false;
         }

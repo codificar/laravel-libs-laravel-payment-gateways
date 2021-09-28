@@ -91,6 +91,10 @@ class GatewaysInterfaceTest {
 		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$transaction = Transaction::where('gateway_transaction_id', $transactionId)->first();
 		$response = $gateway->capture($transaction, $value, $payment);
+		if($response && $response['status'] == 'paid') {
+			$transaction->status = 'paid';
+			$transaction->save();
+		}
 		
 		return $response;
 	}
@@ -124,7 +128,7 @@ class GatewaysInterfaceTest {
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
 		$response = $gateway->billetCharge($value, $user, config('app.url') . '/api/v3/postback', date("Y-m-d"), 'boleto de teste');
-		
+
 		return $response;
 	}
 
