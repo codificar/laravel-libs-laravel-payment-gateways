@@ -102,7 +102,8 @@ class JunoApi {
         try {
             $headersOk = $this->setHeaders();
             if($headersOk) {
-                $exp = (new DateTime($billetExpirationDate))->format('Y-m-d');
+                $datetime = new Carbon($billetExpirationDate);
+                $exp = $datetime->format('Y-m-d');
                 $response = $this->guzzle->request('POST', 'charges', [
                     'headers' => $this->headers, 
                     'json' => [
