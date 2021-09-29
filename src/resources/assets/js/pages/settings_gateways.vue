@@ -1698,6 +1698,11 @@ export default {
                     </select>
                   </div>
                 </div>
+                <!-- this will reset juno auth token and expiration date if save config. It's importante, because when change gateway sandbox to production, its need reset-->
+                <div class="col-lg-6">
+                  {{this.gateways.juno.juno_auth_token = ""}}
+                  {{this.gateways.juno.juno_auth_token_expiration_date = ""}}
+                </div>
               </div>
             </div>
           </div>

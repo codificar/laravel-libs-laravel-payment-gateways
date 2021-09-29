@@ -98,7 +98,7 @@ Class JunoLib implements IPayment
                         'code' => $response->_embedded->charges[0]->code
                     )),
                     'billet_url' => $response->_embedded->charges[0]->link,
-                    'digitable_line' => $response->_embedded->charges[0]->billetDetails->barcodeNumber,
+                    'digitable_line' => $response->_embedded->charges[0]->payNumber,
                     'billet_expiration_date' => $billetExpirationDate
                 );
             } else {

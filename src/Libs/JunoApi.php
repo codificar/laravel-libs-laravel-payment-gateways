@@ -126,7 +126,7 @@ class JunoApi {
             }
             
         } catch (RequestException $e) {
-            \Log::error("Juno create charge error.");
+            \Log::error("Juno create billet charge error.");
             \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
             return null;
         }
