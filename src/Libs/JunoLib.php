@@ -400,21 +400,51 @@ Class JunoLib implements IPayment
     }
     
     public function deleteCard(Payment $payment, User $user = null){
-        
-    }    
+        return array(
+			'success' => true
+		);
+    }  
 
    
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        \Log::error('split_not_implemented');
-
-        return array(
-            "success" 			=> false ,
-            "type" 				=> 'api_split_error' ,
-            "code" 				=> 'api_split_error',
-            "message" 			=> 'split_not_implementd',
-            "transaction_id" 	=> ''
-        );
+        if(!$this->checkAutoTransferProvider()) {
+            return array(
+                'success' => true,
+                'recipient_id' => '',
+            );
+        } else {
+            try {
+                $juno = new JunoApi();
+                $res = $juno->createDigitalAccount($ledgerBankAccount);
+                if($res) {
+                    return array(
+                        "success" 			=> true ,
+                        "status" 			=> 'refunded',
+                        "transaction_id" 	=> ''
+                    );
+                } else {
+                    \Log::error('Error juno create account 2');
+                    return array(
+                        "success" 					=> false ,
+                        "recipient_id"				=> '',
+                        "type" 						=> 'api_bankaccount_error' ,
+                        "code" 						=> 'api_bankaccount_error' ,
+                        "message" 					=> 'api_bankaccount_error'
+                    );
+                }
+            } catch (Exception $th) {
+                \Log::error('Error juno create account');
+                \Log::error($th->getMessage());
+                return array(
+                    "success" 					=> false ,
+                    "recipient_id"				=> '',
+                    "type" 						=> 'api_bankaccount_error' ,
+                    "code" 						=> 'api_bankaccount_error' ,
+                    "message" 					=> 'api_bankaccount_error'
+                );
+            }
+        }
     }
 
     /**
@@ -449,11 +479,11 @@ Class JunoLib implements IPayment
     public function checkAutoTransferProvider()
     {
         return false;
-    }
+	}
 
     public function debit(Payment $payment, $amount, $description)
     {
-        \Log::error('debit_not_implemented');
+        \Log::error('debit_not_implemented: juno');
 
         return array(
             "success" 			=> false,

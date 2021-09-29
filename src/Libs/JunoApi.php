@@ -9,7 +9,7 @@ use GuzzleHttp\Psr7;
 
 use Codificar\PaymentGateways\Libs\CardFlag;
 
-use Settings, Payment;
+use Settings, Payment, Provider, Bank;
 
 
 class JunoApi {
@@ -311,6 +311,52 @@ class JunoApi {
             \Log::error("retrieve juno error");
             \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
             return false;
+        }
+    }
+
+    public function createDigitalAccount($ledgerBankAccount) {
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $provider = Provider::find($ledgerBankAccount->provider_id);
+                $bank = Bank::where('id', $ledgerBankAccount->bank_id)->first();
+                $response = $this->guzzle->request('POST', 'digital-accounts', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'type' => 'PAYMENT',
+                        'name' => $ledgerBankAccount->holder,
+                        'document' => preg_replace( '/[^0-9]/', '', $ledgerBankAccount->document),
+                        'email' => $provider->email,
+                        'birthDate' => (new Carbon($ledgerBankAccount->birthday_date))->format('Y-m-d'),
+                        'phone' => $provider->phone,
+                        'businessArea' => 2033, //2033 - cod da juno para todo tipo de 'servicos'
+                        'linesOfBusiness' => 'Prestação de Serviço',
+                        'address' => $this->getCustomerAddress($provider),
+                        'bankAccount' => array(
+                            'bankNumber' => $bank->code,
+                            'agencyNumber' => $ledgerBankAccount->agency,
+                            'accountNumber' => $ledgerBankAccount->account,
+                            'accountType' => $ledgerBankAccount->account_type == 'conta_poupanca' ? 'SAVINGS' : 'CHECKING',
+                            'accountHolder' => array(
+                                'name' => $ledgerBankAccount->holder,
+                                'document' => preg_replace( '/[^0-9]/', '', $ledgerBankAccount->document)
+                            ),
+                        ),
+                        'autoTransfer' => true
+                    ]
+                ]);
+                if($response->getStatusCode() == 200) {
+                    return json_decode($response->getBody());
+                } 
+                else {
+                    return null;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("Juno create account error.");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return null;
         }
     }
 

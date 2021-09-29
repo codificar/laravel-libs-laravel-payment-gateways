@@ -24,7 +24,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'juno_public_token')->update(['value' => '80F17BE20F828204BD9C382DD784F5DBDA8E2838000D8E28A562E502FA7DC998']);
 		Settings::where('key', 'juno_sandbox')->update(['value' => '1']);
 
-		$this->runInterfaceGateways($gateway, '4111111111111111');
+		$this->runInterfaceGateways($gateway);
+		//$this->runSPlitGateways($gateway);
 	}
 
 	public function testIpag() {
