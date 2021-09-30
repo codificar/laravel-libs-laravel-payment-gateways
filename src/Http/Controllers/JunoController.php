@@ -34,12 +34,29 @@ class JunoController extends Controller
     }
 
      /**
-     * @api{post}/libs/settings/save/gateways
-     * Save payment default and confs
+     * @api{post}/libs/gateways/juno/add_card/provider
      * @return Json
      */
+    public function saveCardJunoProvider()
+    {
+        $providerId = Input::get('id');
+        $creditCardHash = Input::get('credit_card_hash');
+        $cardId = Input::get('card_id');
+        
+        //check if cardId is from provider (for security)
+        $payment = Payment::find($cardId);
+        if($payment->provider_id != $providerId) {
+            return Response::json(array('success' => false));
+        } else {
+            return $this->saveCardJuno($cardId, $creditCardHash);
+        }
+    }
 
-    public function saveCardJuno()
+    /**
+     * @api{post}/libs/gateways/juno/add_card/provider
+     * @return Json
+     */
+    public function saveCardJunoUser()
     {
         $userId = Input::get('id');
         $creditCardHash = Input::get('credit_card_hash');
@@ -50,19 +67,25 @@ class JunoController extends Controller
         if($payment->user_id != $userId) {
             return Response::json(array('success' => false));
         } else {
-            $cardToken = JunoLib::createCardToken($creditCardHash);
-            if(!$cardToken) {
-                //se der erro na tokenizacao, entao deleta o cartao do banco de dados
-                $payment->delete();
-                return Response::json(array('success' => false));
-            }
-            else {
-                $payment->card_token = $cardToken;
-                $payment->customer_id = $cardToken;
-                $payment->save();
+            return $this->saveCardJuno($cardId, $creditCardHash);
+        }
+    }
 
-                return Response::json(array('success' => true));
-            }
+    public function saveCardJuno($cardId, $creditCardHash)
+    {
+        $payment = Payment::find($cardId);
+        $cardToken = JunoLib::createCardToken($creditCardHash);
+        if(!$cardToken) {
+            //se der erro na tokenizacao, entao deleta o cartao do banco de dados
+            $payment->delete();
+            return Response::json(array('success' => false));
+        }
+        else {
+            $payment->card_token = $cardToken;
+            $payment->customer_id = $cardToken;
+            $payment->save();
+
+            return Response::json(array('success' => true));
         }
     }
 }

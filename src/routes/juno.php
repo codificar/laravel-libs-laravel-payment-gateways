@@ -8,12 +8,12 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
 
     // Provider routes
     Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.provider_api:api'], function () {
-        Route::post('/provider', array('as' => 'saveCardJunoProvider', 'uses' => 'JunoController@saveCardJuno'));
+        Route::post('/provider', array('as' => 'saveCardJunoProvider', 'uses' => 'JunoController@saveCardJunoProvider'));
     });
 
     // Provider routes
     Route::group(['prefix' => 'libs/gateways/juno/add_card', 'middleware' => 'auth.user_api:api'], function () {
-        Route::post('/user', array('as' => 'saveCardJunoUser', 'uses' => 'JunoController@saveCardJuno'));
+        Route::post('/user', array('as' => 'saveCardJunoUser', 'uses' => 'JunoController@saveCardJunoUser'));
     });
 
 });
