@@ -151,6 +151,18 @@ class GatewaysController extends Controller
         'payment_billing'
     );
 
+    public $name_keys_payment_methods =  array(
+        'name_payment_money',
+        'name_payment_card',
+        'name_payment_machine',
+        'name_payment_carto',
+        'name_payment_crypt',
+        'name_payment_debitCard',
+        'name_payment_balance',
+        'name_payment_prepaid',
+        'name_payment_billing'
+    );
+
     public $keys_prepaid =  array(
         'prepaid_min_billet_value',
         'prepaid_tax_billet',
@@ -229,6 +241,13 @@ class GatewaysController extends Controller
             'key'   => Storage::exists('certificates/BancoInterKey.pem')
         );
 
+        //pega as nomenclaturas das formas de pagamento
+        $nomenclatures = array();
+        foreach ($this->name_keys_payment_methods as $key) {
+            $nomenclatures[$key] = Settings::findByKey($key);
+        }
+        $nomenclatures['payments_custom_name'] = Settings::findByKey('payments_custom_name');
+
         //retorna view
         return View::make('gateways::settings')
             ->with([
@@ -238,7 +257,8 @@ class GatewaysController extends Controller
                 'bancryp' => $bancryp,
                 'prepaid' => $prepaid,
                 'settings' => $settings,
-                'certificates' => $certificates
+                'certificates' => $certificates,
+                'nomenclatures' => $nomenclatures
             ]);
     }
 
@@ -345,11 +365,36 @@ class GatewaysController extends Controller
             }
         }
 
+        //salva as nomenclatuas
+        foreach ($request->nomenclatures as $key => $value) {
+            //Verifica se a key existe
+            if(in_array($key, $this->name_keys_payment_methods) || $key == 'payments_custom_name') {
+                $this->updateOrCreateSettingKey($key, $value);
+            }
+        }
+
         // Return data
         return new GatewaysResource([
             'is_updating_cards' => $isUpdatingCards,
             'estimate_update_cards' => $estimateUpdateCards
         ]);
+    }
+
+    public function getNomenclatures() {
+
+        $nomenclatures = array();
+        if((bool)Settings::findByKey('payments_custom_name')) {
+            foreach ($this->name_keys_payment_methods as $key) {
+                $nomenclatures[$key] = Settings::findByKey($key);
+            }
+        } else {
+            foreach ($this->name_keys_payment_methods as $key) {
+                $nomenclatures[$key] = "";
+            }
+        }
+
+        return response()->json($nomenclatures);
+
     }
 
     private function updateOrCreateSettingKey($key, $value) {

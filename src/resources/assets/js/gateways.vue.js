@@ -20,6 +20,9 @@ Vue.component('loading', Loading);
 import VueTheMask from 'vue-the-mask';
 Vue.use(VueTheMask)
 
+import ToggleButton from 'vue-js-toggle-button'
+Vue.use(ToggleButton)
+
 //Allows localization using trans()
 Vue.prototype.trans = (key) => {
     return _.get(window.lang, key, key);

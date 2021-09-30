@@ -190,5 +190,8 @@ return array(
 	'invalid_card_number' 		=> 'Invalid Card Number',
 	'fill_the_field' 			=> 'Fill the field',
 	'refused_card' 				=> 'Refused card',
-	'card_success_added'		=> 'Card Sucess Added'
+	'card_success_added'		=> 'Card Sucess Added',
+	'nomenclatures' 			=> 'Nomenclatures',
+	'custom_nomenclatures'		=> 'Custom Nomenclatures',
+	'juno_postback_msg'			=> 'Note: Enter Juno panel, click on the "Plugins & API" menu, in the "PAYMENT NOTIFICATION" field, place the following link:'
 );

@@ -189,5 +189,8 @@ return array(
 	'invalid_card_number' 		=> 'O número do cartão é inválido',
 	'fill_the_field' 			=> 'Preencha o campo',
 	'refused_card' 				=> 'Cartão Recusado',
-	'card_success_added'		=> 'Cartão adicionado com sucesso!'
+	'card_success_added'		=> 'Cartão adicionado com sucesso!',
+	'nomenclatures' 			=> 'Nomenclaturas',
+	'custom_nomenclatures'		=> 'Nomenclaturas Personalizadas',
+	'juno_postback_msg'			=> 'Obs: Entre no painel da Juno, clique no menu "Plugins & API", no campo "NOTIFICAÇÃO DE PAGAMENTOS" coloque o seguinte link:'
 );

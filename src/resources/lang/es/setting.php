@@ -188,5 +188,8 @@ return array(
 	'invalid_card_number' 		=> 'El número de tarjeta no es válido',
 	'fill_the_field' 			=> 'Rellena el campo',
 	'refused_card '				=>' Tarjeta rechazada ',
-	'card_success_added' 		=> '¡Tarjeta agregada correctamente!'
+	'card_success_added' 		=> '¡Tarjeta agregada correctamente!',
+	'nomenclatures' 			=> 'Nomenclaturas',
+	'custom_nomenclatures'		=> 'Nomenclaturas Personalizadas',
+	'juno_postback_msg'			=> 'Nota: Ingrese al panel de Juno, haga clic en el menú "Complementos y API", en el campo "NOTIFICACIÓN DE PAGO", coloque el siguiente enlace:'
 );

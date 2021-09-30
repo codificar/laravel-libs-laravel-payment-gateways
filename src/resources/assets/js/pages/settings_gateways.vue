@@ -2,13 +2,14 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates"],
+  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
   data() {
     return {
       gateways: {},
       payment_methods: {},
 			carto: {},
-      certificates: {}
+      certificates: {},
+      nomenclatures: {}
     };
   },
   methods: {
@@ -30,7 +31,8 @@ export default {
 								carto: this.carto,
 								bancryp: this.bancryp,
 								prepaid: this.prepaid,
-                settings: this.settings
+                settings: this.settings,
+                nomenclatures: this.nomenclatures
               })
               .then((response) => {
                 if (response.data.success) {
@@ -85,6 +87,14 @@ export default {
         this.gateways.bancointer.banco_inter_key = event.target.files[0].name
         this.certificates.key = event.target.files[0]
       }
+    },
+
+    paymentCustomNames() {
+      this.nomenclatures.payments_custom_name = !this.nomenclatures.payments_custom_name;
+    },
+
+    getOriginUrl() {
+      return window.location.origin;
     }
   },
   created() {
@@ -95,6 +105,8 @@ export default {
 		this.Prepaid ? (this.prepaid = JSON.parse(this.Prepaid)) : null;
     this.Settings ? (this.settings = JSON.parse(this.Settings)) : null;
     this.Certificates ? (this.certificates = JSON.parse(this.Certificates)) : null;
+    this.Nomenclatures ? (this.nomenclatures = JSON.parse(this.Nomenclatures)) : null;
+    this.nomenclatures.payments_custom_name = parseInt(this.nomenclatures.payments_custom_name) == 1 ? true : false;
   },
 };
 </script>
@@ -232,6 +244,163 @@ export default {
     </div>
     <!-- / formas de pagamento -->
 
+
+    <!-- nomenclatures -->
+    <div class="card-margin-top">
+      <div class="card-outline-info">
+        <div class="card-header d-flex align-items-center">
+          <h4 class="m-b-0 text-white">{{ trans("setting.custom_nomenclatures") }} </h4>
+          <toggle-button 
+            style="padding-left: 10px; margin:0px" 
+            @change="paymentCustomNames"
+            :height="20"
+            :width="43"
+            :value="nomenclatures.payments_custom_name"
+          />
+        </div>
+        <div class="card-block" v-if="nomenclatures.payments_custom_name">
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.money") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-money"
+                    v-model="nomenclatures.name_payment_money"
+                    :placeholder="trans('setting.money')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.card") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-card"
+                    v-model="nomenclatures.name_payment_card"
+                    :placeholder="trans('setting.card')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.debitCard") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-debitCard"
+                    v-model="nomenclatures.name_payment_debitCard"
+                    :placeholder="trans('setting.debitCard')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.machine") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-machine"
+                    v-model="nomenclatures.name_payment_machine"
+                    :placeholder="trans('setting.machine')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.carto") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-carto"
+                    v-model="nomenclatures.name_payment_carto"
+                    :placeholder="trans('setting.carto')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.crypt_coin") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-crypt_coin"
+                    v-model="nomenclatures.name_payment_crypt"
+                    :placeholder="trans('setting.crypt_coin')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_balance") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-payment_balance"
+                    v-model="nomenclatures.name_payment_balance"
+                    :placeholder="trans('setting.payment_balance')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_prepaid") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-payment_prepaid"
+                    v-model="nomenclatures.name_payment_prepaid"
+                    :placeholder="trans('setting.payment_prepaid')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_billing") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-payment_billing"
+                    v-model="nomenclatures.name_payment_billing"
+                    :placeholder="trans('setting.payment_billing')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- / nomenclatures -->
 
     <!-- general settings -->
     <div class="card-margin-top">
@@ -1703,6 +1872,10 @@ export default {
                   {{this.gateways.juno.juno_auth_token = ""}}
                   {{this.gateways.juno.juno_auth_token_expiration_date = ""}}
                 </div>
+              </div>
+              <div style="align-items:center">
+                <p> {{ trans("setting.juno_postback_msg") + " "}}</p>
+                <p style="color: blue"> {{ getOriginUrl() + '/libs/finance/postback/juno' }}</p>
               </div>
             </div>
           </div>
