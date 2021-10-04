@@ -27,6 +27,7 @@
 			prepaid="{{ json_encode($prepaid)}}"
 			settings="{{ json_encode($settings)}}"
 			certificates="{{ json_encode($certificates)}}"
+			nomenclatures="{{ json_encode($nomenclatures) }}"
 		>
 		</settingsgateways>
 		

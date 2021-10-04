@@ -53,7 +53,7 @@ return array(
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
-
+	'juno'						=> 'Juno',
 	
 
 	
@@ -155,7 +155,7 @@ return array(
 	'saturday'					=> 'Saturday',
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
-	'ipag_token'				=> 'Ipag Token',,
+	'ipag_token'				=> 'Ipag Token',
 	'ipag_antifraud_title'		=> 'Do you want to make transactions with anti-fraud?',
 
 	'adiq_client_id'			=> 'Adiq Client Id',
@@ -167,4 +167,31 @@ return array(
 	'cnpj_for_banco_inter'		=> 'CNPJ',
 	'banco_inter_crt'			=> 'Certificate',
 	'banco_inter_key'			=> 'Key',
+
+	'juno_settings'				=> 'Juno',
+	'juno_client_id'			=> 'Client ID',
+	'juno_secret'				=> 'Secret (Client Secret)',
+	'juno_resource_token'		=> 'Private token',
+	'juno_public_token'			=> 'Public token',
+	'juno_sandbox'				=> 'Operation Mode',
+
+	'credit_card' 				=> 'Credit Card',
+	'holder_name'			 	=> 'Holder Name',
+	'card_number' 				=> 'Card number',
+	'exp_month' 				=> 'Expiration month',
+	'exp_year' 					=> 'Expiration Year',
+	'cvv' 						=> 'CVV',
+	'create_card' 				=> 'Create Card',
+	'card_added_msg' 			=> 'Card successfully added! Go back to see the list of cards.',
+	'user_not_auth' 			=> 'Unauthenticated User',
+	'invalid_card' 				=> 'Invalid card data',
+	'expired_card' 				=> 'The card is expired',
+	'invalid_cvv' 				=> 'Invalid CVV',
+	'invalid_card_number' 		=> 'Invalid Card Number',
+	'fill_the_field' 			=> 'Fill the field',
+	'refused_card' 				=> 'Refused card',
+	'card_success_added'		=> 'Card Sucess Added',
+	'nomenclatures' 			=> 'Nomenclatures',
+	'custom_nomenclatures'		=> 'Custom Nomenclatures',
+	'juno_postback_msg'			=> 'Note: Enter Juno panel, click on the "Plugins & API" menu, in the "PAYMENT NOTIFICATION" field, place the following link:'
 );

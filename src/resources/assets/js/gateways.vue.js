@@ -8,7 +8,20 @@ import SettingsGateways from './pages/settings_gateways.vue';
 
 import VueSweetalert2 from 'vue-sweetalert2';
 
+import JunoAddCard from './pages/juno_add_card.vue';
+
 Vue.use(VueSweetalert2);
+
+import Loading from 'vue-loading-overlay';
+import 'vue-loading-overlay/dist/vue-loading.css';
+Vue.use(Loading);
+Vue.component('loading', Loading);
+
+import VueTheMask from 'vue-the-mask';
+Vue.use(VueTheMask)
+
+import ToggleButton from 'vue-js-toggle-button'
+Vue.use(ToggleButton)
 
 //Allows localization using trans()
 Vue.prototype.trans = (key) => {
@@ -28,7 +41,8 @@ new Vue({
     },
 
     components: {
-        settingsgateways: SettingsGateways
+        settingsgateways: SettingsGateways,
+        junoaddcard: JunoAddCard
     },
 
     created: function () {

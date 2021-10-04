@@ -17,6 +17,14 @@ class GatewaysInterfaceTest {
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
 		
+		//o gateway da juno precisa de webview (iframe) para cadastrar cartao. Entao para prosseguir com os testes, foi colocado o token do cartao manualmente
+		if(Settings::findByKey('default_payment') == 'juno') {
+			$payment = Payment::find($response['payment']['id']);
+			$payment->customer_id = "552fa250-f7e6-42a1-89b7-149cb2e034fe";
+			$payment->card_token = "552fa250-f7e6-42a1-89b7-149cb2e034fe";
+			$payment->save();
+		}
+
 		return($response);
     }
 
@@ -83,6 +91,10 @@ class GatewaysInterfaceTest {
 		$payment = Payment::getFirstOrDefaultPayment($user->id, $cardId);
 		$transaction = Transaction::where('gateway_transaction_id', $transactionId)->first();
 		$response = $gateway->capture($transaction, $value, $payment);
+		if($response && $response['status'] == 'paid') {
+			$transaction->status = 'paid';
+			$transaction->save();
+		}
 		
 		return $response;
 	}
@@ -116,7 +128,7 @@ class GatewaysInterfaceTest {
 		$gateway = PaymentFactory::createGateway();
 		$user = $this->userRandomForTest();
 		$response = $gateway->billetCharge($value, $user, config('app.url') . '/api/v3/postback', date("Y-m-d"), 'boleto de teste');
-		
+
 		return $response;
 	}
 
@@ -199,8 +211,10 @@ class GatewaysInterfaceTest {
 			$newUser->address_number= 375;
 			$newUser->address_neighbour = 'Centro';
 			$newUser->address_city  = 'Belo Horizonte';
-			$newUser->birthdate		= '1999-12-12';
-
+			if(isset($newUser->birthdate)) {
+				$newUser->birthdate = '1999-12-12';
+			}
+			
 			$newUser->save();
 
 			return $newUser;
@@ -212,7 +226,7 @@ class GatewaysInterfaceTest {
      * @return  Provider
      * */
     private static function providerRandomForTest(){
-		$provider = Provider::Where('email' , 'provider.tests@codificar.com.br')->first();
+		$provider = Provider::Where('email' , 'testegmail@gmail.com')->first();
 
 		if ( isset($provider) ) {
 			\Log::debug("ecnontrou!!!1");
@@ -224,13 +238,14 @@ class GatewaysInterfaceTest {
 			$newProvider				= new Provider;
 			$newProvider->first_name 	= 'Provider';
 			$newProvider->last_name  	= 'Health Check';
-			$newProvider->email 	 	= 'provider.tests@codificar.com.br';
+			$newProvider->email 	 	= 'testegmail@gmail.com';
 			$newProvider->address 	 	= 'Rua dos Goitacazes';
-			$newProvider->state	 		= 'Minas Gerais';
+			$newProvider->state	 		= 'MG';
+			$newProvider->phone 	 	= '+5531999896532';
 			$newProvider->country 	 	= 'Brasil';
 			$newProvider->zipcode	 	= '30190050';
 			$newProvider->password 	 	= Hash::make('qweqwe');
-			$newProvider->document 	 	= '81649728000';
+			$newProvider->document 	 	= '70538862041';
 			$newProvider->token 	 	= generate_token();
 			$newProvider->token_expiry	= generate_expiry();
 			$newProvider->device_token	= generate_token();
@@ -252,8 +267,10 @@ class GatewaysInterfaceTest {
 			$newProvider->is_active     = 1;
 			$newProvider->is_available  = 1;
 			$newProvider->is_approved   = 1;
-			$newProvider->position   	= new Point(-19.922324, -43.941561);
-
+			if(isset($newProvider->position)) {
+				$newProvider->position   	= new Point(-19.922324, -43.941561);
+			}
+			
 			$newProvider->save();
 
 			$types = ProviderType::where('is_visible', 1)->get();
@@ -262,7 +279,7 @@ class GatewaysInterfaceTest {
 				ProviderServices::saveDb($newProvider->id, $type->id, null, null, $type->price_per_unit_distance, $type->price_per_unit_time,
 						   $type->base_price, 0, $type->commission_rate, $type->commission_type, $type->base_distance, $type->base_time,
 						   $type->base_price_provider, $type->base_price_user, $type->distance_unit,
-						   $type->time_unit, $genre = ProviderType::NONE, 1);
+						   $type->time_unit, 'none', 1);
 			}
 
 			//Create a bank cont for test
@@ -274,7 +291,7 @@ class GatewaysInterfaceTest {
 			$ledgerBankAccount->ledger_id = $ledger->id;
 			$ledgerBankAccount->holder =  $provider->first_name;
 			$ledgerBankAccount->document = $provider->document;
-			$ledgerBankAccount->bank_id = '1';
+			$ledgerBankAccount->bank_id = '12';
 			$ledgerBankAccount->agency = '1234';
 			$ledgerBankAccount->agency_digit = 5;
 			$ledgerBankAccount->account = '12345';
@@ -283,6 +300,7 @@ class GatewaysInterfaceTest {
 			$ledgerBankAccount->recipient_id = 'empty';
             $ledgerBankAccount->person_type = 'person_type';
            	$ledgerBankAccount->provider_id = $provider->id;
+			$ledgerBankAccount->birthday_date = '1990-10-10 00:00:00';
             $ledgerBankAccount->save();
 
 			return $newProvider;

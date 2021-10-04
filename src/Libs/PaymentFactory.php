@@ -63,6 +63,9 @@ class PaymentFactory
 
             case PaymentFacade::PAYMENT_GATEWAY_IPAG:
                 return (new IpagLib());
+                
+            case PaymentFacade::PAYMENT_GATEWAY_JUNO:
+                return (new JunoLib());
         }
     }
 

@@ -53,7 +53,7 @@ return array(
 	'adiq'						=> 'Adiq',
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
-
+	'juno'						=> 'Juno',
 	
 	
 	//Chaves dos gateways
@@ -164,5 +164,32 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
-	'ipag_antifraud_title'		=> '¿Quieres realizar transacciones con antifraude?'
+	'ipag_antifraud_title'		=> '¿Quieres realizar transacciones con antifraude?',
+
+	'juno_settings'				=> 'Juno',
+	'juno_client_id'			=> 'Client ID',
+	'juno_secret'				=> 'Secret (Client Secret)',
+	'juno_resource_token'		=> 'Token de recurso (token privado)',
+	'juno_public_token'			=> 'Token Público',
+	'juno_sandbox'				=> 'Operation Mode',
+	
+	'credit_card' 				=> 'Tarjeta de crédito',
+	'holder_name' 				=> 'nombre del titular',
+	'card_number' 				=> 'Número de tarjeta',
+	'exp_month' 				=> 'Mes válido',
+	'exp_year' 					=> 'Año de vencimiento',
+	'cvv'						=> 'CVV',
+	'create_card' 				=> 'Registrar tarjeta',
+	'card_added_msg'		 	=> '¡Tarjeta agregada correctamente! Regrese para ver la lista de tarjetas. ',
+	'user_not_auth' 			=> 'Usuario no autenticado',
+	'invalid_card' 				=> 'Detalles de tarjeta inválidos',
+	'expired_card' 				=> 'Tarjeta caducada',
+	'invalid_cvv' 				=> 'CVV no es válido',
+	'invalid_card_number' 		=> 'El número de tarjeta no es válido',
+	'fill_the_field' 			=> 'Rellena el campo',
+	'refused_card '				=>' Tarjeta rechazada ',
+	'card_success_added' 		=> '¡Tarjeta agregada correctamente!',
+	'nomenclatures' 			=> 'Nomenclaturas',
+	'custom_nomenclatures'		=> 'Nomenclaturas Personalizadas',
+	'juno_postback_msg'			=> 'Nota: Ingrese al panel de Juno, haga clic en el menú "Complementos y API", en el campo "NOTIFICACIÓN DE PAGO", coloque el siguiente enlace:'
 );
