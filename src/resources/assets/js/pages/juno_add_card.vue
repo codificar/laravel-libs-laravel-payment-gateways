@@ -128,7 +128,7 @@ export default {
                         that.saveCardApi(cardHash);
                     }, function(error) {
                         that.isLoading = false;
-                        that.showAlert(this.trans('setting.invalid_card'), 'error');
+                        that.showAlert(that.trans('setting.invalid_card'), 'error');
                     });
                 } 
             }
