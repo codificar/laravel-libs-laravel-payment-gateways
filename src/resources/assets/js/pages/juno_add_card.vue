@@ -55,6 +55,8 @@ export default {
                 axios
                 .post('/libs/gateways/juno/add_card/' + this.holder_type, {
                     id: this.holder_id,
+                    user_id: this.holder_id,
+                    provider_id: this.holder_id,
                     token: this.holder_token,
                     credit_card_hash: hashCard,
                     card_id: card_id
