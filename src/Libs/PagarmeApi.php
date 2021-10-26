@@ -162,7 +162,7 @@ class IpagApi
         else
             $response = null;
 
-        if(!isset($response->data->id))
+        if(!isset($response->id))
         {
             $url = sprintf('%s/recipients', self::URL);
             $verb = self::POST_REQUEST;
@@ -173,51 +173,51 @@ class IpagApi
             $verb = self::PUT_REQUEST;
         }
 
-        $phoneRemask    =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        //mobile or fixed phone remask BR
-        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(!$phoneRemask)
-            $phoneRemask = '(31) 99999-9999'; //if the phone has save error
+        $providerType   =   ((strlen($provider->document)) > 11) ? 'company' : 'individual';
+        $ledgerType     =   ((strlen($ledgerBankAccount->document)) > 11) ? 'company' : 'individual';
 
         $fields = (object)array(
-            'login'         =>  $provider->email,
-            'password'      =>  preg_replace('/\D/', '', $provider->document),
-            'name'          =>  $ledgerBankAccount->holder,
-            'email'         =>  $provider->email,
-            'phone'         =>  $phoneRemask,
-            'bank'      =>  (object)array(
-                'code'          =>  $bank->code,
-                'agency'        =>  $ledgerBankAccount->agency,
-                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
+            "name"      => $provider->first_name . $provider->last_name,
+            "email"     => $provider->email,
+            "document"  => $provider->document,
+            "type"      => $providerType,
+            "default_bank_account"      =>  (object)array(
+                "holder_name"           =>  $ledgerBankAccount->holder,
+                "holder_type"           =>  $ledgerType,
+                "holder_document"       =>  $ledgerBankAccount->document,
+                "bank"                  =>  $bank->code,
+                "branch_number"         =>  $ledgerBankAccount->agency,
+                "branch_check_digit"    =>  $ledgerBankAccount->agency_digit,
+                "account_number"        =>  $ledgerBankAccount->account,
+                "account_check_digit"   =>  $ledgerBankAccount->account_digit,
+                "type"                  =>  ($ledgerBankAccount->account_type == "conta_corrente" ? "checking" : ($ledgerBankAccount->account_type == "conta_poupanca" ? "savings" : ""))
+            ),
+            "transfer_settings"     =>  (object)array(
+                "transfer_enabled"    =>  (Settings::findByKey('auto_transfer_provider_payment') == '1') ?? false,
+                "transfer_interval"   =>  "Daily",
+                "transfer_day"        =>  Settings::findByKey('provider_transfer_day')
             )
         );
+        //    "automatic_anticipation_settings":
+        //       {
+        //       "enabled" => true,
+        //       "type" => "full", //anticipation type : "full" | "1025"
+        //       "volume_percentage" => "50",
+        //       "delay" => null
+        //     }
 
-        if(!$response)
-            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
+        $header         =   self::getHeader();
+        $body           =   json_encode($fields);
+        $accountRequest =   self::apiRequest($url, $body, $header, $verb);
 
-        //to juridical bank account
-        $birthday = $ledgerBankAccount->birthday_date;
-        if(strlen($ledgerBankAccount->document) > 11)
-            $fields['owner'] = (object)array(
-                'name'      =>  $provider->first_name . $provider->last_name,
-                'email'     =>  $provider->email,
-                'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
-                'phone'     =>  $phoneRemask,
-                'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
+        if(isset($accountRequest->status) && $accountRequest->status == 'active')
+            $accountRequest = $response = (object)array(
+                'success'       =>  false,
+                'recipient_id'  =>  ""
             );
-
-        $header     =   self::getHeader();
-        $body       =   json_encode($fields);
-        $accountRequest = self::apiRequest($url, $body, $header, $verb);
-
-        // if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
-        //     $accountRequest = self::activeSeller($accountRequest->data->id);
 
         return $accountRequest;
     }
@@ -242,7 +242,7 @@ class IpagApi
         else
             $response = self::getSeller($sellerId);
 
-        if(!isset($response->data->id))
+        if(!isset($response->id))
         {
             Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
             $response = (object)array(
@@ -251,41 +251,36 @@ class IpagApi
             );
         }
 
-        if($response->success)
-        {
-            $result = (object)array(
-                'success'           =>  true,
-                'recipient_id'      =>  $response->data->id,
-                'is_active'         =>  $response->data->attributes->is_active
-            );
-            $ledgerBankAccount->recipient_id = $response->data->id;
-            $ledgerBankAccount->save();
-        }
-        else
-        {
-            #TODO remover após job de recriar recipients ao trocar gateway
-            $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
-            if($newAccount->success)
-            {
-                $ledgerBankAccount->recipient_id = $newAccount->data->id;
-                $ledgerBankAccount->save();
-                $result = (object)array(
-                    'success'       =>  true,
-                    'recipient_id'  =>  $ledgerBankAccount->recipient_id,
-                    'is_active'     =>  $newAccount->data->attributes->is_active
-                );
-            }
-            else
-            {
-                $result = (object)array(
-                    'success'       =>  false,
-                    'recipient_id'  =>  ""
-                );
-            }
-        }
+        $result = (object)array(
+            'success'           =>  true,
+            'recipient_id'      =>  $response->id,
+            'is_active'         =>  ($response->status == 'active') ?? false
+        );
+        $ledgerBankAccount->recipient_id = $response->data->id;
+        $ledgerBankAccount->save();
 
-        // if(isset($result->is_active) && $result->is_active === false)
-        //     self::activeSeller($result['recipient_id']);
+        // else
+        // {
+        //     #TODO remover após job de recriar recipients ao trocar gateway
+        //     $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
+        //     if($newAccount->success)
+        //     {
+        //         $ledgerBankAccount->recipient_id = $newAccount->data->id;
+        //         $ledgerBankAccount->save();
+        //         $result = (object)array(
+        //             'success'       =>  true,
+        //             'recipient_id'  =>  $ledgerBankAccount->recipient_id,
+        //             'is_active'     =>  $newAccount->data->attributes->is_active
+        //         );
+        //     }
+        //     else
+        //     {
+        //         $result = (object)array(
+        //             'success'       =>  false,
+        //             'recipient_id'  =>  ""
+        //         );
+        //     }
+        // }
 
         return $result;
     }
@@ -318,17 +313,6 @@ class IpagApi
         return $pixRequest;
     }
 
-    // public static function activeSeller($sellerId)
-    // {
-    //     $activeUrl       =   sprintf('%s/resources/sellers?id=%s', self::URL, $sellerId);
-
-    //     $activeBody      =   json_encode(["is_active"=>true]);
-    //     $activeHeader    =   self::getHeader();
-    //     $activeRequest   =   self::apiRequest($activeUrl, $activeBody, $activeHeader, self::PUT_REQUEST);
-
-    //     return $activeRequest;
-    // }
-
     private static function getOrderId()
     {
         list($microSeconds, $seconds) = explode(" ", microtime());
@@ -349,39 +333,13 @@ class IpagApi
         return $expDate;
     }
 
-    private static function getBrand($payment)
-    {
-        $brand = Payment::getBrand($payment);
-        $brand = strtolower($brand);
-
-        if($brand == 'Master' || $brand == 'master')
-            $brand = 'mastercard';
-
-        return $brand;
-    }
-
-    // public static function amountRound($amount)
-    // {
-    //     $amount = $amount * self::ROUND_VALUE;
-    //     $amount = (int)$amount;
-
-    //     return $amount;
-    // }
-
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
         if($payment)
-            $client         =   User::find($payment->user_id);
+            $client     =   User::find($payment->user_id);
 
-        $cnpjMask           =   "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
-        $cpfMask            =   "%s%s%s.%s%s%s.%s%s%s-%s%s";
-
-        $mask               =   ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-        $personType         =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
-
-        $client->document   =   vsprintf($mask, str_split($client->document));
-        $clientPhone        =   self::phoneDivide($client->phone);
-
+        $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
+        $clientPhone    =   self::phoneDivide($client->phone);
         $orderId        =   self::getOrderId();
         $requestId      =   $client ? $client->getLastRequest()->id : $orderId;
 
@@ -407,8 +365,7 @@ class IpagApi
                     )
                 )
             ),
-            "closed"        =>  true,
-            "payments"      =>  null
+            "closed"        =>  true
         );
 
         if($payment)
@@ -437,7 +394,7 @@ class IpagApi
             $payFields = (object)array(
                 "payment_method" => "pix",
                 "pix" => (object)array(
-                    "expires_in" => "86400"
+                    "expires_in" => "86400" //24h
                 )
             );
         }
@@ -452,6 +409,15 @@ class IpagApi
                     "type"              =>  "DM" //DM (Duplicata Mercantil) | BDP (Boleto de proposta)
                 )
             );
+
+            $fields->customer->address  =   (object)array(
+                "line_1"    => "$client->address_number, $client->address, $client->address_neighbour",
+                "line_2"    => $client->address_complements,
+                "zip_code"  => preg_replace('/\D/', '', $client->zipcode),
+                "city"      => $client->address_city,
+                "state"     => $client->state,
+                "country"   => self::countryInitials($client->country)
+            );
         }
 
         $fields->payments[] = $payFields;
@@ -465,34 +431,41 @@ class IpagApi
         return json_encode($fields);
     }
 
-    // private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
-    // {
-    //     $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
+    private static function getSplitInfo($providerId, $providerAmount)
+    {
+        $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
 
-    //     if(!$ledgerBankAccount)
-    //         return false;
+        if(!$ledgerBankAccount)
+            return false;
 
-    //     $sellerId = self::checkProviderAccount($ledgerBankAccount);
+        $sellerId   =   self::checkProviderAccount($ledgerBankAccount);
 
-    //     if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
-    //         return false;
+        if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
+            return false;
 
-    //     $fields = (object)array(
-    //         $sellerIndex            =>  $sellerId->recipient_id,
-    //         'amount'                =>  floatval($providerAmount),
-    //         'liable'                =>  true,
-    //         'charge_processing_fee' =>  true
-    //     );
+        $fields     =   (object)array(
+            "split" =>  [
+                (object)array(
+                    "amount"        =>  $providerAmount,
+                    "recipient_id"  =>  $sellerId,
+                    "type"          =>  "flat", //flat | percentage
+                    "options"       =>  (object)array(
+                        "charge_processing_fee" =>  true,
+                        "charge_remainder_fee"  =>  false,
+                        "liable"                =>  true
+                    )
+                )
+            ]
+        );
 
-    //     return $fields;
-    // }
+        return $fields;
+    }
 
     private static function getHeader($useVersion = false)
     {
-        $version    =   ['x-api-version: 2'];
-        $token      =   self::makeToken();
-        $ipagToken  =   Settings::findObjectByKey('ipag_token');
-        $basic      =   $ipagToken && isset($ipagToken->value)  ? $ipagToken->value : $token;
+        $token          =   self::makeToken();
+        $pagarmeToken   =   Settings::findObjectByKey('pagarme_token');
+        $basic          =   $pagarmeToken && isset($pagarmeToken->value) ? $pagarmeToken->value : $token;
 
         $header = array (
             'Content-Type: application/json',
@@ -507,13 +480,13 @@ class IpagApi
 
     private static function makeToken()
     {
-        $ipagId     =   Settings::findObjectByKey('ipag_api_id');
-        $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
+        $pagarmeSecret  =   Settings::findObjectByKey('pagarme_secret');
 
-        $concateString = base64_encode($ipagId->value.':'.$ipagKey->value);
+        $concateString  =   base64_encode($pagarmeSecret->value.':');
 
-        try {
-            $token = Settings::findObjectByKey('ipag_token');
+        try
+        {
+            $token = Settings::findObjectByKey('pagarme_token');
             $token->value = $concateString;
             $token->save();
         }
@@ -575,15 +548,6 @@ class IpagApi
         }
     }
 
-    private static function remaskDocument($document)
-    {
-        $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
-        $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
-        $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
-
-        return vsprintf($mask, str_split($document));
-    }
-
     private static function phoneDivide($phone)
 	{
         $numeralPhone = preg_replace('/\D/', '', $phone);
@@ -594,39 +558,40 @@ class IpagApi
 		return $objPhone;
 	}
 
+    private static function countryInitials($country)
+    {
+        switch(strtolower($country))
+        {
+            case 'angola':
+            case 'ao':
+                $initials = 'AO';
+                break;
+            case 'united states':
+            case 'estados unidos':
+            case 'us':
+            case 'usa':
+                $initials = 'US';
+                break;
+            case 'portugal':
+            case 'pt':
+                $initials = 'PO';
+                break;
+            default:
+                $initials = 'BR';	
+                break;
+        }
+
+        return $initials;
+    }
+
     public static function retrieveHooks()
     {
         $body       =   null;
         $header     =   self::getHeader();
-        $url        =   sprintf('%s/resources/webhooks', self::URL);
+        $url        =   sprintf('%s/hooks', self::URL);
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function registerHook($postbackUrl)
-    {
-        $header     =   self::getHeader();
-        $url        =   sprintf('%s/resources/webhooks', self::URL);
-
-        $body       =   (object)array(
-            'http_method'   =>  self::POST_REQUEST,
-            'url'           =>  $postbackUrl,
-            'description'   =>  'Webhook para receber notificações de atualização das transações',
-            'actions'       =>  (object)array(
-                'TransactionCreated',
-                'TransactionWaitingPayment',
-                'TransactionCanceled',
-                'TransactionPreAuthorized',
-                'TransactionCaptured',
-                'TransactionDenied',
-                'TransactionDisputed',
-                'TransactionChargedback'
-            )
-        );
-
-        $apiRequest =   self::apiRequest($url, json_encode($body), $header, self::POST_REQUEST);
-
-        return $apiRequest;
-    }
 }
