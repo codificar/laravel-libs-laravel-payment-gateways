@@ -5,7 +5,6 @@ use Carbon\Carbon;
 
 //models do sistema
 use Log, Exception;
-use App;
 use Payment;
 use Provider;
 use Transaction;
@@ -92,7 +91,7 @@ class IpagApi
         $url = sprintf('%s/orders/%s/closed', self::URL, $transaction->gateway_transaction_id);
 
         if($amount)
-            $url = sprintf('%s&valor=%s', $url, $amount);
+            $url = sprintf('%s&valor=%s', $url, self::amountRound($amount));
 
         $body       =   null;
         $header     =   self::getHeader(true);
@@ -113,9 +112,14 @@ class IpagApi
      *                      ?'message' //if it fails, with false success
      *                     }
      */
-    public static function captureWithSplit(Transaction $transaction, Provider $provider, $providerAmount, $newAmount = null)
+    public static function captureWithSplit(Transaction $transaction, Provider $provider, $providerAmount)
     {
-        return false;
+        $splitBody      =   self::getSplitInfo($provider->id, $providerAmount, $transaction->gross_value);
+        $splitHeader    =   self::getHeader();
+        $splitUrl       =   sprintf('%s/charges/%s/capture', self::apiUrl(), $transaction->gateway_transaction_id);
+        $captureSplitRequest =  self::apiRequest($splitUrl, $splitBody, $splitHeader, self::POST_REQUEST);
+
+        return $captureSplitRequest;
     }
 
     /**
@@ -201,13 +205,6 @@ class IpagApi
                 "transfer_day"        =>  Settings::findByKey('provider_transfer_day')
             )
         );
-        //    "automatic_anticipation_settings":
-        //       {
-        //       "enabled" => true,
-        //       "type" => "full", //anticipation type : "full" | "1025"
-        //       "volume_percentage" => "50",
-        //       "delay" => null
-        //     }
 
         $header         =   self::getHeader();
         $body           =   json_encode($fields);
@@ -313,6 +310,17 @@ class IpagApi
         return $pixRequest;
     }
 
+    public static function debit(Payment $payment, $amount)
+    {
+        $url = sprintf('%s/orders/', self::URL);
+
+        $header         =   self::getHeader(true);
+        $body           =   self::getBody($payment, $amount, null, false, null, null, null, false, true);
+        $debitRequest   =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        return $debitRequest;
+    }
+
     private static function getOrderId()
     {
         list($microSeconds, $seconds) = explode(" ", microtime());
@@ -333,10 +341,21 @@ class IpagApi
         return $expDate;
     }
 
-    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false)
+    public static function amountRound($amount)
+    {
+        $amount = $amount * self::ROUND_VALUE;
+        $amount = (int)$amount;
+
+        return $amount;
+    }
+
+    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false, $isDebit = false)
     {
         if($payment)
+        {
             $client     =   User::find($payment->user_id);
+            $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
+        }
 
         $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
         $clientPhone    =   self::phoneDivide($client->phone);
@@ -346,7 +365,7 @@ class IpagApi
         $fields = (object)array(
             "items"     => [
                 (object)array(
-                    "amount"        =>  $amount,
+                    "amount"        =>  self::amountRound($amount),
                     "quantity"      =>  1,
                     "description"   =>  substr((string) Settings::findByKey('pagarme_product_title'), 0, 254),
                     "code"          =>  "$requestId"
@@ -375,11 +394,9 @@ class IpagApi
             $cardNumber = $payment->getCardNumber();
 
             $payFields = (object)array(
-                "payment_method"    => "credit_card",
-                "credit_card"       => (object)array(
-                    "capture"               =>  $capture,
-                    "installments"          =>  1,
-                    "card"                  => (object)array(
+                "payment_method"    => "$paymentType",
+                "$paymentType"      => (object)array(
+                    "card"              => (object)array(
                         "number"        =>  $cardNumber,
                         "holder_name"   =>  $payment->getCardHolder(),
                         "exp_month"     =>  $expirationDate[0],
@@ -388,6 +405,12 @@ class IpagApi
                     )
                 )
             );
+
+            if(!$isDebit)
+                $payFields->credit_card = array_merge(
+                    $payFields->credit_card, 
+                    (object)array("capture"   =>  $capture, "installments"  =>  1)
+                );
         }
         else if($isPix)
         {
@@ -424,14 +447,14 @@ class IpagApi
 
         if($capture && $provider && isset($provider->id) && $payment)
         {
-            $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
-            $fields->split_rules = [$split];
+            $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
+            $fields->payments->split = $splitFields->split;
         }
 
         return json_encode($fields);
     }
 
-    private static function getSplitInfo($providerId, $providerAmount)
+    private static function getSplitInfo($providerId, $providerAmount, $totalAmount)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
 
@@ -443,10 +466,20 @@ class IpagApi
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             return false;
 
-        $fields     =   (object)array(
+        $splitFields     =   (object)array(
             "split" =>  [
                 (object)array(
-                    "amount"        =>  $providerAmount,
+                    "amount"        =>  self::amountRound($totalAmount) - self::amountRound($providerAmount),
+                    "recipient_id"  =>  Settings::findByKey('pagarme_recipient_id'),
+                    "type"          =>  "flat", //flat | percentage
+                    "options"       =>  (object)array(
+                        "charge_processing_fee" =>  true,
+                        "charge_remainder_fee"  =>  true,
+                        "liable"                =>  true
+                    )
+                ),
+                (object)array(
+                    "amount"        =>  self::amountRound($providerAmount),
                     "recipient_id"  =>  $sellerId,
                     "type"          =>  "flat", //flat | percentage
                     "options"       =>  (object)array(
@@ -458,7 +491,7 @@ class IpagApi
             ]
         );
 
-        return $fields;
+        return $splitFields;
     }
 
     private static function getHeader($useVersion = false)
@@ -480,7 +513,7 @@ class IpagApi
 
     private static function makeToken()
     {
-        $pagarmeSecret  =   Settings::findObjectByKey('pagarme_secret');
+        $pagarmeSecret  =   Settings::findObjectByKey('pagarme_secret_key');
 
         $concateString  =   base64_encode($pagarmeSecret->value.':');
 

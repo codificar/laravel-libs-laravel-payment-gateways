@@ -32,9 +32,10 @@ class GatewaysController extends Controller
     
     public $keys_gateways = [
         'pagarme' => [
-            'pagarme_encryption_key',
+            'pagarme_secret_key',
             'pagarme_recipient_id',
-            'pagarme_api_key'
+            'pagarme_token',
+            'gateway_product_title'
         ],
         'stripe' => [
             'stripe_secret_key',
@@ -108,7 +109,7 @@ class GatewaysController extends Controller
             'ipag_api_key',
             'ipag_token',
             'ipag_antifraud',
-            'ipag_product_title'
+            'gateway_product_title'
         ],
         'juno' => [
             'juno_client_id',

@@ -68,9 +68,8 @@ return array(
 	'mercadopago_settings'		=> 'Market Paid Settings',
 	'pagarapido_settings'		=> 'Paga Rapido Settings',
 	'advanced_settings'			=> 'Advanced Settings',
-	'pay_encryption_key_me'		=> 'Pagar.me Encryption Key',
+	'pagarme_secret_key'		=> 'Pagar.me secret Key',
 	'pagarme_recipient_id'		=> 'Pagar.me Recipient Id',
-	'pagarme_api_key'			=> 'Pagar.me API Key',
 	'byebnk_api_key'			=> 'ByeBnk API key',
 	'byebnk_api_user'			=> 'ByeBnk User Id',
 	'stripe_secret'				=> 'Stripe Private Key',
@@ -193,5 +192,6 @@ return array(
 	'card_success_added'		=> 'Card Sucess Added',
 	'nomenclatures' 			=> 'Nomenclatures',
 	'custom_nomenclatures'		=> 'Custom Nomenclatures',
-	'juno_postback_msg'			=> 'Note: Enter Juno panel, click on the "Plugins & API" menu, in the "PAYMENT NOTIFICATION" field, place the following link:'
+	'juno_postback_msg'			=> 'Note: Enter Juno panel, click on the "Plugins & API" menu, in the "PAYMENT NOTIFICATION" field, place the following link:',
+	'gateway_product_title'		=> 'Product description'
 );

@@ -67,9 +67,8 @@ return array(
 	'mercadopago_settings'		=> 'Mercado Pago Configurações',
 	'pagarapido_settings'		=> 'Paga Rápido Configurações',
 	'advanced_settings'			=> 'Configurações Avançadas',
-	'pay_encryption_key_me'		=> 'Chave de Criptografia do Pagar.me',
+	'pagarme_secret_key'		=> 'Chave secreta Pagar.me',
 	'pagarme_recipient_id'		=> 'Id de Recebedor do Pagar.me',
-	'pagarme_api_key'			=> 'Chave de API do Pagar.me',
 	'byebnk_api_key'			=> 'Chave de API do ByeBnk',
 	'byebnk_api_user'			=> 'Id do Usuario ByeBnk',
 	'stripe_secret'				=> 'Chave Privada do Stripe',
@@ -192,5 +191,6 @@ return array(
 	'card_success_added'		=> 'Cartão adicionado com sucesso!',
 	'nomenclatures' 			=> 'Nomenclaturas',
 	'custom_nomenclatures'		=> 'Nomenclaturas Personalizadas',
-	'juno_postback_msg'			=> 'Obs: Entre no painel da Juno, clique no menu "Plugins & API", no campo "NOTIFICAÇÃO DE PAGAMENTOS" coloque o seguinte link:'
+	'juno_postback_msg'			=> 'Obs: Entre no painel da Juno, clique no menu "Plugins & API", no campo "NOTIFICAÇÃO DE PAGAMENTOS" coloque o seguinte link:',
+	'gateway_product_title'		=> 'Descrição do produto'
 );

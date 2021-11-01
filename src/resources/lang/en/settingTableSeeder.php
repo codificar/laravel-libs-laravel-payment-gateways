@@ -3,9 +3,8 @@
 return array(
 
 	'default_pay_gate'						=> 'Standard Payment Intermediary'
-	,'pay_encryption_key_me' 				=> 'Pagar.me Encryption Key'
+	,'pagarme_secret_key'					=> 'Pagar.me secret Key'
 	,'pagarme_recipient_id' 				=> 'Pagar.me Recipient Id'
-	,'pagarme_api_key' 						=> 'Pagar.me API Key'
 	,'stripe_secret' 						=> 'Stripe Private Key'
 	,'stripe_public' 						=> 'Stripe Public Key'
 	,'stripe_connect' 						=> 'Stripe Connect'
@@ -36,6 +35,6 @@ return array(
 	,'ipag_api_id'							=> 'Ipag API Id'
 	,'ipag_api_key'							=> 'Ipag API Key'
 	,'ipag_antifraud_title'					=> 'Transactions with anti-fraud undergo prior data validation. Score must be less than 0.3'
-	,'ipag_product_title'					=> 'Product/service nomenclature used in the gateway (ex.: Mobility service)'
+	,'gateway_product_title'				=> 'Product/service nomenclature used in the gateway (ex.: Mobility service)'
 
 );

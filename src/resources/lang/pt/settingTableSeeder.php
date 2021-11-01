@@ -3,9 +3,8 @@
 return array(
 
 	'default_pay_gate'						=> 'Intermediador Padrão de Pagamento'
-	,'pay_encryption_key_me' 				=> 'Chave de Criptografia do Pagar.me'
+	,'pagarme_secret_key'					=> 'Chave secreta Pagar.me'
 	,'pagarme_recipient_id' 				=> 'Id de Recebedor do Pagar.me'	
-	,'pagarme_api_key' 						=> 'Chave de API do Pagar.me'
 	,'stripe_secret' 						=> 'Chave Privada do Stripe'
 	,'stripe_public' 						=> 'Chave Pública do Stripe'
 	,'stripe_connect' 						=> 'Stripe Connect'
@@ -36,5 +35,5 @@ return array(
 	,'ipag_api_id'							=> 'Ipag API Id'
 	,'ipag_api_key'							=> 'Ipag API Key'
 	,'ipag_antifraud_title'					=> 'Transações com antifraude passam por validação prévia dos dados. Score precisa ser menor que 0.3'
-	,'ipag_product_title'					=> 'Nomenclatura do produto/serviço utilizada no gateway(ex.:Serviço de mobilidade)'
+	,'gateway_product_title'				=> 'Nomenclatura do produto/serviço utilizada no gateway(ex.:Serviço de mobilidade)'
 );

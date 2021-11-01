@@ -541,8 +541,8 @@ class IpagApi
             ),
             'products'          =>  array(
                 (object)array(
-                    'name'          =>  substr((string) Settings::findByKey('ipag_product_title'), 0, 80)." - ".$requestId,
-                    'description'   =>  substr((string) Settings::findByKey('ipag_product_title'), 0, 254),
+                    'name'          =>  substr((string) Settings::findByKey('gateway_product_title'), 0, 80)." - ".$requestId,
+                    'description'   =>  substr((string) Settings::findByKey('gateway_product_title'), 0, 254),
                     'unit_price'    =>  $amount,
                     'quantity'      =>  1,
                     'sku'           =>  "$requestId"

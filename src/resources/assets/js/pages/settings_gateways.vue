@@ -611,13 +611,13 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{ trans("setting.ipag_product_title") }}
+                      {{ trans("setting.gateway_product_title") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
                         :title="
-                          trans('settingTableSeeder.ipag_product_title')
+                          trans('settingTableSeeder.gateway_product_title')
                         "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
@@ -628,7 +628,7 @@ export default {
                       type="text"
                       class="form-control input-ipag"
                       maxlength="80"
-                      v-model="gateways.ipag.ipag_product_title"
+                      v-model="gateways.ipag.gateway_product_title"
                     />
                     <div class="help-block with-errors"></div>
                   </div>
@@ -720,13 +720,13 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{ trans("setting.pay_encryption_key_me") }}
+                      {{ trans("setting.pagarme_secret_key") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
                         :title="
-                          trans('settingTableSeeder.pay_encryption_key_me')
+                          trans('settingTableSeeder.pagarme_secret_key')
                         "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
@@ -770,12 +770,12 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{ trans("setting.pagarme_api_key") }}
+                      {{ trans("setting.gateway_product_title") }}
                       <a
                         href="#"
                         class="question-field"
                         data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.pagarme_api_key')"
+                        :title="trans('settingTableSeeder.gateway_product_title')"
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
                       </a>
@@ -784,7 +784,7 @@ export default {
                     <input
                       type="text"
                       class="form-control input-pagarme"
-                      v-model="gateways.pagarme.pagarme_api_key"
+                      v-model="gateways.pagarme.gateway_product_title"
                     />
                     <div class="help-block with-errors"></div>
                   </div>

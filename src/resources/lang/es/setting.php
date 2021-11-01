@@ -67,9 +67,8 @@ return array(
 	'mercadopago_settings'		=> 'Configuración de pago del mercado',
 	'pagarapido_settings'		=> 'Configuración de Paga Rapido',
 	'advanced_settings'			=> 'Configuraciones avanzadas',
-	'pay_encryption_key_me'		=> 'Clave de cifrado de Pagar.me',
+	'pagarme_secret_key'		=> 'Clave secreta Pagar.me',
 	'pagarme_recipient_id'		=> 'Identificación del destinatario de Pagar.me',
-	'pagarme_api_key'			=> 'Clave API de Pagar.me',
 	'byebnk_api_key'			=> 'ByeBnk API key',
 	'byebnk_api_user'			=> 'ID de usuario de ByeBnk',
 	'stripe_secret'				=> 'Clave privada de banda',
@@ -191,5 +190,6 @@ return array(
 	'card_success_added' 		=> '¡Tarjeta agregada correctamente!',
 	'nomenclatures' 			=> 'Nomenclaturas',
 	'custom_nomenclatures'		=> 'Nomenclaturas Personalizadas',
-	'juno_postback_msg'			=> 'Nota: Ingrese al panel de Juno, haga clic en el menú "Complementos y API", en el campo "NOTIFICACIÓN DE PAGO", coloque el siguiente enlace:'
+	'juno_postback_msg'			=> 'Nota: Ingrese al panel de Juno, haga clic en el menú "Complementos y API", en el campo "NOTIFICACIÓN DE PAGO", coloque el siguiente enlace:',
+	'gateway_product_title'		=> 'Descripción de lo producto'
 );
