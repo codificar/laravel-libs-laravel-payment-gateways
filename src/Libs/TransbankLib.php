@@ -508,6 +508,16 @@ class TransbankLib implements IPayment
         }
     }
 
+    public function pixCharge($holder, $amount)
+    {
+        \Log::error('pix_not_implemented');
+        return array(
+            "success" 			=> false,
+            "image_base64"      => '',
+            "transaction_id" 	=> ''
+        );
+    }
+
     private static function getTransbankCommerceCode(){
 		$settings = Settings::where('key', 'transbank_commerce_code')->first();
 

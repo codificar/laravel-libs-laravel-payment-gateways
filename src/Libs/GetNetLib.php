@@ -730,4 +730,14 @@ class GetNetLib implements IPayment
         else 
             return $keywords_currency;
     }
+
+    public function pixCharge($holder, $amount)
+    {
+        \Log::error('pix_not_implemented');
+        return array(
+            "success" 			=> false,
+            "image_base64"      => '',
+            "transaction_id" 	=> ''
+        );
+    }
 }

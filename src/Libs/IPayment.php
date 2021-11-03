@@ -222,4 +222,18 @@ interface IPayment
      *                     ]
      */
     public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description);
+
+    /**
+     * Create a pix charge
+     *
+     * @param Decimal       $amount         A positive decimal representing how much to charge.
+     * @return Array       [
+     *                      'success',
+     *                      'qr_code_base64'
+     *                      'copy_and_paste'
+	 *                      'transaction_id'
+     *                     ]
+     */
+    public function pixCharge($holder, $amount);
+
 }
