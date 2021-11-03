@@ -507,4 +507,37 @@ Class JunoLib implements IPayment
         );
     }
 
+    public function pixCharge($holder, $amount, $description = null)
+    {
+        try {
+            $juno = new JunoApi();
+            $response = $juno->pixCharge($amount);
+			if($response) {
+				return array(
+					"success" 			=> true,
+					"qr_code_base64"    => $response->imagemBase64,
+                    "copy_and_paste"    => base64_decode($response->qrcodeBase64),
+					"transaction_id" 	=> $response->txid
+				);
+			} else {
+                \Log::error('Error juno pix 1');
+                return array(
+                    "success" 			=> false,
+					"qr_code_base64"    => '',
+                    "copy_and_paste"    => '',
+					"transaction_id" 	=> ''
+                );
+            }
+		} catch (Exception $th) {
+			\Log::error('Error juno pix 2.');
+            \Log::error($th->getMessage());
+			return array(
+                "success" 			=> false,
+                "qr_code_base64"    => '',
+                "copy_and_paste"    => '',
+                "transaction_id" 	=> ''
+            );
+		}
+        
+    }
 }

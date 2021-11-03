@@ -513,7 +513,8 @@ class TransbankLib implements IPayment
         \Log::error('pix_not_implemented');
         return array(
             "success" 			=> false,
-            "image_base64"      => '',
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => '',
             "transaction_id" 	=> ''
         );
     }

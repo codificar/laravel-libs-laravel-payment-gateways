@@ -314,6 +314,62 @@ class JunoApi {
         }
     }
 
+    public function pixCharge($amount) {
+
+        try {
+            $headersOk = $this->setHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('POST', 'pix-api/v2/cob', [
+                    'headers' => $this->headers,
+                    'json' => [
+                        'calendario' => array(
+                            'expiracao' => 3600 // 1 hora para expirar o pix (3600 segundos)
+                        ),
+                        'valor' => array(
+                            'original' => 1.00
+                        ),
+                        'chave' => 'c6502b66-dee4-4d2d-aed9-18dc974f7336',
+                        'solicitacaoPagador' => 'Prestação de Serviço'
+                    ]
+                    
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 201) {
+
+                    $res = json_decode($response->getBody());
+                    try {
+                        $headersOk = $this->setHeaders();
+                        if($headersOk) {
+                            $responsePix = $this->guzzle->request('GET', 'pix-api/qrcode/v2/' . $res->txid . '/imagem', [
+                                'headers' => $this->headers
+                            ]);
+                            if($responsePix->getStatusCode() == 200 || $responsePix->getStatusCode() == 201) {
+                                $arr = json_decode($responsePix->getBody());
+                                $arr->txid = $res->txid;
+                                return $arr;
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                        
+                    } catch (RequestException $e) {
+                        \Log::error("pix juno qr code error");
+                        \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+                        return false;
+                    }
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("pix juno error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
     public function createDigitalAccount($ledgerBankAccount) {
         try {
             $headersOk = $this->setHeaders();
@@ -392,5 +448,15 @@ class JunoApi {
 
 		return $word;
 	}
+
+    public function guidv4()
+    {
+        $data = random_bytes(16);
+
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // set version to 0100
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
     
 }
