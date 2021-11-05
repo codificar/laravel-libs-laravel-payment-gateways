@@ -30,6 +30,7 @@ class GatewaysController extends Controller
        ,array('value' => '7', 'name' => 'setting.saturday')
     );
     
+    //credit card gateways
     public $keys_gateways = [
         'pagarme' => [
             'pagarme_encryption_key',
@@ -121,6 +122,20 @@ class GatewaysController extends Controller
         ],
     ];
 
+    //pix gateways
+    public $keys_pix_gateways = [
+        'juno' => [
+            'pix_juno_client_id',
+            'pix_juno_secret',
+            'pix_juno_resource_token',
+            'pix_juno_public_token',
+            'pix_juno_auth_token',
+            'pix_juno_auth_token_expiration_date',
+            'pix_juno_sandbox',
+            'pix_juno_random_key'
+        ]
+    ];
+
     public $payment_gateways =  array(
         array('value' => 'pagarme', 'name' => 'setting.pagarme'),
         array('value' => 'stripe', 'name' => 'setting.stripe'),
@@ -148,9 +163,12 @@ class GatewaysController extends Controller
         'payment_debitCard',
         'payment_balance',
         'payment_prepaid',
-        'payment_billing'
+        'payment_billing',
+        'payment_direct_pix',
+        'payment_gateway_pix'
     );
 
+    //Custom names of payment methods
     public $name_keys_payment_methods =  array(
         'name_payment_money',
         'name_payment_card',
@@ -171,7 +189,10 @@ class GatewaysController extends Controller
         'prepaid_billet_corp',
         'prepaid_card_user',
         'prepaid_card_provider',
-        'prepaid_card_corp'
+        'prepaid_card_corp',
+        'prepaid_pix_user',
+        'prepaid_pix_provider',
+        'prepaid_pix_corp'
     );
 
     public $keys_settings = array(
@@ -204,6 +225,18 @@ class GatewaysController extends Controller
             foreach ($values as $value) {
                 $temp_setting = Settings::where('key', '=', $value)->first();
                 $gateways[$key][$value] = $temp_setting ? $temp_setting->value : null;
+            }
+        }   
+
+        //configuracoes dos gateways pix
+        $pix_gateways = array();
+        $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
+
+        //recupera as chaves de todos os gateways de pix
+        foreach ($this->keys_pix_gateways as $key => $values) {
+            foreach ($values as $value) {
+                $temp_setting = Settings::where('key', '=', $value)->first();
+                $pix_gateways[$key][$value] = $temp_setting ? $temp_setting->value : null;
             }
         }   
         
@@ -253,6 +286,7 @@ class GatewaysController extends Controller
             ->with([
                 'payment_methods' => $payment_methods,
                 'gateways' => $gateways,
+                'pix_gateways' => $pix_gateways,
                 'carto' => $carto,
                 'bancryp' => $bancryp,
                 'prepaid' => $prepaid,
@@ -313,12 +347,16 @@ class GatewaysController extends Controller
         //Salva o gateway de cartao de credito escolhido
         $this->updateOrCreateSettingKey('default_payment', $newGateway);
 
+        //Salva o gateway de pix escolhido
+        $pixGateway = $request->pix_gateways['default_payment_pix'];
+        $this->updateOrCreateSettingKey('default_payment_pix', $pixGateway);
+
         //salva os dias de compensacao futura
         if(isset($request->gateways['compensate_provider_days']) ) {
             $this->updateOrCreateSettingKey('compensate_provider_days', $request->gateways['compensate_provider_days']);
         }
        
-        //salva as chaves do gateway escolhido
+        //salva as chaves do gateway de cartao escolhido
         if($newGateway) {
             foreach ($request->gateways[$newGateway] as $key => $value) {
                 //Verifica se a key do gateway existe
@@ -327,6 +365,17 @@ class GatewaysController extends Controller
                 }
             }
         }
+
+        //salva as chaves do gateway de pix escolhido
+        if($pixGateway) {
+            foreach ($request->pix_gateways[$pixGateway] as $key => $value) {
+                //Verifica se a key do gateway existe
+                if(in_array($key, $this->keys_pix_gateways[$pixGateway])) {
+                    $this->updateOrCreateSettingKey($key, $value);
+                }
+            }
+        }
+        
        
 
         //Salva o gateway de boleto do faturamento

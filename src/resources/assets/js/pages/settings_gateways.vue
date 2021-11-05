@@ -2,11 +2,13 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
+  props: ["PaymentMethods", "Gateways", "PixGateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
   data() {
     return {
       gateways: {},
+      pix_gateways : {},
       payment_methods: {},
+      prepaid: {},
 			carto: {},
       certificates: {},
       nomenclatures: {}
@@ -28,6 +30,7 @@ export default {
               .post("/libs/settings/save/gateways", {
                 payment_methods: this.payment_methods,
                 gateways: this.gateways,
+                pix_gateways: this.pix_gateways,
 								carto: this.carto,
 								bancryp: this.bancryp,
 								prepaid: this.prepaid,
@@ -100,6 +103,7 @@ export default {
   created() {
     this.PaymentMethods ? (this.payment_methods = JSON.parse(this.PaymentMethods)) : null;
     this.Gateways ? (this.gateways = JSON.parse(this.Gateways)) : null;
+    this.PixGateways ? (this.pix_gateways = JSON.parse(this.PixGateways)) : null;
 		this.Carto ? (this.carto = JSON.parse(this.Carto)) : null;
 		this.Bancryp ? (this.bancryp = JSON.parse(this.Bancryp)) : null;
 		this.Prepaid ? (this.prepaid = JSON.parse(this.Prepaid)) : null;
@@ -235,6 +239,42 @@ export default {
                   <label class="form-check-label" for="payment_billing">{{
                     trans("setting.payment_billing")
                   }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_direct_pix"
+                    v-model="payment_methods.payment_direct_pix"
+                  />
+                  <label class="form-check-label" for="payment_direct_pix">
+                    {{ trans("setting.payment_direct_pix") }}
+                    <a
+                      href="#"
+                      class="question-field"
+                      data-toggle="tooltip"
+                      :title="trans('setting.payment_direct_pix_msg')"
+                      ><span class="mdi mdi-comment-question-outline"></span
+                    ></a>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_gateway_pix"
+                    v-model="payment_methods.payment_gateway_pix"
+                  />
+                  <label class="form-check-label" for="payment_gateway_pix">
+                    {{ trans("setting.payment_gateway_pix") }}
+                    <a
+                      href="#"
+                      class="question-field"
+                      data-toggle="tooltip"
+                      :title="trans('setting.payment_gateway_pix_msg')"
+                      ><span class="mdi mdi-comment-question-outline"></span
+                    ></a>
+                  </label>
                 </div>
               </div>
             </div>
@@ -2078,7 +2118,7 @@ export default {
           </div>
 
           <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-4">
               <div class="panel-heading">
                 <h3 class="panel-title">
                   {{ trans("setting.prepaid_billet") }}
@@ -2122,7 +2162,7 @@ export default {
                 </div>
               </div>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-4">
               <div class="panel-heading">
                 <h3 class="panel-title">
                   {{ trans("setting.prepaid_card") }}
@@ -2164,6 +2204,50 @@ export default {
                 </div>
               </div>
             </div>
+            <div class="col-lg-4">
+              <div class="panel-heading">
+                <h3 class="panel-title">
+                  {{ trans("setting.prepaid_pix") }}
+                </h3>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_pix_user"
+                    v-model="prepaid.prepaid_pix_user"
+                  />
+                  <label class="form-check-label" for="prepaid_pix_user">{{
+                    trans("setting.user")
+                  }}</label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_pix_provider"
+                    v-model="prepaid.prepaid_pix_provider"
+                  />
+                  <label
+                    class="form-check-label"
+                    for="prepaid_pix_provider"
+                    >{{ trans("setting.provider") }}</label
+                  >
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="prepaid_pix_corp"
+                    v-model="prepaid.prepaid_pix_corp"
+                  />
+                  <label class="form-check-label" for="prepaid_pix_corp">{{
+                    trans("setting.corp")
+                  }}</label>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="row">
             <div class="col-lg-12">
@@ -2179,6 +2263,9 @@ export default {
                     ><span class="mdi mdi-comment-question-outline"></span
                   ></a>
               </span>
+            </div>
+            <div class="col-lg-12">
+              <span>{{ trans("setting.obs_pix_prepaid") }}</span>
             </div>
           </div>
         </div>
@@ -2414,6 +2501,222 @@ export default {
       </div>
     </div>
     <!-- / Boleto -->
+
+
+    <!-- gateway pix -->
+    <!-- As configuracoes do pix eh ativada quando existe a forma de pagamento pix OU quando o pix prepago esta ativado-->
+    <div v-if="payment_methods.payment_gateway_pix || prepaid.prepaid_pix_corp || prepaid.prepaid_pix_provider || prepaid.prepaid_pix_user" class="card-margin-top">
+      <div class="card-outline-info">
+        <div class="card-header">
+          <h4 class="m-b-0 text-white">
+            {{ trans("setting.payment_gateway_pix") }}
+          </h4>
+        </div>
+        <div class="card-block">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.default_pay_gateway_pix") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="trans('setting.default_pay_gateway_pix')"
+                    ><span class="mdi mdi-comment-question-outline"></span
+                  ></a>
+                  <span class="required-field">*</span>
+                </label>
+                <select
+                  v-model="pix_gateways.default_payment_pix"
+                  name="default_payment_pix"
+                  class="select form-control"
+                >
+                  <option value="juno">juno</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!--Configurações de pix da juno-->
+          <div
+            class="panel panel-default juno"
+            v-if="pix_gateways.default_payment_pix == 'juno'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.juno_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pix_juno_client_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pix_juno_client_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-juno"
+                      v-model="pix_gateways.juno.pix_juno_client_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pix_juno_secret") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pix_juno_secret')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-juno"
+                      v-model="pix_gateways.juno.pix_juno_secret"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pix_juno_resource_token") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pix_juno_resource_token')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-juno"
+                      v-model="pix_gateways.juno.pix_juno_resource_token"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pix_juno_public_token") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pix_juno_public_token')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-juno"
+                      v-model="pix_gateways.juno.pix_juno_public_token"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pix_juno_random_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.pix_juno_random_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-juno"
+                      v-model="pix_gateways.juno.pix_juno_random_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.operation_mode") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.operation_mode')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <select
+                      v-model="pix_gateways.juno.pix_juno_sandbox"
+                      class="select form-control"
+                      required
+                    >
+                      <option value="0">{{ trans("setting.production") }}</option>
+                      <option value="1"> {{ trans("setting.Sandbox") }} </option>
+                    </select>
+                  </div>
+                </div>
+                <!-- this will reset juno auth token and expiration date if save config. It's importante, because when change gateway sandbox to production, its need reset-->
+                <div class="col-lg-6">
+                  {{this.pix_gateways.juno.pix_juno_auth_token = ""}}
+                  {{this.pix_gateways.juno.pix_juno_auth_token_expiration_date = ""}}
+                </div>
+              </div>
+              <div style="align-items:center">
+                <p> {{ trans("setting.juno_postback_msg") + " "}}</p>
+                <p style="color: blue"> {{ getOriginUrl() + '/libs/finance/postback/juno' }}</p>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações de boleto do gerencianet-->
+        </div>
+      </div>
+    </div>
+    <!-- / gateway pix -->
 
     <!--Save-->
     <div
