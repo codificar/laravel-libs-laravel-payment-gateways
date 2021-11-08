@@ -59,9 +59,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
-		Settings::where('key', 'pagarme_encryption_key')->update(['value' => 'ek_test_pHEXVtJxrD2z7BR2k3vABIcQhg9Lob']);
+		Settings::where('key', 'pagarme_secret_key')->update(['value' => 'pk_test_pHEXVtJxrD2z7BR2k3vABIcQhg9Lob']);
 		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 're_ckfcykeja0c5psw6eq7ohg6wx']);
-		Settings::where('key', 'pagarme_api_key')->update(['value' => 'ak_test_PlTjytFjSz5RLwcUK9TFssfmKMac8y']);
 
 		$this->runInterfaceGateways($gateway);
 		$this->runSPlitGateways($gateway);
