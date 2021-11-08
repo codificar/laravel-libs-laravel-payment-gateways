@@ -199,7 +199,7 @@ return array(
 	'default_pay_gateway_pix'	=> 'Intermediario estándar de pago por Pix',
 	'prepaid_pix'				=> 'Inserción de equilibrio Pix',
 	'obs_pix_prepaid'			=> '- Los pagos con Pix necesitan una pasarela de pago.',
-	'pix_juno_random_key'		=> 'clave de Pix aleatoria',
+	'pix_key'					=> 'Clave de Pix Aleatoria',
 	
 	'pix_juno_settings'			=> 'Juno ajustes',
 	'pix_juno_client_id'		=> 'Client ID',

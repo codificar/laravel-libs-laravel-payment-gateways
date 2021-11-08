@@ -26,12 +26,12 @@ class AllGatewaysTest extends TestCase
 
 		//Change the pix keys
 		Settings::where('key', 'default_payment_pix')->update(['value' => $gateway]);
+		Settings::where('key', 'pix_key')->update(['value' => 'c6502b66-dee4-4d2d-aed9-18dc974f7336']);
 		Settings::where('key', 'pix_juno_client_id')->update(['value' => 'cOl1gRnf2twWH2IT']);
 		Settings::where('key', 'pix_juno_secret')->update(['value' => 'J9?+Y+Gy8fFZXiDJ?8LY20=gS_Y2{S<T']);
 		Settings::where('key', 'pix_juno_resource_token')->update(['value' => 'F3F843CBE1C9F52528BEC2C8DB6B172C6A763C26CB16757B79B39F7F83DBDA1A']);
 		Settings::where('key', 'pix_juno_public_token')->update(['value' => '80F17BE20F828204BD9C382DD784F5DBDA8E2838000D8E28A562E502FA7DC998']);
 		Settings::where('key', 'pix_juno_sandbox')->update(['value' => '1']);
-		Settings::where('key', 'pix_juno_random_key')->update(['value' => 'c6502b66-dee4-4d2d-aed9-18dc974f7336']);
 
 		$this->runInterfaceGateways($gateway);
 		$this->runPix($gateway);

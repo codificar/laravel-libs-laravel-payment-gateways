@@ -131,8 +131,7 @@ class GatewaysController extends Controller
             'pix_juno_public_token',
             'pix_juno_auth_token',
             'pix_juno_auth_token_expiration_date',
-            'pix_juno_sandbox',
-            'pix_juno_random_key'
+            'pix_juno_sandbox'
         ]
     ];
 
@@ -231,7 +230,7 @@ class GatewaysController extends Controller
         //configuracoes dos gateways pix
         $pix_gateways = array();
         $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
-
+        $pix_gateways['pix_key'] = Settings::findByKey('pix_key');
         //recupera as chaves de todos os gateways de pix
         foreach ($this->keys_pix_gateways as $key => $values) {
             foreach ($values as $value) {
@@ -350,6 +349,7 @@ class GatewaysController extends Controller
         //Salva o gateway de pix escolhido
         $pixGateway = $request->pix_gateways['default_payment_pix'];
         $this->updateOrCreateSettingKey('default_payment_pix', $pixGateway);
+        $this->updateOrCreateSettingKey('pix_key', $request->pix_gateways['pix_key']);
 
         //salva os dias de compensacao futura
         if(isset($request->gateways['compensate_provider_days']) ) {

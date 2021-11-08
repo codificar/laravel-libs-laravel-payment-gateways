@@ -200,7 +200,7 @@ return array(
 	'default_pay_gateway_pix'	=> 'Intermediador Padrão de Pagamento por Pix',
 	'prepaid_pix'				=> 'Inserção de saldo Pix',
 	'obs_pix_prepaid'			=> '- Pagamentos por pix precisam de gateway de pagamento.',
-	'pix_juno_random_key'		=> 'Chave Pix Aleatória',
+	'pix_key'					=> 'Chave Pix Aleatória',
 	
 	'pix_juno_settings'			=> 'Juno Configurações',
 	'pix_juno_client_id'		=> 'Client ID',

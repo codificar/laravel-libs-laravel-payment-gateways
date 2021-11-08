@@ -2536,6 +2536,30 @@ export default {
                 </select>
               </div>
             </div>
+            <div class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.pix_key") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="
+                      trans('setting.pix_key')
+                    "
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="pix_gateways.pix_key"
+                />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
           </div>
 
           <!--Configurações de pix da juno-->
@@ -2653,30 +2677,6 @@ export default {
               </div>
 
               <div class="row">
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.pix_juno_random_key") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('setting.pix_juno_random_key')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control input-juno"
-                      v-model="pix_gateways.juno.pix_juno_random_key"
-                    />
-                    <div class="help-block with-errors"></div>
-                  </div>
-                </div>
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">

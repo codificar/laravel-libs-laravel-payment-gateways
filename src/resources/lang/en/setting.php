@@ -201,7 +201,7 @@ return array(
 	'default_pay_gateway_pix'	=> 'Standard Pay Per Pix Intermediary',
 	'prepaid_pix'				=> 'Pis balance entry',
 	'obs_pix_prepaid'			=> '- Payments per pix need payment gateway.',
-	'pix_juno_random_key'		=> 'Pix Random Key',
+	'pix_key'					=> 'Pix Random Key',
 	
 	'pix_juno_settings'			=> 'Juno Settings',
 	'pix_juno_client_id'		=> 'Client ID',

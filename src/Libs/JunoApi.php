@@ -370,7 +370,7 @@ class JunoApi {
                         'valor' => array(
                             'original' => 1.00
                         ),
-                        'chave' => Settings::findByKey("pix_juno_random_key"),
+                        'chave' => Settings::findByKey("pix_key"),
                         'solicitacaoPagador' => 'Prestação de Serviço'
                     ]
                     
