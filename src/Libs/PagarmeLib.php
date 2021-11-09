@@ -3,7 +3,7 @@
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
-use Codificar\PaymentGateways\Libs\IpagApi;
+use Codificar\PaymentGateways\Libs\PagarmeApi;
 
 use ApiErrors;
 use Exception;
@@ -17,7 +17,7 @@ use Settings;
 // use RequestCharging;
 use Log;
 
-Class IpagLib implements IPayment
+Class PagarmeLib implements IPayment
 {
     /**
      * Payment status strings
@@ -74,7 +74,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
+            $response = PagarmeApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
 
             if (
                 isset($response->success) && 
@@ -133,7 +133,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $response = PagarmeApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
 
 			if(
                 isset($response->success) && 
@@ -192,7 +192,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-			$responseHooks = IpagApi::retrieveHooks();
+			$responseHooks = PagarmeApi::retrieveHooks();
 
 			if(
 				!isset($responseHooks->success) ||
@@ -208,7 +208,7 @@ Class IpagLib implements IPayment
 					"transaction_id"		=> ''
 				);
 
-            $response = IpagApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);
+            $response = PagarmeApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);
 
             if (
                 isset($response->success) ||
@@ -325,7 +325,7 @@ Class IpagLib implements IPayment
 					)
 				);
 
-			$response = IpagApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
+			$response = PagarmeApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
 			if(
                 isset($response->success) && 
@@ -382,7 +382,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-			$response = IpagApi::capture($transaction, $amount);
+			$response = PagarmeApi::capture($transaction, $amount);
 
             if(
                 isset($response->success) && 
@@ -463,7 +463,7 @@ Class IpagLib implements IPayment
     {
 		try
         {
-			$response = IpagApi::refund($transaction);
+			$response = PagarmeApi::refund($transaction);
 
 			if(
                 isset($response->success) && 
@@ -504,7 +504,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::retrieve($transaction);
+            $response = PagarmeApi::retrieve($transaction);
 
             if(
                 isset($response->success) && 
@@ -572,7 +572,7 @@ Class IpagLib implements IPayment
 			'card_type'		=>	detectCardType($cardNumber),
             'card_token'	=>	'',
             'token'	        =>	'',
-            'gateway'       => 'ipag'
+            'gateway'       => 'pagarme'
 		);
 
 		return $result;
@@ -605,7 +605,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
+            $newAccount = PagarmeApi::createOrUpdateAccount($ledgerBankAccount);
 
             if($newAccount->success && isset($newAccount->data->id))
             {
@@ -702,7 +702,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::debit($payment, $amount);
+            $response = PagarmeApi::debit($payment, $amount);
 
 			if(
                 isset($response->success) && 
@@ -807,7 +807,7 @@ Class IpagLib implements IPayment
     {
         try
         {
-            $response = IpagApi::pixCharge($amount, $user);
+            $response = PagarmeApi::pixCharge($amount, $user);
 
             if (
                 isset($response->success) ||

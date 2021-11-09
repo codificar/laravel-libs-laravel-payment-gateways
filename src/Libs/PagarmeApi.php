@@ -13,7 +13,7 @@ use LedgerBankAccount;
 use Settings;
 use Bank;
 
-class IpagApi
+class PagarmeApi
 {
     const URL  =   "https://api.pagar.me/core/v5";
 
