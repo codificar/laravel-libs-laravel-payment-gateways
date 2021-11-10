@@ -412,6 +412,29 @@ class JunoApi {
         }
     }
 
+    public function retrievePix($gateway_transaction_id) {
+
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('GET', 'pix-api/v2/cob/' . $gateway_transaction_id . '/', [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 201) {
+                    return json_decode($response->getBody());
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("retrieve pix juno error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
     public function createDigitalAccount($ledgerBankAccount) {
         try {
             $headersOk = $this->setHeaders();

@@ -540,4 +540,43 @@ Class JunoLib implements IPayment
 		}
         
     }
+
+    public function retrievePix($gateway_transaction_id)
+    {
+
+        try {
+            $juno = new JunoApi();
+            $response = $juno->retrievePix($gateway_transaction_id);
+			if($response) {
+                $transaction = Transaction::where('gateway_transaction_id', $gateway_transaction_id)->first();
+                return array(
+					"success" 			=> true,
+                    "paid"              => $response->status == "CONCLUIDA" ? true : false,
+                    "value"             => $transaction->gross_value,
+					"qr_code_base64"    => $transaction->pix_base64,
+                    "copy_and_paste"    => $transaction->pix_copy_paste,
+				);
+			} else {
+                \Log::error($th->getMessage());
+                \Log::error('retrieve_pix_error 1');
+                return array(
+                    "success" 			=> false,
+                    'paid'				=> false,
+                    "value" 			=> '',
+                    "qr_code_base64"    => '',
+                    "copy_and_paste"    => ''
+                );
+            }
+		} catch (Exception $th) {
+            \Log::error($th->getMessage());
+            \Log::error('retrieve_pix_error 2');
+            return array(
+                "success" 			=> false,
+                'paid'				=> false,
+                "value" 			=> '',
+                "qr_code_base64"    => '',
+                "copy_and_paste"    => ''
+            );
+		}
+    }
 }

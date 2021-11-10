@@ -287,4 +287,16 @@ class CartoLib implements IPayment
             "transaction_id" 	=> ''
         );
     }
+
+	public function retrievePix($transaction_gateway_id)
+    {
+        \Log::error('retrieve_pix_not_implemented');
+        return array(
+            "success" 			=> false,
+			'paid'				=> false,
+			"value" 			=> '',
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => ''
+        );
+    }
 }

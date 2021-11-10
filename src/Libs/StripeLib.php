@@ -1020,6 +1020,18 @@ class StripeLib implements IPayment
         );
     }
 
+	public function retrievePix($transaction_gateway_id)
+    {
+        \Log::error('retrieve_pix_not_implemented');
+        return array(
+            "success" 			=> false,
+			'paid'				=> false,
+			"value" 			=> '',
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => ''
+        );
+    }
+
 	/**
      * Check if currency is 3 char length. If not, get the 'BRL' as default
      * Verifica se o currency tem 3 caracteres. Se nao tiver, entao utiliza o BRL como default.
