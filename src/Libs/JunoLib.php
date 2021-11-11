@@ -15,6 +15,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Finance;
 
 Class JunoLib implements IPayment
 {
@@ -130,20 +131,33 @@ Class JunoLib implements IPayment
         if(isset($request->chargeCode) && $request->chargeCode) {
             //pega as possiveis transacoes que tem o charge code da juno.
             $possibleTransactions = Transaction::where('gateway_transaction_id', 'like', '%' . $request->chargeCode . '%')->get();
-            //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
-            foreach($possibleTransactions as $transaction) {
-                //verifica se essa transacao e uma transacao do tipo boleto 
-                if($transaction->billet_link) {
-                    $transactionIds = unserialize($transaction->gateway_transaction_id);
-                    if($transactionIds['code'] == $request->chargeCode) {
-                        $retrieve = $this->retrieve($transaction);
-                        if($retrieve['success'] && $retrieve['status']) {
-                            return [
-                                'success' => true,
-                                'status' => $retrieve['status'],
-                                'transaction_id' => $transaction->id
-                            ];
+            if($possibleTransactions) {
+                //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
+                foreach($possibleTransactions as $transaction) {
+                    //verifica se essa transacao e uma transacao do tipo boleto 
+                    if($transaction->billet_link) {
+                        $transactionIds = unserialize($transaction->gateway_transaction_id);
+                        if($transactionIds['code'] == $request->chargeCode) {
+                            $retrieve = $this->retrieve($transaction);
+                            if($retrieve['success'] && $retrieve['status']) {
+                                return [
+                                    'success' => true,
+                                    'status' => $retrieve['status'],
+                                    'transaction_id' => $transaction->id
+                                ];
+                            }
                         }
+                    }
+                }
+            } else { // se nao encontrou possiveis transactions, entao e um postback pix
+                // atualiza as transacoes pix
+                $transactions = Transaction::whereNotNull('pix_copy_paste')->where('created_at', '>', Carbon::yesterday())->where('status', 'waiting_payment')->get();
+                foreach($transactions as $tr) {
+                    $res = $this->retrievePix($tr->gateway_transaction_id);
+                    if($res && $res['paid']) {
+                        $finance = Finance::createCustomEntry($tr->ledger_id, Finance::SEPARATE_CREDIT, "Pagamento Pix", $tr->gross_value, null, null);
+                        $tr->status = 'paid';
+                        $tr->save();
                     }
                 }
             }
