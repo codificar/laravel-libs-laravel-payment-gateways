@@ -545,29 +545,40 @@ Class JunoLib implements IPayment
     {
 
         try {
-            $juno = new JunoApi();
-            $response = $juno->retrievePix($gateway_transaction_id);
-			if($response) {
-                $transaction = Transaction::where('gateway_transaction_id', $gateway_transaction_id)->first();
+            $transaction = Transaction::where('gateway_transaction_id', $gateway_transaction_id)->first();
+            //se ja esta pago, nao e necessario chamar api da juno para para verificar
+            if($transaction && $transaction->status == 'paid') {
                 return array(
-					"success" 			=> true,
-                    "paid"              => $response->status == "CONCLUIDA" ? true : false,
+                    "success" 			=> true,
+                    "paid"              => true,
                     "value"             => $transaction->gross_value,
-					"qr_code_base64"    => $transaction->pix_base64,
-                    "copy_and_paste"    => $transaction->pix_copy_paste,
-				);
-			} else {
-                \Log::error($th->getMessage());
-                \Log::error('retrieve_pix_error 1');
-                return array(
-                    "success" 			=> false,
-                    'paid'				=> false,
-                    "value" 			=> '',
-                    "qr_code_base64"    => '',
-                    "copy_and_paste"    => ''
+                    "qr_code_base64"    => $transaction->pix_base64,
+                    "copy_and_paste"    => $transaction->pix_copy_paste
                 );
+            } else {
+                $juno = new JunoApi();
+                $response = $juno->retrievePix($gateway_transaction_id);
+                if($response) {
+                    return array(
+                        "success" 			=> true,
+                        "paid"              => $response->status == "CONCLUIDA" ? true : false,
+                        "value"             => $transaction->gross_value,
+                        "qr_code_base64"    => $transaction->pix_base64,
+                        "copy_and_paste"    => $transaction->pix_copy_paste
+                    );
+                } else {
+                    \Log::error($th->getMessage());
+                    \Log::error('retrieve_pix_error 1');
+                    return array(
+                        "success" 			=> false,
+                        'paid'				=> false,
+                        "value" 			=> '',
+                        "qr_code_base64"    => '',
+                        "copy_and_paste"    => ''
+                    );
+                }
             }
-		} catch (Exception $th) {
+        } catch (Exception $th) {
             \Log::error($th->getMessage());
             \Log::error('retrieve_pix_error 2');
             return array(
@@ -577,6 +588,6 @@ Class JunoLib implements IPayment
                 "qr_code_base64"    => '',
                 "copy_and_paste"    => ''
             );
-		}
+        }
     }
 }
