@@ -59,11 +59,11 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
 
 		//Change the keys
-		Settings::where('key', 'pagarme_secret_key')->update(['value' => 'pk_test_pHEXVtJxrD2z7BR2k3vABIcQhg9Lob']);
-		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 're_ckfcykeja0c5psw6eq7ohg6wx']);
+		Settings::where('key', 'pagarme_secret_key')->update(['value' => 'sk_test_QZJV0vs9OuAKwWDn']);
+		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 'rp_RjMAPEjHXFj6qNeE']);
 
-		$this->runInterfaceGateways($gateway);
-		$this->runSPlitGateways($gateway);
+		$this->runInterfaceGateways($gateway, "342793631858229", false, 5);
+		$this->runSPlitGateways($gateway, "342793631858229", false, 5);
 	}
 
 	public function testCielo() {
@@ -246,9 +246,12 @@ class AllGatewaysTest extends TestCase
 		$this->runInterfaceGateways($gateway);
 	}
 
-    private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070', $isTerraCard = false){
+	//$delay is a waiting time between requests
+    private function runInterfaceGateways($gateway, $cardNumber = '5420222734962070', $isTerraCard = false, $delay = 0){
 		$interface = new GatewaysInterfaceTest();
 		
+		if($delay)
+			sleep($delay);
 		//Cria o cartao e verifica se todos os parametros estao ok
 		$createCard = $interface->testCreateCard($cardNumber, $isTerraCard);
 		$this->assertTrue($createCard['success']);
@@ -265,6 +268,8 @@ class AllGatewaysTest extends TestCase
 
 		$cardId = $createCard['payment']['id'];
 		
+		if($delay)
+			sleep($delay);
 		//Realiza uma cobranca direta e sem split
 		\Log::debug("gateway: " . $gateway . " - cardId: " . $cardId);
 		$charge = $interface->testCharge($cardId, $isTerraCard);
@@ -277,6 +282,8 @@ class AllGatewaysTest extends TestCase
 		$this->assertNotEmpty($charge['transaction_id']);
 		echo "\n".$gateway." - charge sem split: ok";
 
+		if($delay)
+			sleep($delay);
 		//Realiza uma pre-autorizacao (chargeNoCapture) sem split
 		if($gateway != 'pagarapido') { //nao testa chargeNoCapture no gateway pagarapido, pois ele nao tem essa funcionalidade
 			$chargeNoCapture = $interface->testChargeNoCapture($cardId, $isTerraCard);
@@ -301,6 +308,8 @@ class AllGatewaysTest extends TestCase
 			$chargeNoCapture['transaction_id'] = $charge['transaction_id'];
 		}
 
+		if($delay)
+			sleep($delay);
 		//Faz o cancelamento da transacao
 		$refund = $interface->testRefund($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($refund['success']);
@@ -309,6 +318,8 @@ class AllGatewaysTest extends TestCase
 		$this->assertNotEmpty($refund['transaction_id']);
 		echo "\n".$gateway." - refunded: ok";
 
+		if($delay)
+			sleep($delay);
 		//retrieve (recuperar os dados) a transaction
 		$retrieve = $interface->testRetrieve($chargeNoCapture['transaction_id'], $cardId);
 		$this->assertTrue($retrieve['success']);
@@ -322,7 +333,8 @@ class AllGatewaysTest extends TestCase
 		$this->assertNotEmpty($retrieve['card_last_digits']);
 		echo "\n".$gateway." - retrieve: ok";
 
-
+		if($delay)
+			sleep($delay);
 		//billetCharge (boleto bancario)
 		if($gateway != 'stripe' && $gateway != 'adiq' && $gateway != 'braspag') { //stripe nao possui boleto, entao nao eh verificado no teste
 			$billet = $interface->testBilletCharge();
@@ -335,14 +347,19 @@ class AllGatewaysTest extends TestCase
 		}
 	}
 
-	private function runSPlitGateways($gateway, $cardNumber = '5420222734962070'){
+	//$delay is a waiting time between requests
+	private function runSPlitGateways($gateway, $cardNumber = '5420222734962070', $delay = 0){
 		$interface = new GatewaysInterfaceTest();
 		
+		if($delay)
+			sleep($delay);
 		//Cria o cartao
 		$createCard = $interface->testCreateCard($cardNumber);
 		$this->assertTrue($createCard['success']);
 		$cardId = $createCard['payment']['id']; 
 		
+		if($delay)
+			sleep($delay);
 		//cria conta bancaria
 		$charge = $interface->testCreateOrUpdateAccount($cardId);
 		$this->assertTrue($charge['success']);
@@ -350,12 +367,16 @@ class AllGatewaysTest extends TestCase
 		$this->assertNotEmpty($charge['recipient_id']);
 		echo "\n".$gateway." - criar conta do prestador (Recipient): ok";
 
+		if($delay)
+			sleep($delay);
 		//Realiza uma cobranca direta com split
 		$charge = $interface->testChargeWithSplit($cardId, true);
 		$this->assertTrue($charge['success']);
 		$this->assertEquals($charge['status'], 'paid');
 		echo "\n".$gateway." - charge com split: ok";
 
+		if($delay)
+			sleep($delay);
 		//Realiza um charge no capture com split
 		$chargeNoCaptureWithSplit = $interface->testChargeWithSplit($cardId, false);
 		$this->assertTrue($chargeNoCaptureWithSplit['success']);

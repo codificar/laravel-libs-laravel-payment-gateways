@@ -5,6 +5,7 @@ namespace Tests\libs\gateways;
 use Hash, Crypt;
 use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
+use Location;
 
 class GatewaysInterfaceTest {
 
@@ -254,22 +255,27 @@ class GatewaysInterfaceTest {
 			$newProvider->device_token	= generate_token();
 			$newProvider->timezone		= 'UTC';
 			$newProvider->status_id		= $status->id;
-			$newProvider->location_id	= null;
+			$newProvider->location_id	= Location::first()->id;
 			$newProvider->address_number= 375;
 			$newProvider->address_neighbour = 'Centro';
 			$newProvider->address_city  = 'Belo Horizonte';
 			$newProvider->last_activity = date('Y-m-d H:i:s');
 			$newProvider->register_step = 'approved';
-			$newProvider->cnh 			= '65675221000105';
+			$newProvider->cnh 			= '65675221000';
 			$newProvider->car_brand 	= 'Ford';
 			$newProvider->car_number 	= 'QWE-0134';
 			$newProvider->car_model 	= 'Focus';
 			$newProvider->is_active     = 1;
 			$newProvider->is_available  = 1;
 			$newProvider->is_approved   = 1;
-			if(isset($newProvider->position)) {
-				$newProvider->position   	= new Point(-19.922324, -43.941561);
-			}
+			$newProvider->activation_code = '587162c53087e';
+			$newProvider->residencia	= 0;
+			$newProvider->banking		= 0;
+			$newProvider->crlv			= 0;
+			$newProvider->register_rejected = 0;
+			$newProvider->all_docs		= 1;
+			$newProvider->receiving_request = 0;
+			$newProvider->position  = new Point(-19.922324, -43.941561);
 			
 			$newProvider->save();
 

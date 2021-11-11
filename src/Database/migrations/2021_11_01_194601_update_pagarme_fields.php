@@ -38,6 +38,21 @@ class UpdatePagarmeFields extends Migration
                 'sub_category' => '0'
             ]
         );
+
+        Settings::updateOrCreate(
+            ['key' => 'ipag_product_title'],
+            [
+                'key' => 'gateway_product_title',
+                'value' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'tool_tip' => 'Gateway product title',
+                'page' => '1',
+                'category' => '6',
+                'sub_category' => '0'
+            ]
+        );
+
     }
 
     /**
@@ -80,5 +95,20 @@ class UpdatePagarmeFields extends Migration
 
         if($token = Settings::whereKey('pagarme_token')->first())
             $token->delete();
+
+        Settings::updateOrCreate(
+            ['key' => 'gateway_product_title'],
+            [
+                'key' => 'ipag_product_title',
+                'value' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'tool_tip' => 'Ipag product title',
+                'page' => '1',
+                'category' => '6',
+                'sub_category' => '0'
+            ]
+        );
+
     }
 }

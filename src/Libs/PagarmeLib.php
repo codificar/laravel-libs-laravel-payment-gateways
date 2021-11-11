@@ -81,11 +81,11 @@ Class PagarmeLib implements IPayment
                 $response->success && 
                 isset($response->data) && 
                 (
-                    $response->data->charges[0]->status == self::GATEWAY_CAPTURED ||
-                    $response->data->charges[0]->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
                 )
             ){
-                $statusMessage = $response->data->charges[0]->status;
+                $statusMessage = $response->data->charges[0]->last_transaction->status;
 				$result = array (
 					'success' 		    => true,
 					'status' 		    => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'authorized',
@@ -140,11 +140,11 @@ Class PagarmeLib implements IPayment
                 $response->success && 
                 isset($response->data) &&
                 (
-                    $response->data->charges[0]->status == self::GATEWAY_CAPTURED ||
-                    $response->data->charges[0]->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
                 )
             ){
-                $statusMessage = $response->data->charges[0]->status;
+                $statusMessage = $response->data->charges[0]->last_transaction->status;
 				$result = array (
                     'success'           =>  true,
                     'captured'          =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,
@@ -192,22 +192,6 @@ Class PagarmeLib implements IPayment
     {
         try
         {
-			$responseHooks = PagarmeApi::retrieveHooks();
-
-			if(
-				!isset($responseHooks->success) ||
-				!$responseHooks->success ||
-				!isset($responseHooks->data->data) ||
-				!count($responseHooks->data->data)
-			)
-				return array(
-					"success" 				=> false,
-					"type" 					=> 'api_charge_error',
-					"code" 					=> '',
-					"message" 				=> '',
-					"transaction_id"		=> ''
-				);
-
             $response = PagarmeApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);
 
             if (
@@ -217,7 +201,7 @@ Class PagarmeLib implements IPayment
             )
                 return array (
                     'success'                   =>  true,
-                    'captured'                  =>  true,
+                    'captured'                  =>  false,
                     'paid'                      =>  false,
                     'status'                    =>  self::WAITING_PAYMENT,
                     'transaction_id'            =>  (string)$response->data->charges[0]->id,
@@ -332,11 +316,11 @@ Class PagarmeLib implements IPayment
                 $response->success && 
                 isset($response->data) && 
                 (
-                    $response->data->charges[0]->status == self::GATEWAY_CAPTURED ||
-                    $response->data->charges[0]->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
+                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
                 )
             ){
-                $statusMessage = $response->data->charges[0]->status;
+                $statusMessage = $response->data->charges[0]->last_transaction->status;
 				$result = array (
 					'success' 		 => true,
 					'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
@@ -388,16 +372,16 @@ Class PagarmeLib implements IPayment
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) && 
-                $response->data->charges[0]->status == self::GATEWAY_CAPTURED
+                $response->data->last_transaction->status == self::GATEWAY_CAPTURED
             ){
-                $statusMessage = $response->data->charges[0]->status;
+                $statusMessage = $response->data->last_transaction->status;
 
 				return array (
 					'success' 		 => true,
 					'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
 					'paid' 			 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
 					'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
-					'transaction_id' => (string)$response->data->charges[0]->id
+					'transaction_id' => (string)$response->data->id
 				);
 
 			} else {
@@ -469,12 +453,12 @@ Class PagarmeLib implements IPayment
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) && 
-                $response->data->charges[0]->status == 'CANCELED'
+                $response->data->last_transaction->status == self::GATEWAY_REFUNDED
             ){
                 $result = array(
                     "success"           =>  true ,
                     "status"            =>  'refunded',
-                    "transaction_id"    =>  (string)$response->data->charges[0]->id                   
+                    "transaction_id"    =>  (string)$response->data->id                   
                 );
                 
                 return $result;
@@ -510,14 +494,14 @@ Class PagarmeLib implements IPayment
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) && 
-                isset($response->data->charges[0]->status)
+                isset($response->data->last_transaction->status)
             ){
                 return array(
                     'success' 			=> true,
-                    'transaction_id' 	=> (string)$response->data->charges[0]->id,
-                    'amount' 			=> $response->data->charges[0]->amount,
+                    'transaction_id' 	=> (string)$response->data->id,
+                    'amount' 			=> $response->data->amount,
                     'destination' 		=> '',	
-                    'status' 			=> $this->getStatusString($response->data->charges[0]->status),
+                    'status' 			=> $this->getStatusString($response->data->last_transaction->status),
                     'card_last_digits' 	=> $payment ? $payment->last_four : ''
                 );
             }
@@ -708,9 +692,9 @@ Class PagarmeLib implements IPayment
                 isset($response->success) && 
                 $response->success && 
                 isset($response->data) &&
-                $response->data->charges[0]->status == self::GATEWAY_CAPTURED
+                $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED
             ){
-                $statusMessage = $response->data->charges[0]->status;
+                $statusMessage = $response->data->charges[0]->last_transaction->status;
 				$result = array (
                     'success'           =>  true,
                     'captured'          =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,

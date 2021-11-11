@@ -23,6 +23,7 @@ class PagarmeApi
     const POST_REQUEST  =   'POST';
     const GET_REQUEST   =   'GET';
     const PUT_REQUEST   =   'PUT';
+    const DELETE_REQUEST=   'DELETE';
 
     /**
      * Authorizes a card payment, reserving service amount
@@ -88,12 +89,9 @@ class PagarmeApi
      */
     public static function capture(Transaction $transaction, $amount)
     {
-        $url = sprintf('%s/orders/%s/closed', self::URL, $transaction->gateway_transaction_id);
+        $url = sprintf('%s/charges/%s/capture', self::URL, $transaction->gateway_transaction_id);
 
-        if($amount)
-            $url = sprintf('%s&valor=%s', $url, self::amountRound($amount));
-
-        $body       =   null;
+        $body       =   $amount ? (object)array('amount' => self::amountRound($amount)) : null;
         $header     =   self::getHeader(true);
         $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -135,7 +133,7 @@ class PagarmeApi
      */
     public static function retrieve(Transaction $transaction)
     {
-        $url = sprintf('%s/orders/%s', self::URL, $transaction->gateway_transaction_id);
+        $url = sprintf('%s/charges/%s', self::URL, $transaction->gateway_transaction_id);
 
         $body       =   null;
         $header     =   self::getHeader(true);
@@ -146,11 +144,10 @@ class PagarmeApi
 
     public static function refund(Transaction $transaction)
     {
-        $url = sprintf('%s/orders/', self::URL, $transaction->gateway_transaction_id);
+        $url = sprintf('%s/charges/%s', self::URL, $transaction->gateway_transaction_id);
 
-        $body       =   null;
-        $header     =   self::getHeader(true);
-        $refundRequest = self::apiRequest($url, $body, $header, self::POST_REQUEST);
+        $header        =    self::getHeader(true);
+        $refundRequest =    self::apiRequest($url, null, $header, self::DELETE_REQUEST);
 
         return $refundRequest;
     }
@@ -202,7 +199,7 @@ class PagarmeApi
             "transfer_settings"     =>  (object)array(
                 "transfer_enabled"    =>  (Settings::findByKey('auto_transfer_provider_payment') == '1') ?? false,
                 "transfer_interval"   =>  "Daily",
-                "transfer_day"        =>  Settings::findByKey('provider_transfer_day')
+                "transfer_day"        =>  0
             )
         );
 
@@ -239,7 +236,7 @@ class PagarmeApi
         else
             $response = self::getSeller($sellerId);
 
-        if(!isset($response->id))
+        if(!isset($response->data->id))
         {
             Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
             $response = (object)array(
@@ -250,8 +247,8 @@ class PagarmeApi
 
         $result = (object)array(
             'success'           =>  true,
-            'recipient_id'      =>  $response->id,
-            'is_active'         =>  ($response->status == 'active') ?? false
+            'recipient_id'      =>  $response->data->id,
+            'is_active'         =>  ($response->data->status == 'active') ?? false
         );
         $ledgerBankAccount->recipient_id = $response->data->id;
         $ledgerBankAccount->save();
@@ -360,15 +357,14 @@ class PagarmeApi
         $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
         $clientPhone    =   self::phoneDivide($client->phone);
         $orderId        =   self::getOrderId();
-        $requestId      =   $client ? $client->getLastRequest()->id : $orderId;
 
         $fields = (object)array(
             "items"     => [
                 (object)array(
                     "amount"        =>  self::amountRound($amount),
                     "quantity"      =>  1,
-                    "description"   =>  substr((string) Settings::findByKey('pagarme_product_title'), 0, 254),
-                    "code"          =>  "$requestId"
+                    "description"   =>  substr((string) Settings::findByKey('gateway_product_title'), 0, 254),
+                    "code"          =>  "$orderId"
                 )
             ],
             "customer"      =>  (object)array(
@@ -407,10 +403,11 @@ class PagarmeApi
             );
 
             if(!$isDebit)
-                $payFields->credit_card = array_merge(
-                    $payFields->credit_card, 
-                    (object)array("capture"   =>  $capture, "installments"  =>  1)
+                $payFields->credit_card = (object)array_merge(
+                    (array)$payFields->credit_card, 
+                    array("capture"   =>  $capture, "installments"  =>  1)
                 );
+
         }
         else if($isPix)
         {
@@ -448,7 +445,7 @@ class PagarmeApi
         if($capture && $provider && isset($provider->id) && $payment)
         {
             $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
-            $fields->payments->split = $splitFields->split;
+            $fields->payments[0]->split = $splitFields->split;
         }
 
         return json_encode($fields);
@@ -480,7 +477,7 @@ class PagarmeApi
                 ),
                 (object)array(
                     "amount"        =>  self::amountRound($providerAmount),
-                    "recipient_id"  =>  $sellerId,
+                    "recipient_id"  =>  $sellerId->recipient_id,
                     "type"          =>  "flat", //flat | percentage
                     "options"       =>  (object)array(
                         "charge_processing_fee" =>  true,
@@ -494,7 +491,7 @@ class PagarmeApi
         return $splitFields;
     }
 
-    private static function getHeader($useVersion = false)
+    private static function getHeader()
     {
         $token          =   self::makeToken();
         $pagarmeToken   =   Settings::findObjectByKey('pagarme_token');
@@ -504,9 +501,6 @@ class PagarmeApi
             'Content-Type: application/json',
             'Authorization: Basic '.$basic
         );
-
-        if($useVersion)
-            $header = array_merge($header, $version);
 
         return $header;
     }
