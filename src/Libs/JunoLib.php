@@ -131,26 +131,29 @@ Class JunoLib implements IPayment
         if(isset($request->chargeCode) && $request->chargeCode) {
             //pega as possiveis transacoes que tem o charge code da juno.
             $possibleTransactions = Transaction::where('gateway_transaction_id', 'like', '%' . $request->chargeCode . '%')->get();
-            if($possibleTransactions) {
-                //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
-                foreach($possibleTransactions as $transaction) {
-                    //verifica se essa transacao e uma transacao do tipo boleto 
-                    if($transaction->billet_link) {
-                        $transactionIds = unserialize($transaction->gateway_transaction_id);
-                        if($transactionIds['code'] == $request->chargeCode) {
-                            $retrieve = $this->retrieve($transaction);
-                            if($retrieve['success'] && $retrieve['status']) {
-                                return [
-                                    'success' => true,
-                                    'status' => $retrieve['status'],
-                                    'transaction_id' => $transaction->id
-                                ];
-                            }
+            $postbackFromBillet = false; //assumindo que o postback nao e do boleto. Se for, essa variavel recebe true depois
+           
+            //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
+            foreach($possibleTransactions as $transaction) {
+                //verifica se essa transacao e uma transacao do tipo boleto 
+                if($transaction->billet_link) {
+                    $transactionIds = unserialize($transaction->gateway_transaction_id);
+                    if($transactionIds['code'] == $request->chargeCode) {
+                        $postbackFromBillet = true;
+                        $retrieve = $this->retrieve($transaction);
+                        if($retrieve['success'] && $retrieve['status']) {
+                            return [
+                                'success' => true,
+                                'status' => $retrieve['status'],
+                                'transaction_id' => $transaction->id
+                            ];
                         }
                     }
                 }
-            } else { // se nao encontrou possiveis transactions, entao e um postback pix
-                // atualiza as transacoes pix
+            }
+            // se nao encontrou possiveis transactions, entao e um postback pix
+            // atualiza as transacoes pix
+            if(!$postbackFromBillet) {
                 $transactions = Transaction::whereNotNull('pix_copy_paste')->where('created_at', '>', Carbon::yesterday())->where('status', 'waiting_payment')->get();
                 foreach($transactions as $tr) {
                     $res = $this->retrievePix($tr->gateway_transaction_id);
