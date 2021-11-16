@@ -528,7 +528,7 @@ Class JunoLib implements IPayment
     {
         try {
             $juno = new JunoApi();
-            $response = $juno->pixCharge($amount);
+            $response = $juno->createPixWebhooks();
 			if($response) {
 				return array(
 					"success" 			=> true,

@@ -493,6 +493,104 @@ class JunoApi {
 		return $customer ;
 	}
 
+    private function listPixWebhooks() {
+        $webhooksList = array();
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('GET', 'notifications/webhooks', [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200) {
+                    // pega os ids dos webhooks cadastrados 
+                    $res = json_decode($response->getBody());
+                    if(isset($res->_embedded) && isset($res->_embedded->webhooks)) {
+                        foreach($res->_embedded->webhooks as $event) {
+                            array_push($webhooksList, $event->id);
+                        }
+                    }
+                } 
+
+                return $webhooksList;
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("error list webhooks");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return $webhooksList;
+        }
+    }
+
+    private function deletePixWebhooks($webhooksId) {
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('DELETE', 'notifications/webhooks/' . $webhooksId, [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 204) {
+                    return true;
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("error delete webhooks");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    /*
+        Se tentar cadastra um webhook sendo que ja existe outro evento cadastrado, entao a juno retorna erro
+        Se ja existe, entao por que cadastrar novamente? Pois pode ser que a URL do webhooks tenha alterado (ex: a mesma conta da juno sendo utilizada em diferentes projetos ou o cliente mudou o dominio).
+        Para nunca ocorrer erro ao tentar cadastrar um evento, o fluxo eh da seguinte forma:
+        1) Chamar a api de listar eventos webhooks cadastrados e salvar os ids desses eventos
+        2) Caso tenha eventos cadastrados, entao chamar a api de remover webhooks
+        3) Cadastrar os novos webhooks normalmente
+    */
+    public function createPixWebhooks() {
+
+        // 1) listar webhooks
+        $webhooksList = $this->listPixWebhooks();
+
+        // 2) deletar webhooks (caso existir)
+        foreach($webhooksList as $webhooksId) {
+            $this->deletePixWebhooks($webhooksId);
+        }
+
+        // 3) criar novos webhooks
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+
+                // rota da biblioteca laravel-finance, responsavel por tratar o postback
+                $url = route('GatewayPostbackPix') . '/juno';
+                $response = $this->guzzle->request('POST', 'notifications/webhooks', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'url' => $url,
+                        'eventTypes' => array(
+                            'PAYMENT_NOTIFICATION',
+                            'CHARGE_STATUS_CHANGED' 
+                        )
+                    ]
+                ]);
+                if($response->getStatusCode() == 200 && $response->getBody()) {
+                    $res = json_decode($response->getBody());
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        } catch (RequestException $e) {
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
     private function getCustomerAddress($holder) {
         return array (
             "street" => $holder->getStreet(),
