@@ -543,6 +543,23 @@ Class JunoLib implements IPayment
         
     }
 
+    public function createPixWebhooks() {
+        try {
+            $juno = new JunoApi();
+            $response = $juno->createPixWebhooks();
+			if($response) {
+				return true;
+			} else {
+                \Log::error('Error juno create webhooks');
+                return false;
+            }
+		} catch (Exception $th) {
+			\Log::error('Error juno create webhooks.');
+            \Log::error($th->getMessage());
+			return false;
+		}
+    }
+
     /**
      * Funcao para recuperar os detalhes de uma transacao pix
      * Se o primeiro parametro (transaction_id) for null, entao sera utilizado o $request
@@ -563,13 +580,13 @@ Class JunoLib implements IPayment
         }
         //evento chamado logo apos criar a cobranca pix.
         else if($request->eventType == "CHARGE_STATUS_CHANGED") {
-            if($request->data[0]->status == "ACTIVE") {
-                $txid = $request->data[0]->attributes[0]->pix[0];
+            if(isset($request->data) && isset($request->data[0]['attributes']) && isset($request->data[0]['attributes']['pix']) && $request->data[0]['attributes']['status'] == "ACTIVE") {
+                $txid = $request->data[0]['attributes']['pix']['txid'];
                 $transaction = Transaction::where("gateway_transaction_id", $txid)->first();
                 if($transaction) {
                     //atualiza o gateway_transaction_id para salvar o charge_id, que sera responsavel para o postback de quando o pix for pago
                     $transaction->gateway_transaction_id = serialize(array(
-                        'charge_id' => $request->data[0]->entityId,
+                        'charge_id' => $request->data[0]['entityId'],
                         'txid' => $txid
                     ));
                     $transaction->save();
@@ -587,8 +604,8 @@ Class JunoLib implements IPayment
         } else if ($request->eventType == "PAYMENT_NOTIFICATION") { //evento chamado quando um pagamento pix e realizado
             try {
 
-                $charge_id = $request->data[0]->attributes[0]->charge->id;
-
+                $charge_id =  $request->data[0]['attributes']['charge']['id'];
+                
                 //pega as possiveis transacoes
                 $possibleTransactions = Transaction::where('gateway_transaction_id', 'like', '%' . $charge_id . '%')->get();
            

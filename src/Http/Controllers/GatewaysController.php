@@ -14,7 +14,7 @@ use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
-use Provider, Settings, Ledger, Finance, Bank, LedgerBankAccount, Payment;
+use Provider, Settings, Ledger, Finance, Bank, LedgerBankAccount, Payment, PaymentFactory;
 use stdClass;
 use Storage;
 
@@ -375,8 +375,16 @@ class GatewaysController extends Controller
                 }
             }
         }
-        
-       
+
+        //se o gateway for juno, entao chama o metodo para configurar o webhooks
+        if($pixGateway == 'juno') {
+            try {
+                $gateway = PaymentFactory::createPixGateway();
+                $gateway->createPixWebhooks();
+            } catch (Exception $th) {
+                \Log::error($th->getMessage());
+            }
+        }
 
         //Salva o gateway de boleto do faturamento
         $defaultPaymentBillet = $request->gateways['default_payment_boleto'];
