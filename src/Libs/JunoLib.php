@@ -550,11 +550,11 @@ Class JunoLib implements IPayment
 			if($response) {
 				return true;
 			} else {
-                \Log::error('Error juno create webhooks');
+                \Log::error('Error juno create webhooks. Possivelmente as chaves utilizadas são inválidas.');
                 return false;
             }
 		} catch (Exception $th) {
-			\Log::error('Error juno create webhooks.');
+			\Log::error('Error juno create webhooks. Possivelmente as chaves utilizadas são inválidas.');
             \Log::error($th->getMessage());
 			return false;
 		}

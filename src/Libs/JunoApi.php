@@ -557,10 +557,11 @@ class JunoApi {
         $webhooksList = $this->listPixWebhooks();
 
         // 2) deletar webhooks (caso existir)
-        foreach($webhooksList as $webhooksId) {
-            $this->deletePixWebhooks($webhooksId);
+        if($webhooksList) {
+            foreach($webhooksList as $webhooksId) {
+                $this->deletePixWebhooks($webhooksId);
+            }
         }
-
         // 3) criar novos webhooks
         try {
             $headersOk = $this->setPixHeaders();
