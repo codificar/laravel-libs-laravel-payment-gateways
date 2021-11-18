@@ -412,12 +412,12 @@ class JunoApi {
         }
     }
 
-    public function retrievePix($gateway_transaction_id) {
+    public function retrievePix($txid) {
 
         try {
             $headersOk = $this->setPixHeaders();
             if($headersOk) {
-                $response = $this->guzzle->request('GET', 'pix-api/v2/cob/' . $gateway_transaction_id . '/', [
+                $response = $this->guzzle->request('GET', 'pix-api/v2/cob/' . $txid . '/', [
                     'headers' => $this->headers
                 ]);
                 if($response->getStatusCode() == 200 || $response->getStatusCode() == 201) {

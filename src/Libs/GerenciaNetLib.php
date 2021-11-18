@@ -488,7 +488,7 @@ class GerenciaNetLib implements IPayment
         );
     }
 
-	public function pixCharge($holder, $amount)
+	public function pixCharge($amount, $holder)
     {
         \Log::error('pix_not_implemented');
         return array(
@@ -499,7 +499,7 @@ class GerenciaNetLib implements IPayment
         );
     }
 
-	public function retrievePix($transaction_gateway_id)
+	public function retrievePix($transaction_id, $request = null)
     {
         \Log::error('retrieve_pix_not_implemented');
         return array(

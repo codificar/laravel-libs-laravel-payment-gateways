@@ -592,7 +592,7 @@ class MercadoPagoLib implements IPayment {
         }
     }
 
-    public function pixCharge($holder, $amount)
+    public function pixCharge($amount, $holder)
     {
         \Log::error('pix_not_implemented');
         return array(
@@ -603,7 +603,7 @@ class MercadoPagoLib implements IPayment {
         );
     }
 
-    public function retrievePix($gateway_transaction_id)
+    public function retrievePix($transaction_id, $request = null)
     {
         \Log::error('retrieve_pix_not_implemented');
         return array(

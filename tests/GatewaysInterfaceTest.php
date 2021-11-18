@@ -175,7 +175,7 @@ class GatewaysInterfaceTest {
 	public function testPixCharge() {
 		$gateway = PaymentFactory::createPixGateway();
 		$user = $this->userRandomForTest();
-		$response = $gateway->pixCharge($user, 0.01);
+		$response = $gateway->pixCharge(2.00, $user);
 		return $response;
 	}
     /**
