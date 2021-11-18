@@ -416,7 +416,7 @@ class GerenciaNetLib implements IPayment
 	public function settle($charge_id)
 	{
 		try {
-			$this->getApi()->settleCharge(['id' => $charge_id], []);
+			return $this->getApi()->settleCharge(['id' => $charge_id], []);
 		} catch (GerencianetException $e) {
 			return [
 				"success" => false,
