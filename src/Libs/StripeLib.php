@@ -75,7 +75,7 @@ class StripeLib implements IPayment
 				// atualiza cartao e outros dados
 				if($stripeCustomer && $stripeCustomer->id){
 					// adiciona a nova fonte de cartao
-					$createdCard = $stripeCustomer->sources->create(
+					$card_Token = $stripeCustomer->sources->create(
 										array(
 											"card" => array(
 												"number" 	=> $cardNumber,
@@ -98,7 +98,6 @@ class StripeLib implements IPayment
 				/**
 				 * Create Stripe Credit Card with Token (safe transaction).
 				 */
-
 				$card_Token = $this->createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder);
 
 				$stripeCustomer = \Stripe\Customer::create(array(
@@ -108,16 +107,13 @@ class StripeLib implements IPayment
 					)
 				);
 
-				if($stripeCustomer->sources){
-					$createdCard = $stripeCustomer->sources["data"][0];
-				}
-				else {
+				if (!$stripeCustomer) {
 					return array(
 						"success" 	=> false ,
 						'data' 		=> null,
 						'error' 	=> array(
 							"code" 		=> ApiErrors::CARD_ERROR,
-							"messages" 	=> $stripeCustomer->error['message']
+							"messages" 	=> isset($stripeCustomer->error) ? $stripeCustomer->error['message'] : trans('creditCard.customerCreationFail')
 						)
 					);
 				}
@@ -125,11 +121,11 @@ class StripeLib implements IPayment
 
 			return array(
 				"success" 		=> true ,
-				"customer_id" 	=> $stripeCustomer->id ,
-				"token"			=> $createdCard->id,
-				"card_token" 	=> $createdCard->id ,
-				"last_four" 	=> $createdCard->last4 ,
-				"card_type"		=> strtolower($createdCard->brand),
+				"customer_id" 	=> $stripeCustomer->id,
+				"token"			=> $card_Token["token"],
+				"card_token" 	=> $card_Token["card_token"] ,
+				"last_four" 	=> $card_Token["last_four"] ,
+				"card_type"		=> strtolower($card_Token["card_type"]),
 				"gateway"		=> "stripe"
 			);
 
