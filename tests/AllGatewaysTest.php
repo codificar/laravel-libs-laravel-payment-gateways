@@ -66,6 +66,20 @@ class AllGatewaysTest extends TestCase
 		$this->runSPlitGateways($gateway, "342793631858229", false, 5);
 	}
 
+	public function testPagarmev2() {
+		$gateway = 'pagarmev2';
+		//Update the gateway selected
+		Settings::where('key', 'default_payment')->update(['value' => $gateway]);
+
+		//Change the keys
+		Settings::where('key', 'pagarme_encryption_key')->update(['value' => 'ek_test_pHEXVtJxrD2z7BR2k3vABIcQhg9Lob']);
+		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 're_ckfcykeja0c5psw6eq7ohg6wx']);
+		Settings::where('key', 'pagarme_api_key')->update(['value' => 'ak_test_PlTjytFjSz5RLwcUK9TFssfmKMac8y']);
+
+		$this->runInterfaceGateways($gateway);
+		$this->runSPlitGateways($gateway);
+	}
+
 	public function testCielo() {
 		$gateway = 'cielo';
 		//Update the gateway selected

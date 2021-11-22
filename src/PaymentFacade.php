@@ -9,6 +9,7 @@ class PaymentFacade extends \Illuminate\Support\Facades\Facade
 {
 
     const PAYMENT_GATEWAY_PAGARME = 'pagarme';
+    const PAYMENT_GATEWAY_PAGARME2 = 'pagarmev2';
     const PAYMENT_GATEWAY_STRIPE = 'stripe';
     const PAYMENT_GATEWAY_ZOOP = 'zoop';
     const PAYMENT_GATEWAY_CIELO = 'cielo';

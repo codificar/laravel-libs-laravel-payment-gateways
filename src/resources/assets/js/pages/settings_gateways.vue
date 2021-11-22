@@ -707,11 +707,11 @@ export default {
           <!--Configurações do Pagar.Me-->
           <div
             class="panel panel-default pagarme"
-            v-if="gateways.default_payment == 'pagarme'"
+            v-if="gateways.default_payment == 'pagarmev2'"
           >
             <div class="panel-heading">
               <h3 class="panel-title">
-                {{ trans("setting.pagarme_settings") }}
+                {{ trans("setting.pagarme_settings") }} v2
               </h3>
               <hr />
             </div>
@@ -736,7 +736,97 @@ export default {
                     <input
                       type="text"
                       class="form-control input-pagarme"
-                      v-model="gateways.pagarme.pagarme_encryption_key"
+                      v-model="gateways.pagarmev2.pagarme_encryption_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarme_recipient_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.pagarme_recipient_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-pagarme"
+                      v-model="gateways.pagarmev2.pagarme_recipient_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarme_api_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('settingTableSeeder.pagarme_api_key')"
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-pagarme"
+                      v-model="gateways.pagarmev2.pagarme_api_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- / Configurações do Pagar.Me-->
+
+          <!--Configurações do Pagar.Me-->
+          <div
+            class="panel panel-default pagarme"
+            v-if="gateways.default_payment == 'pagarme'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.pagarme_settings") }} v5
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.pagarme_secret_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.pagarme_secret_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-pagarme"
+                      v-model="gateways.pagarme.pagarme_secret_key"
                     />
                     <div class="help-block with-errors"></div>
                   </div>

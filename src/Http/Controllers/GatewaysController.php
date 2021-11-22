@@ -37,6 +37,11 @@ class GatewaysController extends Controller
             'pagarme_token',
             'gateway_product_title'
         ],
+        'pagarmev2' => [
+            'pagarme_encryption_key',
+            'pagarme_recipient_id',
+            'pagarme_api_key'
+        ],
         'stripe' => [
             'stripe_secret_key',
             'stripe_publishable_key',
@@ -124,6 +129,7 @@ class GatewaysController extends Controller
 
     public $payment_gateways =  array(
         array('value' => 'pagarme', 'name' => 'setting.pagarme'),
+        array('value' => 'pagarmev2', 'name' => 'setting.pagarme'),
         array('value' => 'stripe', 'name' => 'setting.stripe'),
         array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'cielo', 'name' => 'setting.cielo'),

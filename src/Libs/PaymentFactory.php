@@ -14,6 +14,9 @@ class PaymentFactory
             case PaymentFacade::PAYMENT_GATEWAY_PAGARME:
                 return (new PagarmeLib());
 
+            case PaymentFacade::PAYMENT_GATEWAY_PAGARMEv2:
+                return (new PagarmeLibv2());
+
             case PaymentFacade::PAYMENT_GATEWAY_STRIPE:
                 return (new StripeLib());
 
