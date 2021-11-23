@@ -64,6 +64,9 @@ class AllGatewaysTest extends TestCase
 
 		$this->runInterfaceGateways($gateway, "342793631858229", false, 5);
 		$this->runSPlitGateways($gateway, "342793631858229", false, 5);
+
+		User::randomForTest(); // recreate user health check
+		User::randomForTest(true);// recreate user2 health check
 	}
 
 	public function testPagarmev2() {
@@ -76,8 +79,8 @@ class AllGatewaysTest extends TestCase
 		Settings::where('key', 'pagarme_recipient_id')->update(['value' => 're_ckfcykeja0c5psw6eq7ohg6wx']);
 		Settings::where('key', 'pagarme_api_key')->update(['value' => 'ak_test_PlTjytFjSz5RLwcUK9TFssfmKMac8y']);
 
-		$this->runInterfaceGateways($gateway);
-		$this->runSPlitGateways($gateway);
+		$this->runInterfaceGateways($gateway, "342793631858229", false, 5);
+		$this->runSPlitGateways($gateway, "342793631858229", false, 5);
 	}
 
 	public function testCielo() {

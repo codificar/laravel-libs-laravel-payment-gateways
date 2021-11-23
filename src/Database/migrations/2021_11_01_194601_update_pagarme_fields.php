@@ -41,7 +41,7 @@ class UpdatePagarmeFields extends Migration
             ['key' => 'ipag_product_title'],
             [
                 'key' => 'gateway_product_title',
-                'value' => '',
+                'value' => 'Serviço prestado',
                 'created_at' => now(),
                 'updated_at' => now(),
                 'tool_tip' => 'Gateway product title',
@@ -60,17 +60,17 @@ class UpdatePagarmeFields extends Migration
      */
     public function down()
     {
-        if($secret = Settings::whereKey('pagarme_secret_key')->first())
+        if($secret = Settings::where('key','pagarme_secret_key')->first())
             $secret->delete();
 
-        if($token = Settings::whereKey('pagarme_token')->first())
+        if($token = Settings::where('key','pagarme_token')->first())
             $token->delete();
 
         Settings::updateOrCreate(
             ['key' => 'gateway_product_title'],
             [
                 'key' => 'ipag_product_title',
-                'value' => '',
+                'value' => 'Serviço prestado',
                 'created_at' => now(),
                 'updated_at' => now(),
                 'tool_tip' => 'Ipag product title',

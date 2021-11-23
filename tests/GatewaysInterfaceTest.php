@@ -184,6 +184,16 @@ class GatewaysInterfaceTest {
 		else
 			$user	= User::where('email', 'user2.healthcheck@codificar.com.br')->first();
 
+		if(Settings::findByKey('default_payment') == 'pagarme') {
+			if($user)
+			{
+				$user->email = 'Tony@Avangers.com';
+				$user->save();
+			}
+			else
+				$user = User::where('email', 'Tony@Avangers.com')->first();
+		}
+
 		if  ( isset($user) ) {
 			return $user;
 		} else {
