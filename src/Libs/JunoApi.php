@@ -368,7 +368,7 @@ class JunoApi {
                             'expiracao' => 3600 // 1 hora para expirar o pix (3600 segundos)
                         ),
                         'valor' => array(
-                            'original' => $amount
+                            'original' => $amount < 1.5 ? 1.5 : $amount //min value in juno 1.5
                         ),
                         'chave' => Settings::findByKey("pix_key"),
                         'solicitacaoPagador' => 'Prestação de Serviço'
