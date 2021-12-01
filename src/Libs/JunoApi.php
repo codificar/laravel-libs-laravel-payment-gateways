@@ -23,8 +23,8 @@ class JunoApi {
     private $guzzle;
     private $headers;
 
-    public function __construct() {    
-        $isSandbox = Settings::findByKey('juno_sandbox');
+    public function __construct($isPix = false) {
+        $isSandbox = Settings::findByKey($isPix ? 'pix_juno_sandbox' : 'juno_sandbox');
         $this->guzzle = new Client([
             'base_uri' => (int)$isSandbox ? self::URL_SANDBOX : self::URL_PROD,
             'timeout'  => 120, // two minutes timeout
@@ -365,7 +365,7 @@ class JunoApi {
                     'headers' => $this->headers,
                     'json' => [
                         'calendario' => array(
-                            'expiracao' => 3600 // 1 hora para expirar o pix (3600 segundos)
+                            'expiracao' => 36000 // 10 horas para expirar o pix (30600 segundos)
                         ),
                         'valor' => array(
                             'original' => $amount < 1.5 ? 1.5 : $amount //min value in juno 1.5

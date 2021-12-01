@@ -435,6 +435,36 @@ export default {
                   <div class="help-block with-errors"></div>
                 </div>
               </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_direct_pix") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-direct_pix"
+                    v-model="nomenclatures.name_payment_direct_pix"
+                    :placeholder="trans('setting.payment_direct_pix')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_gateway_pix") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-gateway_pix"
+                    v-model="nomenclatures.name_payment_gateway_pix"
+                    :placeholder="trans('setting.payment_gateway_pix')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2705,10 +2735,6 @@ export default {
                   {{this.pix_gateways.juno.pix_juno_auth_token = ""}}
                   {{this.pix_gateways.juno.pix_juno_auth_token_expiration_date = ""}}
                 </div>
-              </div>
-              <div style="align-items:center">
-                <p> {{ trans("setting.juno_postback_msg") + " "}}</p>
-                <p style="color: blue"> {{ getOriginUrl() + '/libs/finance/postback/juno' }}</p>
               </div>
             </div>
           </div>

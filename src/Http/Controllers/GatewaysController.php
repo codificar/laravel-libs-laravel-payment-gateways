@@ -177,7 +177,9 @@ class GatewaysController extends Controller
         'name_payment_debitCard',
         'name_payment_balance',
         'name_payment_prepaid',
-        'name_payment_billing'
+        'name_payment_billing',
+        'name_payment_direct_pix',
+        'name_payment_gateway_pix'
     );
 
     public $keys_prepaid =  array(

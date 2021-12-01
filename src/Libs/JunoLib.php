@@ -512,7 +512,7 @@ Class JunoLib implements IPayment
     public function pixCharge($amount, $holder)
     {
         try {
-            $juno = new JunoApi();
+            $juno = new JunoApi(true);
             $response = $juno->pixCharge($amount);
 			if($response) {
 				return array(
@@ -545,7 +545,7 @@ Class JunoLib implements IPayment
 
     public function createPixWebhooks() {
         try {
-            $juno = new JunoApi();
+            $juno = new JunoApi(true);
             $response = $juno->createPixWebhooks();
 			if($response) {
 				return true;
@@ -615,7 +615,7 @@ Class JunoLib implements IPayment
                     if($transaction->pix_copy_paste) {
                         $transactionIds = unserialize($transaction->gateway_transaction_id);
                         if($transactionIds['charge_id'] == $charge_id) {
-                            $juno = new JunoApi();
+                            $juno = new JunoApi(true);
                             $response = $juno->retrievePix($transactionIds['txid']);
                             if($response) {
                                 return array(
