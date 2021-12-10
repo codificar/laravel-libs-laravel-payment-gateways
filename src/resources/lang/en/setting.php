@@ -199,7 +199,7 @@ return array(
 	'payment_gateway_pix'		=> 'Pix Gateway',
 	'payment_gateway_pix_msg'	=> 'Pixing is performed at the users bank at the end of the request, using the "Copia e Cola" pix key provided by the app or by scanning the QR code available on the providers app. For this type of pix, a Payment Gateway is required.',
 	'default_pay_gateway_pix'	=> 'Standard Pay Per Pix Intermediary',
-	'prepaid_pix'				=> 'Pis balance entry',
+	'prepaid_pix'				=> 'Pix Gateway balance entry',
 	'obs_pix_prepaid'			=> '- Payments per pix need payment gateway.',
 	'pix_key'					=> 'Pix Random Key',
 	

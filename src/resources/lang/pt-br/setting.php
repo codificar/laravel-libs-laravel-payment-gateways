@@ -198,7 +198,7 @@ return array(
 	'payment_gateway_pix'		=> 'Pix Gateway',
 	'payment_gateway_pix_msg'	=> 'O Pix é realizado no banco do usuário no final da solicitação, utilizando a chave pix "Copia e Cola" fornecida pelo app ou então escaneando o código QR disponível no app do prestador. Para esse tipo de pix, é necessário um Gateway de Pagamento.',
 	'default_pay_gateway_pix'	=> 'Intermediador Padrão de Pagamento por Pix',
-	'prepaid_pix'				=> 'Inserção de saldo Pix',
+	'prepaid_pix'				=> 'Inserção de saldo Pix Gateway',
 	'obs_pix_prepaid'			=> '- Pagamentos por pix precisam de gateway de pagamento.',
 	'pix_key'					=> 'Chave Pix Aleatória',
 	

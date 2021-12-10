@@ -197,7 +197,7 @@ return array(
 	'payment_gateway_pix'		=> 'Pix Gateway',
 	'payment_gateway_pix_msg'	=> 'El Pix se realiza en el banco del usuario al finalizar la solicitud, utilizando la clave de pix "Copia e Cola" proporcionada por la aplicación o escaneando el código QR disponible en la aplicación del proveedor. Para este tipo de pix, se requiere una Gateway de Pago.',
 	'default_pay_gateway_pix'	=> 'Intermediario estándar de pago por Pix',
-	'prepaid_pix'				=> 'Inserción de equilibrio Pix',
+	'prepaid_pix'				=> 'Inserción de equilibrio Pix Gateway',
 	'obs_pix_prepaid'			=> '- Los pagos con Pix necesitan una pasarela de pago.',
 	'pix_key'					=> 'Clave de Pix Aleatoria',
 	
