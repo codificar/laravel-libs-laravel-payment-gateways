@@ -150,7 +150,6 @@ class StripeLib implements IPayment
 		}
 		catch(\Throwable $th)
         {
-			\Log::error("erro 22");
             return array(
 				"success" 	=> false ,
 				'data' => null,
