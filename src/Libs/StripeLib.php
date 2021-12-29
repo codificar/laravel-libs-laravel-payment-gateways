@@ -148,6 +148,20 @@ class StripeLib implements IPayment
 				)
 			);
 		}
+		catch(\Throwable $th)
+        {
+			\Log::error("erro 22");
+            return array(
+				"success" 	=> false ,
+				'data' => null,
+				'type' => '',
+				'message' 	=> trans('creditCard.card_declined'),
+				'error' => array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+				)
+			);
+        }
 
 	}
 
