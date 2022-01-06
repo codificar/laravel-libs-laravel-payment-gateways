@@ -389,6 +389,14 @@ class PagarmeApi
 
             $cardNumber = $payment->getCardNumber();
 
+            $address = [
+                "zip_code" => $client->zipcode,
+                "city" => $client->address_city,
+                "state" => $client->state,
+                "country" => self::countryInitials($client->country),
+                "line_1" => "$client->address_number, $client->address, $client->address_neighbour"
+            ];
+
             $payFields = (object)array(
                 "payment_method"    => "$paymentType",
                 "$paymentType"      => (object)array(
@@ -397,7 +405,8 @@ class PagarmeApi
                         "holder_name"   =>  $payment->getCardHolder(),
                         "exp_month"     =>  $expirationDate[0],
                         "exp_year"      =>  str_pad($expirationDate[1], 2, '0', STR_PAD_LEFT),
-                        "cvv"           =>  $payment->getCardCvc()
+                        "cvv"           =>  $payment->getCardCvc(),
+                        "billing_address" => $address
                     )
                 )
             );
