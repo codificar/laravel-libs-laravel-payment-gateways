@@ -379,7 +379,10 @@ class GatewaysController extends Controller
         }
 
         //se o gateway for juno, entao chama o metodo para configurar o webhooks
-        if($pixGateway == 'juno') {
+        if(isset($request->payment_methods['payment_gateway_pix']) && 
+            $request->payment_methods['payment_gateway_pix'] && 
+            $pixGateway == 'juno'
+        ) {
             try {
                 $gateway = PaymentFactory::createPixGateway();
                 $gateway->createPixWebhooks();
