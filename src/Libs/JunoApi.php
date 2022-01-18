@@ -23,8 +23,8 @@ class JunoApi {
     private $guzzle;
     private $headers;
 
-    public function __construct() {    
-        $isSandbox = Settings::findByKey('juno_sandbox');
+    public function __construct($isPix = false) {
+        $isSandbox = Settings::findByKey($isPix ? 'pix_juno_sandbox' : 'juno_sandbox');
         $this->guzzle = new Client([
             'base_uri' => (int)$isSandbox ? self::URL_SANDBOX : self::URL_PROD,
             'timeout'  => 120, // two minutes timeout
@@ -70,6 +70,48 @@ class JunoApi {
             'Accept'        => 'application/json; charset=utf8',
             'X-Api-Version' => 2,
             'X-Resource-Token' => Settings::findByKey("juno_resource_token")
+        ];
+        return true;
+    }
+
+    public function setPixHeaders() {
+        //check if auth token is expired. If yes, generate a new auth token
+        $auth_exp = Settings::findByKey("pix_juno_auth_token_expiration_date");
+        if(!$auth_exp || $auth_exp <= date('Y-m-d H:i:s')) { // se nao tiver data de expiracao ou se ja estiver expirado, gera um novo token
+            try {
+                $isSandbox = Settings::findByKey('pix_juno_sandbox');
+                $guzzleAuth = new Client([
+                    'base_uri' => (int)$isSandbox ? self::URL_AUTH_SANDBOX : self::URL_AUTH_PROD,
+                    'timeout'  => 120, // two minutes timeout
+                ]);
+                $response = $guzzleAuth->request('POST', 'oauth/token', [
+                    'auth' => [
+                        Settings::findByKey("pix_juno_client_id"), 
+                        Settings::findByKey("pix_juno_secret")
+                    ],
+                    'form_params' => [
+                        'grant_type' => "client_credentials"
+                    ]
+                ]);
+                if($response->getStatusCode() == 200 && $response->getBody()) {
+                    $res = json_decode($response->getBody());
+                    Settings::where('key', 'pix_juno_auth_token')->update(['value' => $res->access_token]);
+                    Settings::where('key', 'pix_juno_auth_token_expiration_date')->update(['value' => date('Y-m-d H:i:s', strtotime('1 hour'))]); //validade do token e de uma hora
+                } else {
+                    return false;
+                }
+            } catch (RequestException $e) {
+                \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+                return false;
+            }
+        }
+
+        $this->headers  = [
+            'Authorization' => 'Bearer ' . Settings::findByKey("pix_juno_auth_token"),        
+            'Content-Type'	=> 'application/json; charset=utf8',
+            'Accept'        => 'application/json; charset=utf8',
+            'X-Api-Version' => 2,
+            'X-Resource-Token' => Settings::findByKey("pix_juno_resource_token")
         ];
         return true;
     }
@@ -314,6 +356,85 @@ class JunoApi {
         }
     }
 
+    public function pixCharge($amount) {
+
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('POST', 'pix-api/v2/cob', [
+                    'headers' => $this->headers,
+                    'json' => [
+                        'calendario' => array(
+                            'expiracao' => 36000 // 10 horas para expirar o pix (30600 segundos)
+                        ),
+                        'valor' => array(
+                            'original' => $amount < 1.5 ? 1.5 : $amount //min value in juno 1.5
+                        ),
+                        'chave' => Settings::findByKey("pix_key"),
+                        'solicitacaoPagador' => 'Prestação de Serviço'
+                    ]
+                    
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 201) {
+
+                    $res = json_decode($response->getBody());
+                    try {
+                        $headersOk = $this->setPixHeaders();
+                        if($headersOk) {
+                            $responsePix = $this->guzzle->request('GET', 'pix-api/qrcode/v2/' . $res->txid . '/imagem', [
+                                'headers' => $this->headers
+                            ]);
+                            if($responsePix->getStatusCode() == 200 || $responsePix->getStatusCode() == 201) {
+                                $arr = json_decode($responsePix->getBody());
+                                $arr->txid = $res->txid;
+                                return $arr;
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                        
+                    } catch (RequestException $e) {
+                        \Log::error("pix juno qr code error");
+                        \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+                        return false;
+                    }
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("pix juno error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    public function retrievePix($txid) {
+
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('GET', 'pix-api/v2/cob/' . $txid . '/', [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 201) {
+                    return json_decode($response->getBody());
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("retrieve pix juno error");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
     public function createDigitalAccount($ledgerBankAccount) {
         try {
             $headersOk = $this->setHeaders();
@@ -372,6 +493,105 @@ class JunoApi {
 		return $customer ;
 	}
 
+    private function listPixWebhooks() {
+        $webhooksList = array();
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('GET', 'notifications/webhooks', [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200) {
+                    // pega os ids dos webhooks cadastrados 
+                    $res = json_decode($response->getBody());
+                    if(isset($res->_embedded) && isset($res->_embedded->webhooks)) {
+                        foreach($res->_embedded->webhooks as $event) {
+                            array_push($webhooksList, $event->id);
+                        }
+                    }
+                } 
+
+                return $webhooksList;
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("error list webhooks");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return $webhooksList;
+        }
+    }
+
+    private function deletePixWebhooks($webhooksId) {
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+                $response = $this->guzzle->request('DELETE', 'notifications/webhooks/' . $webhooksId, [
+                    'headers' => $this->headers
+                ]);
+                if($response->getStatusCode() == 200 || $response->getStatusCode() == 204) {
+                    return true;
+                } 
+                else {
+                    return false;
+                }
+            }
+            
+        } catch (RequestException $e) {
+            \Log::error("error delete webhooks");
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
+    /*
+        Se tentar cadastra um webhook sendo que ja existe outro evento cadastrado, entao a juno retorna erro
+        Se ja existe, entao por que cadastrar novamente? Pois pode ser que a URL do webhooks tenha alterado (ex: a mesma conta da juno sendo utilizada em diferentes projetos ou o cliente mudou o dominio).
+        Para nunca ocorrer erro ao tentar cadastrar um evento, o fluxo eh da seguinte forma:
+        1) Chamar a api de listar eventos webhooks cadastrados e salvar os ids desses eventos
+        2) Caso tenha eventos cadastrados, entao chamar a api de remover webhooks
+        3) Cadastrar os novos webhooks normalmente
+    */
+    public function createPixWebhooks() {
+
+        // 1) listar webhooks
+        $webhooksList = $this->listPixWebhooks();
+
+        // 2) deletar webhooks (caso existir)
+        if($webhooksList) {
+            foreach($webhooksList as $webhooksId) {
+                $this->deletePixWebhooks($webhooksId);
+            }
+        }
+        // 3) criar novos webhooks
+        try {
+            $headersOk = $this->setPixHeaders();
+            if($headersOk) {
+
+                // rota da biblioteca laravel-finance, responsavel por tratar o postback
+                $url = route('GatewayPostbackPix') . '/juno';
+                $response = $this->guzzle->request('POST', 'notifications/webhooks', [
+                    'headers' => $this->headers, 
+                    'json' => [
+                        'url' => $url,
+                        'eventTypes' => array(
+                            'PAYMENT_NOTIFICATION',
+                            'CHARGE_STATUS_CHANGED' 
+                        )
+                    ]
+                ]);
+                if($response->getStatusCode() == 200 && $response->getBody()) {
+                    $res = json_decode($response->getBody());
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        } catch (RequestException $e) {
+            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
+            return false;
+        }
+    }
+
     private function getCustomerAddress($holder) {
         return array (
             "street" => $holder->getStreet(),
@@ -392,5 +612,15 @@ class JunoApi {
 
 		return $word;
 	}
+
+    public function guidv4()
+    {
+        $data = random_bytes(16);
+
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // set version to 0100
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
     
 }

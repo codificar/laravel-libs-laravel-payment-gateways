@@ -83,6 +83,15 @@ class PaymentFactory
         }
     }
 
+    public static function createPixGateway()
+    {
+        switch (Settings::findByKey('default_payment_pix')) {
+            case PaymentFacade::PAYMENT_GATEWAY_JUNO:
+                return (new JunoLib());
+
+        }
+    }
+
     public static function isZoop(){
         return (Settings::findByKey('default_payment') == PaymentFacade::PAYMENT_GATEWAY_ZOOP) ;
     }

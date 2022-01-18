@@ -22,6 +22,7 @@
 		<settingsgateways 
 			payment-methods="{{ json_encode($payment_methods)}}"
 			gateways="{{ json_encode($gateways)}}"
+			pix-gateways="{{ json_encode($pix_gateways)}}"
 			carto="{{ json_encode($carto)}}"
 			bancryp="{{ json_encode($bancryp)}}"
 			prepaid="{{ json_encode($prepaid)}}"

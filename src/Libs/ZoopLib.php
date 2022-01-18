@@ -1066,6 +1066,29 @@ class ZoopLib implements IPayment
         );
     }
 
+    public function pixCharge($amount, $holder)
+    {
+        \Log::error('pix_not_implemented');
+        return array(
+            "success" 			=> false,
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => '',
+            "transaction_id" 	=> ''
+        );
+    }
+
+    public function retrievePix($transaction_id, $request = null)
+    {
+        \Log::error('retrieve_pix_not_implemented');
+        return array(
+            "success" 			=> false,
+			'paid'				=> false,
+			"value" 			=> '',
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => ''
+        );
+    }
+
     /**
      * Returns status string based on status gateway
      *

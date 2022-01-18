@@ -15,6 +15,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Finance;
 
 Class JunoLib implements IPayment
 {
@@ -130,6 +131,7 @@ Class JunoLib implements IPayment
         if(isset($request->chargeCode) && $request->chargeCode) {
             //pega as possiveis transacoes que tem o charge code da juno.
             $possibleTransactions = Transaction::where('gateway_transaction_id', 'like', '%' . $request->chargeCode . '%')->get();
+           
             //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
             foreach($possibleTransactions as $transaction) {
                 //verifica se essa transacao e uma transacao do tipo boleto 
@@ -507,4 +509,141 @@ Class JunoLib implements IPayment
         );
     }
 
+    public function pixCharge($amount, $holder)
+    {
+        try {
+            $juno = new JunoApi(true);
+            $response = $juno->pixCharge($amount);
+			if($response) {
+				return array(
+					"success" 			=> true,
+					"qr_code_base64"    => $response->imagemBase64,
+                    "copy_and_paste"    => base64_decode($response->qrcodeBase64),
+					"transaction_id" 	=> $response->txid
+				);
+			} else {
+                \Log::error('Error juno pix 1');
+                return array(
+                    "success" 			=> false,
+					"qr_code_base64"    => '',
+                    "copy_and_paste"    => '',
+					"transaction_id" 	=> ''
+                );
+            }
+		} catch (Exception $th) {
+			\Log::error('Error juno pix 2.');
+            \Log::error($th->getMessage());
+			return array(
+                "success" 			=> false,
+                "qr_code_base64"    => '',
+                "copy_and_paste"    => '',
+                "transaction_id" 	=> ''
+            );
+		}
+        
+    }
+
+    public function createPixWebhooks() {
+        try {
+            $juno = new JunoApi(true);
+            $response = $juno->createPixWebhooks();
+			if($response) {
+				return true;
+			} else {
+                \Log::error('Error juno create webhooks. Possivelmente as chaves utilizadas são inválidas.');
+                return false;
+            }
+		} catch (Exception $th) {
+			\Log::error('Error juno create webhooks. Possivelmente as chaves utilizadas são inválidas.');
+            \Log::error($th->getMessage());
+			return false;
+		}
+    }
+
+    /**
+     * Funcao para recuperar os detalhes de uma transacao pix
+     * Se o primeiro parametro (transaction_id) for null, entao sera utilizado o $request
+     * O parametro $request e enviado pelo gateway da juno pelo webhooks.
+     */
+    public function retrievePix($transaction_id, $request = null)
+    {
+        if($transaction_id && is_numeric($transaction_id)) {
+            $transaction = Transaction::find($transaction_id);
+            return array(
+                'success' => true,
+                'transaction_id' => $transaction->id,
+                'paid' =>  $transaction->status == 'paid' ? true : false,
+                'value' => $transaction->gross_value,
+                'qr_code_base64' => $transaction->pix_base64,
+                'copy_and_paste' => $transaction->pix_copy_paste
+            );
+        }
+        //evento chamado logo apos criar a cobranca pix.
+        else if($request->eventType == "CHARGE_STATUS_CHANGED") {
+            if(isset($request->data) && isset($request->data[0]['attributes']) && isset($request->data[0]['attributes']['pix']) && $request->data[0]['attributes']['status'] == "ACTIVE") {
+                $txid = $request->data[0]['attributes']['pix']['txid'];
+                $transaction = Transaction::where("gateway_transaction_id", $txid)->first();
+                if($transaction) {
+                    //atualiza o gateway_transaction_id para salvar o charge_id, que sera responsavel para o postback de quando o pix for pago
+                    $transaction->gateway_transaction_id = serialize(array(
+                        'charge_id' => $request->data[0]['entityId'],
+                        'txid' => $txid
+                    ));
+                    $transaction->save();
+
+                    return array(
+                        'success' => true,
+                        'transaction_id' => $transaction->id,
+                        'paid' => false,
+                        'value' => $transaction->gross_value,
+                        'qr_code_base64' => null,
+                        'copy_and_paste' => null
+                    );
+                }
+            }
+        } else if ($request->eventType == "PAYMENT_NOTIFICATION") { //evento chamado quando um pagamento pix e realizado
+            try {
+
+                $charge_id =  $request->data[0]['attributes']['charge']['id'];
+                
+                //pega as possiveis transacoes
+                $possibleTransactions = Transaction::where('gateway_transaction_id', 'like', '%' . $charge_id . '%')->get();
+           
+                //Verifica se pegou a transacao correta, fazendo o unserialize no array e verificando o code_id da juno
+                foreach($possibleTransactions as $transaction) {
+                    //verifica se essa transacao e uma transacao do tipo pix 
+                    if($transaction->pix_copy_paste) {
+                        $transactionIds = unserialize($transaction->gateway_transaction_id);
+                        if($transactionIds['charge_id'] == $charge_id) {
+                            $juno = new JunoApi(true);
+                            $response = $juno->retrievePix($transactionIds['txid']);
+                            if($response) {
+                                return array(
+                                    "success" 			=> true,
+                                    "transaction_id"    => $transaction->id,
+                                    "paid"              => $response->status == "CONCLUIDA" ? true : false,
+                                    "value"             => $transaction->gross_value,
+                                    "qr_code_base64"    => $transaction->pix_base64,
+                                    "copy_and_paste"    => $transaction->pix_copy_paste
+                                );
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $th) {
+                \Log::error($th->getMessage());
+                \Log::error('retrieve_pix_error 2');
+            }
+        }
+
+        //se chegou ate aqui, entao nao conseguiu recuperar a transacao de nenhuma forma
+        return array(
+            'success' => false,
+            'transaction_id' => null,
+            'paid' => false,
+            'value' => null,
+            'qr_code_base64' => null,
+            'copy_and_paste' => null
+        );
+    }
 }

@@ -416,7 +416,7 @@ class GerenciaNetLib implements IPayment
 	public function settle($charge_id)
 	{
 		try {
-			$this->getApi()->settleCharge(['id' => $charge_id], []);
+			return $this->getApi()->settleCharge(['id' => $charge_id], []);
 		} catch (GerencianetException $e) {
 			return [
 				"success" => false,
@@ -485,6 +485,29 @@ class GerenciaNetLib implements IPayment
             "code" 				=> 'api_debit_error',
             "message" 			=> 'split_not_implementd',
             "transaction_id" 	=> ''
+        );
+    }
+
+	public function pixCharge($amount, $holder)
+    {
+        \Log::error('pix_not_implemented');
+        return array(
+            "success" 			=> false,
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => '',
+            "transaction_id" 	=> ''
+        );
+    }
+
+	public function retrievePix($transaction_id, $request = null)
+    {
+        \Log::error('retrieve_pix_not_implemented');
+        return array(
+            "success" 			=> false,
+			'paid'				=> false,
+			"value" 			=> '',
+            "qr_code_base64"    => '',
+            "copy_and_paste"    => ''
         );
     }
 }

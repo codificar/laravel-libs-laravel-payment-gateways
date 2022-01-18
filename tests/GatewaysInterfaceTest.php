@@ -173,6 +173,12 @@ class GatewaysInterfaceTest {
 		return $response;
 	}
     
+	public function testPixCharge() {
+		$gateway = PaymentFactory::createPixGateway();
+		$user = $this->userRandomForTest();
+		$response = $gateway->pixCharge(2.00, $user);
+		return $response;
+	}
     /**
 	 * get random user for tests
 	 * @return User
@@ -240,10 +246,8 @@ class GatewaysInterfaceTest {
 		$provider = Provider::Where('email' , 'testegmail@gmail.com')->first();
 
 		if ( isset($provider) ) {
-			\Log::debug("ecnontrou!!!1");
 			return $provider;
 		} else {
-			\Log::debug("ano encontrou!!!");
 			$status = ProviderStatus::where('name', 'APROVADO')->first();
 
 			$newProvider				= new Provider;
