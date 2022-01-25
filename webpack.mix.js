@@ -11,4 +11,4 @@ let mix = require('laravel-mix');
  |
  */
 
-mix.js('src/resources/assets/js/gateways.vue.js', 'public/js');
+mix.js('src/resources/assets/js/gateways.vue.js', 'public/js').vue();
