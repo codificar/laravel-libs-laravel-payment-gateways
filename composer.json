@@ -1,23 +1,49 @@
 {
     "name": "codificar/payment-gateways",
     "description": "Library for payment gateways",
-    "keywords": [
-        "laravel",
-        "payment"
-    ],
-    "authors": [
-        {
-            "name": "Codificar",
-            "email": "libs@codificar.com.br"
-        }
-    ],
+    "type": "package",
     "require": {
         "league/omnipay": "~3.0"
+    },
+    "license": "Codificar Sistemas LTDA",
+    "authors": [
+        {
+            "name": "Guilherme Assis",
+            "email": "guilherme.assis@codificar.com.br"
+        },
+        {
+            "name": "Oto Luz",
+            "email": "oto.luz@codificar.com.br"
+        },
+        {
+            "name": "Raphael Canguçu",
+            "email": "raphael.cangucu@codificar.com.br"
+        }
+    ],
+    "repositories": [
+        {
+          "type": "package",
+          "package": {
+            "name": "codificar/payment-gateways",
+            "version": "master",
+            "source": {
+              "url": "https://libs:ofImhksJ@git.codificar.com.br/laravel-libs/laravel-payment-gateways.git",
+              "type": "git",
+              "reference": "master"
+            }
+          }
+        }
+    ],    
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
     },
     "autoload": {
         "psr-4": {
             "Codificar\\PaymentGateways\\": "src/"
         }
+        
     },
     "extra": {
         "branch-alias": {
