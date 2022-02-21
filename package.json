@@ -2,23 +2,18 @@
 	"private": true,
 	"scripts": {
 		"dev": "npm run development",
-		"development": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
-		"watch": "npm run development -- --watch",
-		"watch-poll": "npm run watch -- --watch-poll",
-		"hot": "cross-env NODE_ENV=development node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline --hot --config=node_modules/laravel-mix/setup/webpack.config.js",
-		"prod": "npm run production",
-		"production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js"
+        "development": "mix",
+        "watch": "mix watch",
+        "watch-poll": "mix watch -- --watch-options-poll=1000",
+        "hot": "mix watch --hot",
+        "prod": "npm run production",
+        "production": "mix --production"
 	},
 	"devDependencies": {
 		"axios": "^0.18.0",
 		"bootstrap": "^4.0.0",
-		"cross-env": "^5.1",
-		"gulp-sass": "^5.0.0",
-		"jquery": "^3.2",
-		"laravel-elixir": "^6.0.0-18",
-		"laravel-elixir-vueify": "1.0.6",
-		"laravel-mix": "^2.1.14",
 		"lodash": "^4.17.4",
+		"laravel-mix": "^6.0.6",
 		"vue": "^2.5.17"
 	},
 	"dependencies": {
@@ -31,7 +26,6 @@
 		"lodash": "^4.17.10",
 		"lodash.clonedeep": "^4.5.0",
 		"lodash.omit": "^4.5.0",
-		"node-sass": "^6.0.1",
 		"socket.io": "^2.3.0",
 		"socket.io-client": "^2.3.0",
 		"vue-auto-progress": "^0.1.3",

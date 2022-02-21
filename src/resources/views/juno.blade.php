@@ -21,6 +21,6 @@
 	</body>
 	
 	<script src="/libs/gateways/lang.trans/setting"> </script> 
-	<script src="{{ elixir('vendor/codificar/laravel-payment-gateways/gateways.vue.js') }}"> </script> 
+	<script src="{{ asset('vendor/codificar/laravel-payment-gateways/gateways.vue.js') }}"> </script> 
 
 </html>

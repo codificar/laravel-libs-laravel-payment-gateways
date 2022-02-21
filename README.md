@@ -1,5 +1,66 @@
-# laravel-payment-gateways
+# Laravel Payments Lib
+
 laravel-payment-gateways é uma bilioteca de pagamentos, que possui diversos gateways.
+
+## Installation
+
+Add in composer.json:
+
+```php
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://libs:ofImhksJ@git.codificar.com.br/laravel-libs/laravel-payment-gateways.git"
+    }
+]
+```
+
+```php
+require:{
+        "codificar/payment-gateways": "1.1.2",
+}
+```
+
+```php
+"autoload": {
+    "psr-4": {
+        "Codificar\\PaymentGateways\\": "vendor/codificar/payment-gateways/src/"
+    },
+}
+```
+
+Update project dependencies:
+
+```shell
+$ composer update
+```
+
+Register the service provider in `config/app.php`:
+
+```php
+'providers' => [
+  /*
+   * Package Service Providers...
+   */
+  Codificar\PaymentGateways\ServiceProvider::class,
+],
+```
+
+
+Publish Js Libs and Tests:
+
+```shell
+$ php artisan vendor:publish --tag=public_vuejs_libs --force
+$ php artisan vendor:publish --tag=publishes_gateway_tests --force
+```
+
+
+Run the migrations:
+
+```shell
+$ php artisan migrate
+```
+
 
 ***
 # Status dos gateways
