@@ -12,6 +12,7 @@ class UpdatePagarmeFields extends Migration
     public function up()
     {
         Settings::updateOrCreate(
+			['key' => 'pagarme_secret_key'],
             [
                 'key' => 'pagarme_secret_key',
                 'value' => '',
@@ -25,6 +26,7 @@ class UpdatePagarmeFields extends Migration
         );
 
         Settings::updateOrCreate(
+			['key' => 'pagarme_token'],
             [
                 'key' => 'pagarme_token',
                 'value' => '',
@@ -38,7 +40,7 @@ class UpdatePagarmeFields extends Migration
         );
 
         Settings::updateOrCreate(
-            ['key' => 'ipag_product_title'],
+            ['key' => 'gateway_product_title'],
             [
                 'key' => 'gateway_product_title',
                 'value' => 'Serviço prestado',
