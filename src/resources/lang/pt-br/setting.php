@@ -39,7 +39,8 @@ return array(
 	'uploaded'					=> 'enviado',
 
 	//Gateways de pagamento
-	'pagarme'					=> 'Pagar.me',
+	'pagarme'					=> 'Pagar.me V5',
+	'pagarmev2'					=> 'Pagar.me V2',
 	'stripe'					=> 'Stripe',
 	'zoop'						=> 'Zoop',
 	'cielo'						=> 'Cielo',
@@ -69,6 +70,8 @@ return array(
 	'advanced_settings'			=> 'Configurações Avançadas',
 	'pagarme_secret_key'		=> 'Chave secreta Pagar.me',
 	'pagarme_recipient_id'		=> 'Id de Recebedor do Pagar.me',
+	'pagarme_encryption_key'	=> 'Chave de Encriptação do Pagar.me',
+	'pagarme_api_key'			=> 'Chave Pública do Pagar.me',
 	'byebnk_api_key'			=> 'Chave de API do ByeBnk',
 	'byebnk_api_user'			=> 'Id do Usuario ByeBnk',
 	'stripe_secret'				=> 'Chave Privada do Stripe',

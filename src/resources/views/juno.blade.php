@@ -10,7 +10,7 @@
 	</head>
 	<body>
 		<div class="content">
-			<div id="VueJs">
+			<div id="payment-gateways">
 				<junoaddcard
 					juno-sandbox="{{ $juno_sandbox }}"
 					public-token="{{ $public_token }}"
@@ -21,6 +21,6 @@
 	</body>
 	
 	<script src="/libs/gateways/lang.trans/setting"> </script> 
-	<script src="{{ asset('vendor/codificar/laravel-payment-gateways/gateways.vue.js') }}"> </script> 
+	<script src="{{ asset('vendor/codificar/payment-gateways/js/gateways.vue.js') }}"> </script> 
 
 </html>

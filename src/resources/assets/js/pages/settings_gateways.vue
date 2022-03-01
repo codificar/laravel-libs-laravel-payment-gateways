@@ -781,7 +781,7 @@ export default {
           >
             <div class="panel-heading">
               <h3 class="panel-title">
-                {{ trans("setting.pagarme_settings") }} v2
+                {{ trans("setting.pagarme_settings") }} V2
               </h3>
               <hr />
             </div>
@@ -790,17 +790,7 @@ export default {
                 <div class="col-lg-6">
                   <div class="form-group">
                     <label for="usr">
-                      {{ trans("setting.pagarme_secret_key") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('settingTableSeeder.pagarme_secret_key')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
+                      {{ trans("setting.pagarme_encryption_key") }}
                       <span class="required-field">*</span>
                     </label>
                     <input
@@ -815,16 +805,6 @@ export default {
                   <div class="form-group">
                     <label for="usr">
                       {{ trans("setting.pagarme_recipient_id") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('settingTableSeeder.pagarme_recipient_id')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
                       <span class="required-field">*</span>
                     </label>
                     <input
@@ -841,14 +821,6 @@ export default {
                   <div class="form-group">
                     <label for="usr">
                       {{ trans("setting.pagarme_api_key") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.pagarme_api_key')"
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
                       <span class="required-field">*</span>
                     </label>
                     <input
@@ -871,7 +843,7 @@ export default {
           >
             <div class="panel-heading">
               <h3 class="panel-title">
-                {{ trans("setting.pagarme_settings") }} v5
+                {{ trans("setting.pagarme_settings") }} V5
               </h3>
               <hr />
             </div>
@@ -881,16 +853,6 @@ export default {
                   <div class="form-group">
                     <label for="usr">
                       {{ trans("setting.pagarme_secret_key") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('settingTableSeeder.pagarme_secret_key')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
                       <span class="required-field">*</span>
                     </label>
                     <input
@@ -905,16 +867,6 @@ export default {
                   <div class="form-group">
                     <label for="usr">
                       {{ trans("setting.pagarme_recipient_id") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('settingTableSeeder.pagarme_recipient_id')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
                       <span class="required-field">*</span>
                     </label>
                     <input
@@ -931,14 +883,6 @@ export default {
                   <div class="form-group">
                     <label for="usr">
                       {{ trans("setting.gateway_product_title") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('settingTableSeeder.gateway_product_title')"
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
                       <span class="required-field">*</span>
                     </label>
                     <input

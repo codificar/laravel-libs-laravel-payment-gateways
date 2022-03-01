@@ -12,3 +12,5 @@ let mix = require('laravel-mix');
  */
 
 mix.js('src/resources/assets/js/gateways.vue.js', 'public/js').vue();
+
+mix.copyDirectory('public/js', '../../../public/vendor/codificar/payment-gateways/js');

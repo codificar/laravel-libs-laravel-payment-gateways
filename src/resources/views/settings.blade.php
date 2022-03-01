@@ -17,7 +17,7 @@
 
 
 @section('content')
-	<div id="VueJs" class="col-sm-12">
+	<div id="payment-gateways" class="col-sm-12">
 		
 		<settingsgateways 
 			payment-methods="{{ json_encode($payment_methods)}}"
@@ -37,5 +37,5 @@
 
 @section('javascripts')
 <script src="/libs/gateways/lang.trans/setting"> </script> 
-<script src="{{ asset('vendor/codificar/laravel-payment-gateways/gateways.vue.js') }}"> </script> 
+<script src="{{ asset('vendor/codificar/payment-gateways/js/gateways.vue.js') }}"> </script> 
 @stop

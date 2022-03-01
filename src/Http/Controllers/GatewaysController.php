@@ -143,7 +143,7 @@ class GatewaysController extends Controller
 
     public $payment_gateways =  array(
         array('value' => 'pagarme', 'name' => 'setting.pagarme'),
-        array('value' => 'pagarmev2', 'name' => 'setting.pagarme'),
+        array('value' => 'pagarmev2', 'name' => 'setting.pagarmev2'),
         array('value' => 'stripe', 'name' => 'setting.stripe'),
         array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'cielo', 'name' => 'setting.cielo'),

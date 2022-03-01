@@ -1,3 +1,5 @@
 {
-    "/public/js/gateways.vue.js": "/public/js/gateways.vue.js"
+    "/public/js/gateways.vue.js": "/public/js/gateways.vue.js",
+    "/public/vendor/codificar/payment-gateways/js/gateways.vue.js": "/public/vendor/codificar/payment-gateways/js/gateways.vue.js",
+    "/public/vendor/codificar/payment-gateways/js/gateways.vue.js.LICENSE.txt": "/public/vendor/codificar/payment-gateways/js/gateways.vue.js.LICENSE.txt"
 }

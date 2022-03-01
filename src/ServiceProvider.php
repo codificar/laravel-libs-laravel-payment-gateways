@@ -35,7 +35,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
         // Publish the VueJS files inside public folder of main project (Copia os arquivos do vue minificados dessa biblioteca para pasta public do projeto que instalar essa lib)
         $this->publishes([
-            __DIR__ . '/../public/js' => public_path('vendor/codificar/laravel-payment-gateways'),
+            __DIR__ . '/../public/js' => public_path('vendor/codificar/payment-gateways'),
         ], 'public_vuejs_libs');
         
         // Publish the tests files 

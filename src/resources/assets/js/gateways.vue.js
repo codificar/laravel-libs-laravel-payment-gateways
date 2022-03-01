@@ -32,10 +32,9 @@ Vue.prototype.isEmpty = (obj) => {
     return _.isEmpty(obj);
 };
 
-
 //Main vue instance
 new Vue({
-    el: '#VueJs',
+    el: '#payment-gateways',
 
     data: {
     },
@@ -47,4 +46,4 @@ new Vue({
 
     created: function () {
     }
-})
+});
