@@ -19,6 +19,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
     {
         // Load routes (carrega as rotas)
         $this->loadRoutesFrom(__DIR__ . '/routes/web.php');
+        $this->loadRoutesFrom(__DIR__ . '/routes/api.php');
         $this->loadRoutesFrom(__DIR__ . '/routes/bancard.php');
         $this->loadRoutesFrom(__DIR__ . '/routes/bancoInter.php');
         $this->loadRoutesFrom(__DIR__ . '/routes/transbank.php');
@@ -35,7 +36,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
         // Publish the VueJS files inside public folder of main project (Copia os arquivos do vue minificados dessa biblioteca para pasta public do projeto que instalar essa lib)
         $this->publishes([
-            __DIR__ . '/../public/js' => public_path('vendor/codificar/payment-gateways'),
+            __DIR__ . '/../public/' => public_path('vendor/codificar/payment-gateways'),
         ], 'public_vuejs_libs');
         
         // Publish the tests files 
