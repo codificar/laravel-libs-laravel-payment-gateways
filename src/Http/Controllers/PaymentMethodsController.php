@@ -3,6 +3,8 @@
 namespace Codificar\PaymentGateways\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Codificar\PaymentGateways\Http\Requests\PaymentsMethodFormRequest;
+use Codificar\PaymentGateways\Http\Resources\PaymentMethodsResource;
 
 class PaymentMethodsController extends Controller
 {
@@ -21,17 +23,31 @@ class PaymentMethodsController extends Controller
     ];
 
     /**
-     * Recupera settings e acessa view
+     * Recupera os métodos de pagamento ativos
      * @return View
      */
-    public function getPaymentMethods()
+    public function getPaymentMethods(PaymentsMethodFormRequest $request)
     {
-        //pega os metodos de pagamentos
-        $paymentMethods = array();
-        foreach ($this->keysPaymentMethods as $key) {
-            $paymentMethods[$key] = (bool) \Settings::findByKey($key);
-        }   
+       $this->response = $this->message = [];
+       $this->response = [];
+       $this->statusCode = Response::HTTP_OK;
+       
+       try{
+            //pega os metodos de pagamentos
+            $paymentMethods = array();
+            foreach ($this->keysPaymentMethods as $key) {
+                $paymentMethods[$key] = (bool) \Settings::findByKey($key);
+            }   
+        } catch (\Throwable $e) {
+            Log::error('RequestController, getRequestDetailsById() ' . $e->getMessage());
+            $this->message = [
+                'message' => trans('api.bad_request')
+            ];
+            $this->statusCode = Response::HTTP_BAD_REQUEST;
+         }
 
-        return $paymentMethods;
+         return (new PaymentMethodsResource($this->response))
+         ->additional($this->message)
+         ->response()->setStatusCode($this->statusCode);
     }
 }
