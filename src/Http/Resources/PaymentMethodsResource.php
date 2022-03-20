@@ -35,8 +35,11 @@ class PaymentMethodsResource extends JsonResource {
      * @return array
      */
     public function toArray($request) {
+        // dd($this[1][1]['money_value']);
         return [
-            'success' => true,
+            'payment_money' => [ 'is_active' => $this[0][0] , 'payment_value' => $this[1][1]['money_value']],
+            'payment_card' => [ 'is_active' => $this[1][0] , 'payment_value' => $this[0][1]['payment_card_value']],
+            'payment_balance' => [ 'is_active' => $this[2][0] , 'payment_value' => $this[2][1]['balance_value']],
         ];
     }
 
