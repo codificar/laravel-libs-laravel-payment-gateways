@@ -30,19 +30,16 @@ class PaymentMethodsController extends Controller
        $this->response = $this->message = [];
        $this->response = [];
        $this->statusCode = Response::HTTP_OK;
-    //    $this->valuesPayment = collect([]);
-
        $paymentMethods = array();
-
-       for ($i = 0 ; $i < count($this->keysPaymentMethods); $i++) {
-           $paymentMethods[$i] = [(bool) \Settings::findByKey(
-               $this->keysPaymentMethods[$i]),
-               $this->valuesPayment[$i]];
-        }   
        try{
-            //pega os metodos de pagamentos
-            
-                $this->response = $paymentMethods;
+           //pega os metodos de pagamentos
+           for ($i = 0 ; $i < count($this->keysPaymentMethods); $i++) {
+               $paymentMethods[$i] = [
+                   (bool) \Settings::findByKey($this->keysPaymentMethods[$i]),
+                   $this->valuesPayment[$i]
+                ];
+            }   
+            $this->response = $paymentMethods;
             } catch (\Throwable $e) {
             Log::error('RequestController, getRequestDetailsById() ' . $e->getMessage());
             $this->message = [

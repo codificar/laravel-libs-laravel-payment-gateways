@@ -26,6 +26,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *       }
  * )
  */
+
+const FIRST = 0;
+const SECOND = 1;
+const TRHEE = 2;
+
 class PaymentMethodsResource extends JsonResource {
 
     /**
@@ -35,11 +40,19 @@ class PaymentMethodsResource extends JsonResource {
      * @return array
      */
     public function toArray($request) {
-        // dd($this[1][1]['money_value']);
         return [
-            'payment_money' => [ 'is_active' => $this[0][0] , 'payment_value' => $this[1][1]['money_value']],
-            'payment_card' => [ 'is_active' => $this[1][0] , 'payment_value' => $this[0][1]['payment_card_value']],
-            'payment_balance' => [ 'is_active' => $this[2][0] , 'payment_value' => $this[2][1]['balance_value']],
+            'payment_card' => [ 'is_active' => $this[SECOND][FIRST],
+                'payment_value' => $this[FIRST][SECOND]
+                ['payment_card_value']],
+
+            'payment_money' => [ 
+                'is_active' => $this[FIRST][FIRST],
+                'payment_value' => $this[SECOND][SECOND]
+                ['money_value']],
+
+            'payment_balance' => [ 'is_active' => $this[TRHEE][FIRST],
+                'payment_value' => $this[TRHEE][SECOND]
+                ['balance_value']],
         ];
     }
 
