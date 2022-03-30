@@ -492,19 +492,5 @@ class GatewaysController extends Controller
         }
     }
 
-    /**
-     * Recupera settings e acessa view
-     * @return View
-     */
-    public function getPaymentMethods()
-    {
-
-        //pega os metodos de pagamentos
-        $paymentMethods = array();
-        foreach ($this->keys_payment_methods as $key) {
-            $paymentMethods[$key] = (bool)Settings::findByKey($key);
-        }   
-
-        return $paymentMethods;
-    }
+    
 }
