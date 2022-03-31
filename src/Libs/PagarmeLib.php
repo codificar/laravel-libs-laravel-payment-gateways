@@ -192,7 +192,7 @@ Class PagarmeLib implements IPayment
     {
         try
         {
-            $response = PagarmeApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);
+            $response = PagarmeApi::billetCharge($amount, $client, $billetExpirationDate);
 
             if (
                 isset($response->success) ||
@@ -540,14 +540,6 @@ Class PagarmeLib implements IPayment
     public function createCard(Payment $payment, User $user = null)
     {
         $cardNumber 			= $payment->getCardNumber();
-		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
-		$cardExpirationYear 	= $payment->getCardExpirationYear();
-		$cardCvc 				= $payment->getCardCvc();
-		$cardHolder 			= $payment->getCardHolder();
-		$userName				= $user->first_name." ".$user->last_name;
-		$userDocument			= str_replace(".", "", $user->document);
-
-		// $cpf = $this->cleanCpf($user->document);
 
 		$result = array(
 			'success'		=>	true,

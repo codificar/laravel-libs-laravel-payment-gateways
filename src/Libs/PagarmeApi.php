@@ -350,7 +350,7 @@ class PagarmeApi
     {
         if($payment)
         {
-            $client     =   User::find($payment->user_id);
+			$client     =   $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
             $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
         }
 
