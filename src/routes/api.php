@@ -17,3 +17,10 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
         Route::get('/payment_methods', array('uses' => 'PaymentMethodsController@getPaymentMethods'));
     });
 });
+
+Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'), function () {
+    Route::group(['prefix' => 'libs/gateways/provider', 'middleware' => 'auth.provider_api'], function () {
+        Route::get('/get_payments', 'PaymentMethodsController@getProviderPayments');
+        Route::post('/set_payments', 'PaymentMethodsController@setProviderPayments');
+    });
+});
