@@ -160,34 +160,10 @@ class GatewaysController extends Controller
     );
 
 
-    public $keys_payment_methods =  array(
-        'payment_money',
-        'payment_card',
-        'payment_machine',
-        'payment_carto',
-        'payment_crypt',
-        'payment_debitCard',
-        'payment_balance',
-        'payment_prepaid',
-        'payment_billing',
-        'payment_direct_pix',
-        'payment_gateway_pix'
-    );
+    public $keys_payment_methods =  GatewaysLibModel::keysPaymentMethods;
 
     //Custom names of payment methods
-    public $name_keys_payment_methods =  array(
-        'name_payment_money',
-        'name_payment_card',
-        'name_payment_machine',
-        'name_payment_carto',
-        'name_payment_crypt',
-        'name_payment_debitCard',
-        'name_payment_balance',
-        'name_payment_prepaid',
-        'name_payment_billing',
-        'name_payment_direct_pix',
-        'name_payment_gateway_pix'
-    );
+    public $name_keys_payment_methods =  GatewaysLibModel::nameKeysPaymentMethods;
 
     public $keys_prepaid =  array(
         'prepaid_min_billet_value',

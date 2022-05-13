@@ -14,6 +14,65 @@ use Exception;
 
 class GatewaysLibModel extends Eloquent
 {
+    
+
+    const keysPaymentMethods =  array(
+        'payment_money',
+        'payment_card',
+        'payment_machine',
+        'payment_carto',
+        'payment_crypt',
+        'payment_debitCard',
+        'payment_balance',
+        'payment_prepaid',
+        'payment_billing',
+        'payment_direct_pix',
+        'payment_gateway_pix'
+    );
+
+    //Custom names of payment methods
+    const nameKeysPaymentMethods =  array(
+        'name_payment_money',
+        'name_payment_card',
+        'name_payment_machine',
+        'name_payment_carto',
+        'name_payment_crypt',
+        'name_payment_debitCard',
+        'name_payment_balance',
+        'name_payment_prepaid',
+        'name_payment_billing',
+        'name_payment_direct_pix',
+        'name_payment_gateway_pix'
+    );
+
+    // Values used to save at request table
+    const CARD = 0;
+	const MONEY = 1;
+	const CARTO = 2;
+	const MACHINE = 3;
+	const CRYPT = 4;
+	const CARD_DEBIT = 6;
+	const ASSOCIATION = 5;
+	
+	const BALANCE = 7;
+	const BILLING = 8;
+
+	const GATEWAY_PIX = 9;
+	const DIRECT_PIX = 10;
+
+    const valuesPayment =  [
+        'payment_money'        => self::MONEY,
+        'payment_card'         => self::CARD,
+        'payment_machine'      => self::MACHINE,
+        'payment_carto'        => self::CARTO,
+        'payment_crypt'        => self::CRYPT,
+        'payment_debitCard'    => self::CARD_DEBIT,
+        'payment_balance'      => self::BALANCE,
+        'payment_prepaid'      => self::BALANCE,
+        'payment_billing'      => self::BILLING,
+        'payment_direct_pix'   => self::GATEWAY_PIX,
+        'payment_gateway_pix'  => self::DIRECT_PIX,
+   ];
 
     protected $table = 'payment';
 
@@ -23,6 +82,114 @@ class GatewaysLibModel extends Eloquent
      * @var bool
      */
 	public $timestamps = true;
+
+
+    /**
+     * get array of payments available
+     *
+     * @return array
+     */
+    public static function getPaymentsAvailable($chatBot = false)
+	 {
+		$paymentArray = [];
+
+		// card
+		if ($payment = self::getPayment('payment_card')) {
+			$payment['index'] = self::CARD;
+			$paymentArray[] = $payment;
+		}
+
+		// money
+		if ($payment = self::getPayment('payment_money')) {
+			$payment['index'] = self::MONEY;
+			$paymentArray[] = $payment;
+		}
+
+		// carto
+		if ($payment = self::getPayment('payment_carto')) {
+			$payment['index'] = self::CARTO;
+			$paymentArray[] = $payment;
+		}
+
+		// machine
+		if ($payment = self::getPayment('payment_machine')) {
+			$payment['index'] = self::MACHINE;
+			$paymentArray[] = $payment;
+		}
+
+		// crypt
+		if ($payment = self::getPayment('payment_crypt')) {
+			$payment['index'] = self::CRYPT;
+			$paymentArray[] = $payment;
+		}
+
+		// debit card
+		if ($payment = self::getPayment('payment_debitCard')) {
+			$payment['index'] = self::CARD_DEBIT;
+			$paymentArray[] = $payment;
+		}
+
+		// Balance
+		if ($payment = self::getPayment('payment_balance')) {
+			$payment['index'] = self::BALANCE;
+			$paymentArray[] = $payment;
+		}
+
+		// Billing
+		if ($payment = self::getPayment('payment_billing')) {
+			$payment['index'] = self::BILLING;
+			$paymentArray[] = $payment;
+		}
+
+		if ($chatBot)
+			return array_filter(
+				$paymentArray, 
+				function ($query) { 
+					if ($query['active'] && in_array($query['index'], \RequestCharging::CHATBOT_WHITE_LIST))
+						return true; 
+				}
+			);
+		// Gateway Pix
+		if ($payment = self::getPayment('payment_gateway_pix')) {
+			$payment['index'] = self::GATEWAY_PIX;
+			$paymentArray[] = $payment;
+		}
+
+		// Direct Pix
+		if ($payment = self::getPayment('payment_direct_pix')) {
+			$payment['index'] = self::DIRECT_PIX;
+			$paymentArray[] = $payment;
+		}
+
+		return array_filter(
+			$paymentArray,
+			function ($query) {
+				if ($query['active']) return true;
+			}
+		);
+	}
+
+    /**
+     * get payment description array
+     *
+     * @return array
+     */
+    public static function getPayment($key)
+	{
+
+		$setting = \Settings::where('key', $key)->first();
+
+		if ($setting) {
+			return [
+				"id" 		    => $setting->id,
+				"name" 		    => trans('payment.' . $key),
+				"custom_name" 	=> \Settings::findByKey('name_'.$key),
+				"active" 	    => (bool) $setting->value,
+				"key"		    => $key
+			] ;
+ 		}
+ 		else return null ;
+    }
 	
 	public static function getUpdateCardsEstimateTime(){
 		//Get total cards except 'carto'
