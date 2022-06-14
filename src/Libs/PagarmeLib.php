@@ -54,6 +54,7 @@ Class PagarmeLib implements IPayment
     const PAYMENT_PENDING      =   'pending';
     const PAYMENT_ABORTED      =   'aborted';
     const PAYMENT_SCHEDULED    =   'scheduled';
+    const PAYMENT_ERROR        =   'error';
 
     const WAITING_PAYMENT = 'waiting_payment';
 
@@ -156,6 +157,7 @@ Class PagarmeLib implements IPayment
 			} else {
                 return array(
                     "success"           => false ,
+                    'status'            => self::PAYMENT_ERROR,
                     'data'              => null,
                     'transaction_id'    => -1,
                     'error' => array(
@@ -170,6 +172,7 @@ Class PagarmeLib implements IPayment
 			return array(
 				"success"           =>  false ,
 				'data'              =>  null,
+                'status'            => self::PAYMENT_ERROR,
 				'transaction_id'    =>  '',
 				'error' => array(
 					"code"      =>  ApiErrors::CARD_ERROR,

@@ -34,6 +34,7 @@ class PagarmeLib2 implements IPayment
 	const PAGARME_WAITING 			= 'waiting_payment';
 	const PAGARME_PENDING_REFUND 	= 'pending_refund';
 	const PAGARME_REFUSED 			= 'refused';
+	const PAGARME_ERROR 			= 'error';
 
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
@@ -227,16 +228,17 @@ class PagarmeLib2 implements IPayment
 					"type" 						=> 'api_charge_error',
 					"code" 						=> 'api_charge_error',
 					"message" 					=> trans("paymentError.refused"),
-					"transaction_id"			=> $pagarMeTransaction->id
+					"transaction_id"			=> $pagarMeTransaction->id,
+					'status' 					=> self::PAGARME_ERROR,
 				);
 			}
 
 			return array (
-				'success' => true,
-				'captured' => $capture,
-				'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'status' => $pagarMeTransaction->status,
-				'transaction_id' => strval($pagarMeTransaction->id)
+				'success' 			=> true,
+				'captured' 			=> $capture,
+				'paid' 				=> ($pagarMeTransaction->status == self::PAGARME_PAID),
+				'status' 			=> self::PAGARME_ERROR,
+				'transaction_id' 	=> strval($pagarMeTransaction->id)
 			);
 		}
 		catch(PagarMe_Exception $ex)
@@ -248,7 +250,8 @@ class PagarmeLib2 implements IPayment
 				"type" 						=> 'api_charge_error' ,
 				"code" 						=> $ex->getReturnCode() ,
 				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
-				"transaction_id"			=> ''
+				"transaction_id"			=> '',
+				"status"					=> 'error'
 			);		
 		}
 	}
@@ -535,7 +538,7 @@ class PagarmeLib2 implements IPayment
 					"type" 				=> 'api_refund_error' ,
 					"code" 				=> $ex->getCode(),
 					"message" 			=> $ex->getMessage(),
-					"transaction_id" 	=> $refund->id ,
+					"transaction_id" 	=> $transaction->id ,
 				);
 		
 		   }
