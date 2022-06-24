@@ -54,6 +54,7 @@ return array(
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
+	'ipag'						=> 'Ipag',
 	
 	
 	//Chaves dos gateways
@@ -163,6 +164,10 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
+	'ipag_expiration_time'		=> 'Tiempo de expiración de Pix',
+	'ipag_version'				=> 'Versión de IPag',
+	'ipag_version_1'			=> 'Versión 1',
+	'ipag_version_2'			=> 'Versión 2',
 	'ipag_antifraud_title'		=> '¿Quieres realizar transacciones con antifraude?',
 
 	'juno_settings'				=> 'Juno',

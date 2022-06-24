@@ -5,6 +5,7 @@ export default {
   props: ["PaymentMethods", "Gateways", "PixGateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
   data() {
     return {
+      isLoading: false,
       gateways: {},
       pix_gateways : {},
       payment_methods: {},
@@ -24,6 +25,7 @@ export default {
         cancelButtonText: this.trans("setting.no"),
       }).then((result) => {
         if (result.value) {
+          this.isLoading = true;
           //Submit form if its valid and email doesnt exists
           new Promise((resolve, reject) => {
             axios
@@ -71,8 +73,10 @@ export default {
                     type: "error",
                   }).then((result) => {});
                 }
+                this.isLoading = false;
               })
               .catch((error) => {
+                this.isLoading = false;
                 console.log(error);
                 reject(error);
                 return false;
@@ -116,6 +120,15 @@ export default {
 </script>
 <template>
   <div>
+    <!-- loading -->
+    <loading 
+        :active.sync="isLoading" 
+        :is-full-page="true"
+        :loader="'dots'"
+        :color="'#007bff'"
+    ></loading>
+    <!-- loading -->
+
     <!-- formas de pagamento -->
     <div class="tab-content">
       <div class="card-outline-info">
@@ -2596,11 +2609,16 @@ export default {
                   name="default_payment_pix"
                   class="select form-control"
                 >
-                  <option value="juno">juno</option>
+                  <option 
+                    v-for="gatewayPix in pix_gateways.list_gateways" 
+                    :key="gatewayPix.value"
+                    :value="gatewayPix.value">
+                    {{gatewayPix.name}}
+                  </option>
                 </select>
               </div>
             </div>
-            <div class="col-lg-6">
+            <div v-if="pix_gateways.default_payment_pix == 'juno'" class="col-lg-6">
               <div class="form-group">
                 <label for="usr">
                   {{ trans("setting.pix_key") }}
@@ -2621,6 +2639,33 @@ export default {
                   class="form-control"
                   v-model="pix_gateways.pix_key"
                 />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
+            <div v-if="pix_gateways.default_payment_pix == 'ipag'" class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.ipag_version") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="
+                      trans('setting.ipag_version')
+                    "
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                    <select
+                      v-model="pix_gateways.ipag.pix_ipag_version"
+                      class="select form-control"
+                      required
+                    >
+                      <option value="1">{{ trans("setting.ipag_version_1") }}</option>
+                      <option value="2"> {{ trans("setting.ipag_version_2") }} </option>
+                    </select>
                 <div class="help-block with-errors"></div>
               </div>
             </div>
@@ -2768,6 +2813,121 @@ export default {
                 <div class="col-lg-6">
                   {{this.pix_gateways.juno.pix_juno_auth_token = ""}}
                   {{this.pix_gateways.juno.pix_juno_auth_token_expiration_date = ""}}
+                </div>
+              </div>
+            </div>
+          </div>
+          <!--Configurações de pix da juno-->
+          <div
+            class="panel panel-default juno"
+            v-if="pix_gateways.default_payment_pix == 'ipag'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.ipag_settings") }}
+              </h3>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_api_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_api_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_api_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_api_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_api_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_api_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_expiration_time") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_expiration_time')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_expiration_time"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.operation_mode") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="trans('setting.operation_mode')"
+                        ><span class="mdi mdi-comment-question-outline"></span
+                      ></a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <select
+                      v-model="pix_gateways.ipag.pix_ipag_sandbox"
+                      class="select form-control"
+                      required
+                    >
+                      <option value="0">{{ trans("setting.production") }}</option>
+                      <option value="1"> {{ trans("setting.Sandbox") }} </option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>

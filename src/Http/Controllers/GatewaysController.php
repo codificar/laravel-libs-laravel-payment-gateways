@@ -138,6 +138,14 @@ class GatewaysController extends Controller
             'pix_juno_auth_token',
             'pix_juno_auth_token_expiration_date',
             'pix_juno_sandbox'
+        ] ,
+        'ipag' => [
+            'pix_ipag_api_id',
+            'pix_ipag_api_key',
+            'pix_ipag_expiration_time',
+            'pix_ipag_version',
+            'pix_ipag_sandbox'
+
         ]
     ];
 
@@ -155,6 +163,11 @@ class GatewaysController extends Controller
         array('value' => 'transbank', 'name' => 'setting.transbank'),
         array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
         array('value' => 'adiq', 'name' => 'setting.adiq'),
+        array('value' => 'ipag', 'name' => 'setting.ipag'),
+        array('value' => 'juno', 'name' => 'setting.juno'),
+    );
+    public $payment_pix_gateways =  array(
+        //array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'ipag', 'name' => 'setting.ipag'),
         array('value' => 'juno', 'name' => 'setting.juno'),
     );
@@ -214,6 +227,7 @@ class GatewaysController extends Controller
 
         //configuracoes dos gateways pix
         $pix_gateways = array();
+        $pix_gateways['list_gateways'] = $this->payment_pix_gateways;
         $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
         $pix_gateways['pix_key'] = Settings::findByKey('pix_key');
         //recupera as chaves de todos os gateways de pix
@@ -364,7 +378,7 @@ class GatewaysController extends Controller
         //se o gateway for juno, entao chama o metodo para configurar o webhooks
         if(isset($request->payment_methods['payment_gateway_pix']) && 
             $request->payment_methods['payment_gateway_pix'] && 
-            $pixGateway == 'juno'
+            ($pixGateway == 'juno' || $pixGateway == 'ipag') 
         ) {
             try {
                 $gateway = PaymentFactory::createPixGateway();
