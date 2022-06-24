@@ -172,6 +172,7 @@ return array(
 	'ipag_version_2'			=> 'Versão 2',
 	'ipag_antifraud_title'		=> 'Deseja fazer transações com antifraude?',
 
+	'Ipag_settings'				=> 'Ipag Configurações',
 	'juno_settings'				=> 'Juno Configurações',
 	'juno_client_id'			=> 'Client ID',
 	'juno_secret'				=> 'Secret (Client Secret)',

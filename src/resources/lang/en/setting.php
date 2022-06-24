@@ -173,6 +173,7 @@ return array(
 	'banco_inter_crt'			=> 'Certificate',
 	'banco_inter_key'			=> 'Key',
 
+	'ipag_settings'				=> 'Ipag Settings',
 	'juno_settings'				=> 'Juno',
 	'juno_client_id'			=> 'Client ID',
 	'juno_secret'				=> 'Secret (Client Secret)',
