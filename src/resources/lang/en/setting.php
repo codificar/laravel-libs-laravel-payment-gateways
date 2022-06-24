@@ -37,6 +37,7 @@ return array(
 	'compensate_provider_days'	=> 'Days to compensate the provider',
 	'compensate_provider_msg'	=> 'Define how many days the provider will receive the balance on your account statement when payment is made with a card. For the provider to receive the moment the request is finalized, enter 0. If no value is selected, the gateway compensation time (usually 31 days) will be considered.',
 	'uploaded'					=> 'uploaded',
+	'select'					=> 'Select',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pay me',

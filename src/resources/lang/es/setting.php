@@ -37,6 +37,7 @@ return array(
 	'compensate_provider_days'	=> 'Días para compensar al proveedor',
 	'compensate_provider_msg'	=> 'Defina cuántos días recibirá el proveedor el saldo en su estado de cuenta cuando el pago se realice con una tarjeta. Para que el proveedor lo reciba en el momento en que finalice la solicitud, ingrese 0. Si no se selecciona ningún valor, se considerará el tiempo de compensación de la puerta de enlace (generalmente 31 días).',
 	'uploaded'					=> 'enviado',
+	'select'					=> 'Seleccione',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Págame',

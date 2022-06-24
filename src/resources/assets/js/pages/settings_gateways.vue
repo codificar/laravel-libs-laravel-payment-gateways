@@ -2609,11 +2609,14 @@ export default {
                   name="default_payment_pix"
                   class="select form-control"
                 >
+                  <option :selected="!!pix_gateways.default_payment_pix" disabled>
+                    {{ trans("setting.select") }}
+                  </option>
                   <option 
                     v-for="gatewayPix in pix_gateways.list_gateways" 
                     :key="gatewayPix.value"
                     :value="gatewayPix.value">
-                    {{gatewayPix.name}}
+                    {{trans(gatewayPix.name)}}
                   </option>
                 </select>
               </div>
