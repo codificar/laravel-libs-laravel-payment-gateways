@@ -54,6 +54,7 @@ return array(
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
+	'ipag'						=> 'Ipag',
 	
 
 	
@@ -155,6 +156,10 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
+	'ipag_expiration_time'		=> 'Pix Expiration Time',
+	'ipag_version'				=> 'Ipag Version',
+	'ipag_version_1'			=> 'Version 1',
+	'ipag_version_2'			=> 'Version 2',
 	'ipag_antifraud_title'		=> 'Do you want to make transactions with anti-fraud?',
 
 	'adiq_client_id'			=> 'Adiq Client Id',

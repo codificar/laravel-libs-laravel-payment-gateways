@@ -88,6 +88,8 @@ class PaymentFactory
         switch (Settings::findByKey('default_payment_pix')) {
             case PaymentFacade::PAYMENT_GATEWAY_JUNO:
                 return (new JunoLib());
+            case PaymentFacade::PAYMENT_GATEWAY_IPAG:
+                return (new IpagLib());
 
         }
     }

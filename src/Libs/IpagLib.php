@@ -197,6 +197,65 @@ Class IpagLib implements IPayment
 		}
     }
 
+    public function createPixWebhooks() {
+
+        try
+        {
+            $url = route('GatewayPostbackPix') . '/ipag';
+            $exists = false;
+			$response = IpagApi::retrieveHooks(true);
+
+            if(isset($response->success) && 
+                $response->success && 
+                isset($response->data) 
+            ) {
+                foreach($response->data->data as $webhook) {
+                    if($webhook->attributes->url == $url) {
+                        $exists = true;
+                        break;                        
+                    }
+                }
+
+                if($exists) {
+                    return array (
+                        'success' 		 => true,
+                        'status' 		 => trans('payment.webhook_exists')
+                    );
+                }
+
+                $response = IpagApi::registerHook($url, true);
+
+                return array (
+                    'success' 		 => true,
+                    'status' 		 => trans('payment.webhook_created')
+                );
+
+            } else {
+                return array(
+                    "success" 	=> false ,
+                    'data' 		=> null,
+                    'error' 	=> array(
+                        "code" 		=> ApiErrors::CARD_ERROR,
+                        "messages" 	=> array(trans('payment.webhook_error'))
+                    )
+                );
+            }
+		} catch (\Throwable $th) {
+            Log::error($th->__toString());
+
+			return array(
+				"success" 	=> false ,
+				'data' 		=> null,
+				'error' 	=> array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array(trans('payment.webhook_error'))
+				)
+			);
+		}
+
+        
+    }
+
     /**
 	 * Função para gerar boletos de pagamentos
 	 * @param int $amount valor do boleto
@@ -802,7 +861,7 @@ Class IpagLib implements IPayment
         }
     }
 
-    public function pixCharge($amount, User $user)
+    public function pixCharge($amount, $user)
     {
         try
         {

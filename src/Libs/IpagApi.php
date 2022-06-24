@@ -618,10 +618,10 @@ class IpagApi
         return $fields;
     }
 
-    private static function getHeader($useVersion = false)
+    private static function getHeader($useVersion = false, $isPix = false)
     {
         $version    =   ['x-api-version: 2'];
-        $token      =   self::makeToken();
+        $token      =   self::makeToken($isPix);
         $ipagToken  =   Settings::findObjectByKey('ipag_token');
         $basic      =   $ipagToken && isset($ipagToken->value)  ? $ipagToken->value : $token;
 
@@ -630,16 +630,24 @@ class IpagApi
             'Authorization: Basic '.$basic
         );
 
-        if($useVersion)
+        $versionSettings  =   Settings::findObjectByKey('pix_ipag_version', '1');
+
+        if($useVersion || $versionSettings->value == '2')
             $header = array_merge($header, $version);
 
         return $header;
     }
 
-    private static function makeToken()
+    private static function makeToken($isPix = false)
     {
-        $ipagId     =   Settings::findObjectByKey('ipag_api_id');
-        $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
+        
+        if($isPix) {
+            $ipagId     =   Settings::findObjectByKey('pix_ipag_api_id');
+            $ipagKey    =   Settings::findObjectByKey('pix_ipag_api_key');
+        } else {
+            $ipagId     =   Settings::findObjectByKey('ipag_api_id');
+            $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
+        }
 
         $concateString = base64_encode($ipagId->value.':'.$ipagKey->value);
 
@@ -715,26 +723,41 @@ class IpagApi
         return vsprintf($mask, str_split($document));
     }
 
-    public static function retrieveHooks()
+    public static function retrieveHooks($isPix = false)
     {
         $body       =   null;
-        $header     =   self::getHeader();
+        $header     =   self::getHeader(false, $isPix);
         $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function registerHook($postbackUrl)
+    public static function registerHook($postbackUrl, $isPix = false)
     {
-        $header     =   self::getHeader();
+        $header     =   self::getHeader(false, $isPix);
         $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
 
-        $body       =   (object)array(
-            'http_method'   =>  self::POST_REQUEST,
-            'url'           =>  $postbackUrl,
-            'description'   =>  'Webhook para receber notificações de atualização das transações',
-            'actions'       =>  (object)array(
+        $actions = [
+            'TransactionCreated',
+            'TransactionWaitingPayment',
+            'TransactionCanceled',
+            'TransactionPreAuthorized',
+            'TransactionCaptured',
+            'TransactionDenied',
+            'TransactionDisputed',
+            'TransactionChargedback'
+        ];
+
+        if($isPix) {
+            $actions = [
+                'PaymentLinkPaymentSucceeded',
+                'PaymentLinkPaymentFailed',
+                'SubscriptionPaymentSucceeded',
+                'SubscriptionPaymentFailed',
+                'ChargePaymentSucceeded',
+                'ChargePaymentFailed',
                 'TransactionCreated',
                 'TransactionWaitingPayment',
                 'TransactionCanceled',
@@ -742,8 +765,17 @@ class IpagApi
                 'TransactionCaptured',
                 'TransactionDenied',
                 'TransactionDisputed',
-                'TransactionChargedback'
-            )
+                'TransactionChargedback',
+                'TransferPaymentSucceeded',
+                'TransferPaymentFailed'
+            ];
+        }
+
+        $body       =   (object)array(
+            'http_method'   =>  self::POST_REQUEST,
+            'url'           =>  $postbackUrl,
+            'description'   =>  'Webhook para receber notificações de atualização das transações',
+            'actions'       =>  (object)$actions
         );
 
         $apiRequest =   self::apiRequest($url, json_encode($body), $header, self::POST_REQUEST);
