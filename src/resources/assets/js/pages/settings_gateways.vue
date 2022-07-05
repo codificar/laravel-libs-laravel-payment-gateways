@@ -2995,7 +2995,7 @@ export default {
                       </a>
                       <span class="required-field">*</span>
                     </label>
-                    <div v-if="listWebhooks.lenght > 0" class="webhooks-ipag">
+                    <div v-if="listWebhooks" class="webhooks-ipag">
                       <ol>
                         <li v-for="webhook in listWebhooks" :key="webhook.id">{webhook.url}</li>
                       </ol>
