@@ -747,7 +747,7 @@ class IpagApi
     public static function registerHook($postbackUrl, $isPix = false)
     {
         $header     =   self::getHeader(false, $isPix);
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl($isPix));
 
         $actions = [
             'TransactionCreated',
