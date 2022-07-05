@@ -94,7 +94,7 @@ export default {
         axios
           .get("/libs/settings/retrieve/webhooks")
           .then((response) => {
-            console.lof('webhooks: ', response.data);
+            console.log('webhooks: ', response.data);
             this.isLoading = false;
             this.listWebhooks = response.data.webhooks;
           })

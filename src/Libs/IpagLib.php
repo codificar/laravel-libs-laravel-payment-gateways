@@ -213,9 +213,17 @@ Class IpagLib implements IPayment
                 isset($response->data) 
             ) {
 
+                $webhooks = $response->data->data;
+
+                $webhooks = array_map(function($webhook) {
+                    if(isset($webhook->attributes->url)) {
+                        return $webhook->attributes;
+                    }
+                }, $webhooks);
+
                 return array (
                     'success' 		 => true,
-                    'webhooks' 		 => $response->data,
+                    'webhooks' 		 => $webhooks,
                     'message' 		 => trans('payment.webhook_created')
                 );
 
