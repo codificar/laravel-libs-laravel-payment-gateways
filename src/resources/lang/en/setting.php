@@ -209,6 +209,7 @@ return array(
 	'prepaid_pix'				=> 'Pix Gateway balance entry',
 	'obs_pix_prepaid'			=> '- Payments per pix need payment gateway.',
 	'pix_key'					=> 'Pix Random Key',
+	'list_webhooks'				=> 'Webhooks',
 	
 	'pix_juno_settings'			=> 'Juno Settings',
 	'pix_juno_client_id'		=> 'Client ID',

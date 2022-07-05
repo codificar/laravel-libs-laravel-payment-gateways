@@ -207,6 +207,7 @@ return array(
 	'prepaid_pix'				=> 'Inserción de equilibrio Pix Gateway',
 	'obs_pix_prepaid'			=> '- Los pagos con Pix necesitan una pasarela de pago.',
 	'pix_key'					=> 'Clave de Pix Aleatoria',
+	'list_webhooks'				=> 'Webhooks',
 	
 	'pix_juno_settings'			=> 'Juno ajustes',
 	'pix_juno_client_id'		=> 'Client ID',

@@ -211,6 +211,7 @@ return array(
 	'prepaid_pix'				=> 'Inserção de saldo Pix Gateway',
 	'obs_pix_prepaid'			=> '- Pagamentos por pix precisam de gateway de pagamento.',
 	'pix_key'					=> 'Chave Pix Aleatória',
+	'list_webhooks'				=> 'Webhooks',
 	
 	'pix_juno_settings'			=> 'Juno Configurações',
 	'pix_juno_client_id'		=> 'Client ID',

@@ -2968,27 +2968,7 @@ export default {
                         class="question-field"
                         data-toggle="tooltip"
                         :title="
-                          trans('setting.webhooks')
-                        "
-                      >
-                        <span class="mdi mdi-comment-question-outline"></span>
-                      </a>
-                      <span class="required-field">*</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-lg-12">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.web_hooks") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="
-                          trans('setting.webhooks')
+                          trans('setting.list_webhooks')
                         "
                       >
                         <span class="mdi mdi-comment-question-outline"></span>
@@ -2997,7 +2977,9 @@ export default {
                     </label>
                     <div v-if="listWebhooks" class="webhooks-ipag">
                       <ol>
-                        <li v-for="webhook in listWebhooks" :key="webhook.id">{webhook.url}</li>
+                        <li v-for="webhook in listWebhooks" :key="webhook.id">
+                          {{ webhook.url }}
+                        </li>
                       </ol>
                     </div>
                   </div>
