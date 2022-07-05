@@ -6,6 +6,7 @@ export default {
   data() {
     return {
       isLoading: false,
+      listWebhooks: [],
       gateways: {},
       pix_gateways : {},
       payment_methods: {},
@@ -89,7 +90,7 @@ export default {
     },
 
     retrievePixWebHooks() {
-      this.isLoadingWebhooks = true;
+      this.isLoading = true;
       new Promise((resolve, reject) => {
         axios
           .get("/libs/settings/retrieve/webhooks")

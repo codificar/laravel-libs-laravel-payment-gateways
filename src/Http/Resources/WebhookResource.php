@@ -38,7 +38,7 @@ class WebhookResource extends JsonResource
 
         return [
             'success' => $this['success'],
-            'webhooks' => $this['webhooks'],
+            'data' => $this['data'],
             'message' => $this['message'],
         ];
     }
