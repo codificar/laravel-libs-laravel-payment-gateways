@@ -5,6 +5,7 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
 
     Route::group(['prefix' => 'libs/settings', 'middleware' => 'auth.admin'], function () {
         Route::post('/save/gateways', array('as' => 'webAdminSaveSettingsGateways', 'uses' => 'GatewaysController@saveSettings'));
+        Route::post('/retrieve/webhooks', array('as' => 'webAdminRetrieveWebhooksPix', 'uses' => 'GatewaysController@retrieveWebhooks'));
     });
 });
 

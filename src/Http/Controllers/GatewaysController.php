@@ -11,6 +11,7 @@ use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
 // Importar Resource
 use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
+use Codificar\PaymentGateways\Http\Resources\WebhookResource;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
@@ -436,6 +437,46 @@ class GatewaysController extends Controller
         return new GatewaysResource([
             'is_updating_cards' => $isUpdatingCards,
             'estimate_update_cards' => $estimateUpdateCards
+        ]);
+    }
+
+    /**
+     * @api{post}/libs/settings/retrieve/webhooks
+     * retrieve Webhooks pix
+     * @return Json
+     */
+    public function retrieveWebhooks()
+    {
+        $success = false;
+        $message = '';
+        $webhooks = [];
+
+        //verificar se o pix gateway está ativo
+        $isGatewayPix = Settings::getPaymentGatewayPix();
+        if($isGatewayPix == 1) {
+            $defaultGatewaPix = Settings::getDefaultPaymentPix();
+            if(isset($defaultGatewaPix) && !empty($defaultGatewaPix) && $defaultGatewaPix == 'ipag') {
+                try {
+                    $gateway = PaymentFactory::createPixGateway();
+                    $webhooks = $gateway->retrieveWebhooks();
+                    $success = true;
+                    $message = 'Webhooks recuperados com sucesso';
+                } catch (Exception $th) {
+                    \Log::error($th->getMessage());
+                    $message = 'Erro ao recuperar webhooks: ' . $th->getMessage();
+                }
+            } else {
+                $message = 'Para recuperar webhooks, é necessário ter o gateway ipag ativo';
+            }
+        } else {
+            $message = 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo';
+        }
+
+        // Return data
+        return new webhookResource([
+            'success' => $success,
+            'webhooks' => $webhooks,
+            'message' => $message
         ]);
     }
 

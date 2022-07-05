@@ -63,6 +63,8 @@ export default {
                       type: "success",
                     }).then((result) => {});
                   }
+                  //Atualizar a lista de webhooks pix
+                  this.retrievePixWebHooks();
                 } else {
                   this.$swal({
                     title: this.trans("setting.failed_set_gateway"),
@@ -84,6 +86,26 @@ export default {
           });
         }
       });
+    },
+
+    retrievePixWebHooks() {
+      this.isLoadingWebhooks = true;
+      new Promise((resolve, reject) => {
+        axios
+          .get("/libs/settings/retrieve/webhooks")
+          .then((response) => {
+            this.isLoading = false;
+            this.listWebhooks = response.data.webhooks;
+          })
+          .catch((error) => {
+            this.isLoading = false;
+            console.log(error);
+            reject(error);
+            return false;
+          });
+      });
+    },
+
     },
 
     processFile(event, type) {
@@ -115,6 +137,8 @@ export default {
     this.Certificates ? (this.certificates = JSON.parse(this.Certificates)) : null;
     this.Nomenclatures ? (this.nomenclatures = JSON.parse(this.Nomenclatures)) : null;
     this.nomenclatures.payments_custom_name = parseInt(this.nomenclatures.payments_custom_name) == 1 ? true : false;
+    //Atualizar a lista de webhooks pix
+    this.retrievePixWebHooks();
   },
 };
 </script>
@@ -2930,6 +2954,49 @@ export default {
                       <option value="0">{{ trans("setting.production") }}</option>
                       <option value="1"> {{ trans("setting.Sandbox") }} </option>
                     </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Webhooks Ipag -->
+              <div class="row">
+                <div class="col-lg-12">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.web_hooks") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.webhooks')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-lg-12">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.web_hooks") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.webhooks')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <div id="webhooks-ipag"></div>
                   </div>
                 </div>
               </div>

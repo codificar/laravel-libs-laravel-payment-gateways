@@ -183,18 +183,65 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (Exception $th) {
-            Log::error($th->__toString());
+            Log::error($th);
+
+            $transaction_id = null;
+            if($response) {
+                $transaction_id = $response->data->Payment->PaymentId;
+            }
 
 			return array(
 				"success"           =>  false ,
 				'data'              =>  null,
-				'transaction_id'    =>  $response->data->Payment->PaymentId,
+				'transaction_id'    =>  $transaction_id,
 				'error' => array(
 					"code"      =>  ApiErrors::CARD_ERROR,
 					"messages"  =>  array(trans('creditCard.customerCreationFail'))
 				)
             );
 		}
+    }
+
+    public function retrieveWebhooks() 
+    {
+        try
+        {
+			$response = IpagApi::retrieveHooks(true);
+
+            if(isset($response->success) && 
+                $response->success && 
+                isset($response->data) 
+            ) {
+
+                return array (
+                    'success' 		 => true,
+                    'webhooks' 		 => $response->data,
+                    'message' 		 => trans('payment.webhook_created')
+                );
+
+            } else {
+                return array(
+                    "success" 	=> false ,
+                    'webhooks' 	=> [],
+                    'error' 	=> array(
+                        "code" 		=> ApiErrors::NOT_FOUND,
+                        "messages" 	=> array(trans('payment.webhook_error'))
+                    )
+                );
+            }
+		} catch (\Throwable $th) {
+            Log::error($th->__toString());
+
+			return array(
+				"success" 	=> false ,
+				'webhooks' 	=> [],
+				'error' 	=> array(
+					"code" 		=> ApiErrors::API_ERROR,
+					"messages" 	=> array(trans('payment.webhook_error'))
+				)
+			);
+		}
+
     }
 
     public function createPixWebhooks() {
@@ -868,19 +915,54 @@ Class IpagLib implements IPayment
             $response = IpagApi::pixCharge($amount, $user);
 
             if (
-                isset($response->success) ||
-                $response->success ||
+                isset($response->success) &&
+                $response->success &&
                 isset($response->data->id)
-            )
+            ) {
+
+                //add minutesin settings
+                $minutes = Settings::getExpirationTimePix();
+                $expirationDate = strtotime($response->data->attributes->created_at);
+                $expirationDate = date('Y-m-d H:i:s', $expirationDate + $minutes * 60);
+
                 return array (
                     'success'                   =>  true,
-                    'captured'                  =>  true,
+                    'captured'                  =>  false,
                     'paid'                      =>  false,
                     'status'                    =>  self::WAITING_PAYMENT,
                     'transaction_id'            =>  (string)$response->data->id,
-                    'billet_expiration_date'    =>  $response->data->attributes->pix->qrcode
+                    'qr_code_base64'            =>  $response->data->attributes->pix->qrcode,
+                    'copy_and_paste'            =>  $response->data->attributes->pix->qrcode,
+                    'expiration_date_time'      =>  $expirationDate,
+                    'billet_expiration_date'    =>  $expirationDate
                 );
-            else
+            }
+            else if( isset($response->success)  && !$response->success) {
+                $message = '';
+                $code = '';
+                if(isset($response->message)) {
+                    if(gettype($response->message) == 'string') {
+                        $message = json_decode($response->message);
+                        if(gettype($message) == 'object') {
+                            $message = $message->message;
+                            $code = $message->code;
+                        } else {
+                            $message = $response->message;
+                        }
+                    }
+                }
+                
+
+                return array(
+                    "success" 				=>  false,
+                    "type" 					=>  'api_charge_error',
+                    "code" 					=>  $code,
+                    "message" 				=>  $message,
+                    "transaction_id"		=>  '',
+                    'billet_expiration_date'=>  ''
+                );
+
+            } else {
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_charge_error',
@@ -889,6 +971,7 @@ Class IpagLib implements IPayment
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
+            }
 
         } catch (\Throwable $th) {
             Log::error($th->getMessage());

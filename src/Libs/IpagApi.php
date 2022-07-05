@@ -31,10 +31,13 @@ class IpagApi
      *
      * @return String
      */
-    private static function apiUrl()
+    private static function apiUrl($isPix = false)
     {
-        if (App::environment() == 'production')
+        if($isPix && Settings::isSandboxEnviromentPix() == 0) {
             return self::URL_PROD;
+        } else if (App::environment() == 'production') {
+            return self::URL_PROD;
+        }
 
         return self::URL_DEV;
     }
@@ -390,9 +393,9 @@ class IpagApi
 
     public static function pixCharge($amount, $user)
     {
-        $url = sprintf('%s/payment', self::apiUrl());
+        $url = sprintf('%s/payment', self::apiUrl(true));
 
-        $header     =   self::getHeader(true);
+        $header     =   self::getHeader(true, true);
         $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -511,8 +514,14 @@ class IpagApi
             $method = Settings::getBilletProvider();
         }
 
+        if(strlen($client->state) > 2) {
+            $client->state = self::getMinStateString($client->state);
+        }
+
         $orderId        =   self::getOrderId();
-        $requestId      =   $client ? $client->getLastRequest()->id : $orderId;
+        $requestId      =   $client && $client->getLastRequest() 
+            ? $client->getLastRequest()->id 
+            : $orderId;
 
         $fields         =   (object)array(
             'amount'            =>  $amount,
@@ -649,8 +658,9 @@ class IpagApi
             $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
         }
 
+        
         $concateString = base64_encode($ipagId->value.':'.$ipagKey->value);
-
+        
         try {
             $token = Settings::findObjectByKey('ipag_token');
             $token->value = $concateString;
@@ -727,7 +737,7 @@ class IpagApi
     {
         $body       =   null;
         $header     =   self::getHeader(false, $isPix);
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl($isPix));
 
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
@@ -781,5 +791,83 @@ class IpagApi
         $apiRequest =   self::apiRequest($url, json_encode($body), $header, self::POST_REQUEST);
 
         return $apiRequest;
+    }
+
+    public static function getMinStateString($state)
+    {
+        $minState = '';
+        // get string full state and return min string
+        switch (strtolower($state)) {
+            case 'acre':
+                $minState = 'AC';
+                break;
+            case 'alagoas':
+                $minState = 'AL';
+                break;
+            case 'amapá':
+                $minState = 'AP';
+                break;
+            case 'amazonas':
+                $minState = 'AM';
+                break;
+            case 'bahia':
+                $minState = 'BA';
+                break;
+            case 'ceará':
+                $minState = 'CE';
+                break;
+            case 'distrito federal':
+                $minState = 'DF';
+                break;
+            case 'espírito santo':
+                $minState = 'ES';
+                break;
+            case 'goiás':
+                $minState = 'GO';
+                break;
+            case 'maranhão':
+                $minState = 'MA';
+                break;
+            case 'mato grosso':
+                $minState = 'MT';
+                break;
+            case 'mato grosso do sul':
+                $minState = 'MS';
+                break;
+            case 'minas gerais':
+                $minState = 'MG';
+                break;
+            case 'pará':
+                $minState = 'PA';
+                break;
+            case 'paraíba':
+                $minState = 'PB';
+                break;
+            case 'paraná':
+                $minState = 'PR';
+                break;
+            case 'pernambuco':
+                $minState = 'PE';
+                break;
+            case 'piauí':
+                $minState = 'PI';
+                break;
+            case 'rio de janeiro':
+                $minState = 'RJ';
+                break;
+            case 'rio grande do norte':
+                $minState = 'RN';
+                break;
+            case 'rio grande do sul':
+                $minState = 'RS';
+                break;
+            case 'rondônia':
+                $minState = 'RO';
+                break;
+            case 'roraima':
+                $minState = 'RR';
+                break;
+        }
+        return $minState;
     }
 }
