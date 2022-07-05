@@ -6,7 +6,7 @@ export default {
   data() {
     return {
       isLoading: false,
-      listWebhooks: [],
+      listWebhooks: null,
       gateways: {},
       pix_gateways : {},
       payment_methods: {},
@@ -2958,7 +2958,7 @@ export default {
               </div>
 
               <!-- Webhooks Ipag -->
-              <div class="row">
+              <div v-if="listWebhooks" class="row">
                 <div class="col-lg-12">
                   <div class="form-group">
                     <label for="usr">
@@ -2975,7 +2975,7 @@ export default {
                       </a>
                       <span class="required-field">*</span>
                     </label>
-                    <div v-if="listWebhooks" class="webhooks-ipag">
+                    <div class="webhooks-ipag">
                       <ol>
                         <li v-for="webhook in listWebhooks" :key="webhook.id">
                           {{ webhook.url }}
