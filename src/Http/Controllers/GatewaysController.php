@@ -475,7 +475,7 @@ class GatewaysController extends Controller
         // Return data
         return new webhookResource([
             'success' => $success,
-            'webhooks' => $webhooks,
+            'data' => $webhooks,
             'message' => $message
         ]);
     }

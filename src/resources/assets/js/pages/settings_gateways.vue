@@ -94,9 +94,8 @@ export default {
         axios
           .get("/libs/settings/retrieve/webhooks")
           .then((response) => {
-            console.log('webhooks: ', response.data);
             this.isLoading = false;
-            this.listWebhooks = response.data.webhooks;
+            this.listWebhooks = response.data.data.webhooks;
           })
           .catch((error) => {
             this.isLoading = false;
@@ -2995,7 +2994,11 @@ export default {
                       </a>
                       <span class="required-field">*</span>
                     </label>
-                    <div id="webhooks-ipag"></div>
+                    <div v-if="listWebhooks.lenght > 0" class="webhooks-ipag">
+                      <ol>
+                        <li v-for="webhook in listWebhooks" :key="webhook.id">{webhook.url}</li>
+                      </ol>
+                    </div>
                   </div>
                 </div>
               </div>
