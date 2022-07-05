@@ -2962,7 +2962,7 @@ export default {
                 <div class="col-lg-12">
                   <div class="form-group">
                     <label for="usr">
-                      {{ trans("setting.web_hooks") }}
+                      {{ trans("setting.list_webhooks") }}
                       <a
                         href="#"
                         class="question-field"
