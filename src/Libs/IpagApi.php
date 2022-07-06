@@ -523,13 +523,17 @@ class IpagApi
             ? $client->getLastRequest()->id 
             : $orderId;
 
+        $phone = preg_replace('/\D/', '', $client->phone);
+        if(strlen($phone) > 11)
+            $phone = substr($phone, 2);
+
         $fields         =   (object)array(
             'amount'            =>  $amount,
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
                 'email'         =>  $client->email,
-                'phone'         =>  substr(preg_replace('/\D/', '', $client->phone), 2),
+                'phone'         =>  $phone,
                 'cpf_cnpj'      =>  $client->document,
                 'billing_address'=>  (object)array(
                     'street'    =>  $client->address,
