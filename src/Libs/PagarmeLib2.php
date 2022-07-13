@@ -597,15 +597,11 @@ class PagarmeLib2 implements IPayment
                     'transaction_id' => $pagarMeTransaction->id
                 );
             } else {
-                $request		= Requests::find($requestId);
-                $user			= User::find($request->id);
-                $refund			= $this->refund($transaction, $payment);
+                \Log::debug('provider without bank account and recipient_id, just do a normal capture');
 
-                \Log::debug("[refund_capture]response:". print_r($refund, 1));
+                $chargeCapture =  $this->capture($transaction, $totalAmount, $payment);
 
-                $chargeCapture	= $this->chargeWithSplit($payment, $provider, $totalAmount, $providerAmount, sprintf(trans('payment.ride_payment'), $requestId), true, $user);
-
-                \Log::debug("[charge_capture]response:". print_r($chargeCapture, 1));
+                \Log::debug("[capture_split] chargeCapture response:". print_r($chargeCapture, 1));
 
                 return $chargeCapture;
             }
