@@ -754,7 +754,7 @@ class PagarmeLib2 implements IPayment
 
             $return = array(
                 "success" 					=> false ,
-                "recipient_id"				=> 'empty',
+                "recipient_id"				=> null,
                 "type" 						=> 'api_bankaccount_error' ,
                 "code" 						=> $ex->getReturnCode() ,
                 "message" 					=> trans("empty.".$ex->getMessage())
