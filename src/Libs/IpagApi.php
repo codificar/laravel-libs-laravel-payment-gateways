@@ -474,7 +474,7 @@ class IpagApi
     //     return $amount;
     // }
 
-    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false)
+    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
         if($payment)
             $client = User::find($payment->user_id);
