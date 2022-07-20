@@ -50,6 +50,12 @@ Class IpagLib implements IPayment
     const WAITING_PAYMENT = 'waiting_payment';
 
     /**
+     * ERROR MESSAGES
+     */
+    const CUSTOMER_BLACK_LIST = 'Customer has been blacklisted';
+    const DECLINED = 'DECLINED';
+
+    /**
      * Charge a credit card with split rules
      *
      * @param Payment       $payment
@@ -139,48 +145,67 @@ Class IpagLib implements IPayment
         try
         {
             $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
-            $sysAntifraud = Settings::findByKey('ipag_antifraud');
+            $sysAntifraud = filter_var(Settings::findByKey('ipag_antifraud'), FILTER_VALIDATE_BOOLEAN);
 
-			if(
-                isset($response->success) && 
-                $response->success && 
-                isset($response->data) && 
-                (
-                    (
-                        $sysAntifraud &&
-                        isset($response->data->attributes->antifraud->status) &&
-                        $response->data->attributes->antifraud->status == 'approved'
-                    ) 
-                    ||
-                    (
-                        !$sysAntifraud
-                    )
-                )
-                &&
-                (
-                    $response->data->attributes->status->message == 'CAPTURED' ||
-                    $response->data->attributes->status->message == 'PRE-AUTHORIZED'
-                )
-            ){
+			if(isset($response->success) && $response->success && // verifica se houve sucesso
+                isset($response->data) // verifica se existe o objeto data
+            ) {
+                //verifica se o sistema antifraude está ativo e se houve algum retorno via ipag
+                $isAntiFraudIpag = $sysAntifraud && 
+                    isset($response->data->attributes->antifraud) && 
+                    $response->data->attributes->antifraud->status == 'approved';
+                
                 $statusMessage = $response->data->attributes->status->message;
-				$result = array (
-                    'success'           =>  true,
-                    'captured'          =>  $statusMessage == 'CAPTURED' ? true : false,
-                    'paid'              =>  $statusMessage == 'CAPTURED' ? true : false,
-                    'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
-                    'transaction_id'    =>  (string)$response->data->id
-                );
-				return $result;
-			} else {
+
+                $isApproved = $statusMessage == 'CAPTURED' || $statusMessage == 'PRE-AUTHORIZED';
+
+                if($isApproved && ($isAntiFraudIpag || !$sysAntifraud) ) {
+                    return array (
+                        'success'           =>  true,
+                        'captured'          =>  $statusMessage == 'CAPTURED' ? true : false,
+                        'paid'              =>  $statusMessage == 'CAPTURED' ? true : false,
+                        'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
+                        'transaction_id'    =>  (string)$response->data->id
+                    );
+                } else {
+                    Log::error('IPAG ERROR TRANSACTION:' . json_encode($response));
+                    $code = ApiErrors::CARD_ERROR;
+                    $message = array(trans('creditCard.customerCreationFail'));
+                    if(isset($response->message)) {
+                        try {
+                            $jsonErrors = json_decode($response->message);
+                            $message = $jsonErrors->error->message; 
+                            $code = $jsonErrors->error->code;
+                        } catch (Exception $e) {
+                            if(gettype($response->message) == 'string') {
+                                $message = $response->message;
+                            }
+                        }
+                    } else if(isset($statusMessage)) {
+                        $message = $statusMessage;
+                    }
+
+                    return array(
+                        "success"           => false ,
+                        'data'              => null,
+                        'transaction_id'    => -1,
+                        'error' => array(
+                            "code"      => $code,
+                            "messages"  => $this->getTranslateMessage($message)
+                        )
+                    );
+                }
+            } else {
                 return array(
                     "success"           => false ,
-                    'data'              => null,
+                    'data'              => $response,
                     'transaction_id'    => -1,
                     'error' => array(
                         "code"      => ApiErrors::CARD_ERROR,
-                        "messages"  => array(trans('creditCard.customerCreationFail'))
+                        "messages"  => trans('creditCard.errorTransaction')
                     )
                 );
+
             }
 		} catch (Exception $th) {
             Log::error($th);
@@ -1078,5 +1103,32 @@ Class IpagLib implements IPayment
     {
         if(!isset($response['success']) || !$response['success'])
             throw new Exception($errorMessage);
+    }
+
+    /**
+     *
+     * @param String        $Message       An arbitrary string to translate
+     * 
+     * @return void
+     */
+    private function getTranslateMessage($message)
+    {
+
+        if(is_array($message)) {
+            foreach($message as $key => $value) {
+                $message[$key] = trans($value);
+            }
+            return $message;
+        } else {
+            if(strpos($message, self::CUSTOMER_BLACK_LIST) !== false) {
+                return trans('creditCard.transactionFailCustomerBlackList');
+            } 
+            if(strpos($message, self::DECLINED) !== false) {
+                return trans('creditCard.transactionFailDeclained');
+            } 
+        }
+
+        return trans('creditCard.customerCreationFail');
+        
     }
 }
