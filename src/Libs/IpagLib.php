@@ -240,11 +240,11 @@ Class IpagLib implements IPayment
 
                 $webhooks = $response->data->data;
 
-                $webhooks = array_map(function($webhook) {
-                    if(isset($webhook->attributes->url)) {
+                $webhooks = array_filter($webhooks, function($webhook) {
+                    if(isset($webhook->attributes->url) && strpos($webhook->attributes->url, url('/')) !== false) {
                         return $webhook->attributes;
                     }
-                }, $webhooks);
+                });
 
                 return array (
                     'success' 		 => true,
