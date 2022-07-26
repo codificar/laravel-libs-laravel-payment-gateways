@@ -954,7 +954,9 @@ Class IpagLib implements IPayment
             if (
                 isset($response->success) &&
                 $response->success &&
-                isset($response->data->id)
+                isset($response->data->attributes) &&
+                isset($response->data->attributes->status) &&
+                $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT
             ) {
 
                 //add minutesin settings
@@ -974,6 +976,36 @@ Class IpagLib implements IPayment
                     'billet_expiration_date'    =>  $expirationDate
                 );
             }
+            else if(
+                isset($response->success) &&
+                $response->success &&
+                isset($response->data->attributes) &&
+                isset($response->data->attributes->status) &&
+                $response->data->attributes->status->code != self::CODE_WAITING_PAYMENT
+            ) {
+                $message = '';
+                $code = $response->data->attributes->status->code;
+                
+                $acquirer = $response->data->attributes->acquirer;
+                $status = $response->data->attributes->status;
+                if($status) {
+                    $code = $status->code;
+                    $message = $status->message;
+                }
+                
+                if(isset($acquirer->message)) {
+                    $message = $acquirer->message;
+                }
+
+                return array(
+                    "success" 				=>  false,
+                    "type" 					=>  'api_charge_error',
+                    "code" 					=>  $code,
+                    "message" 				=>  $message,
+                    "transaction_id"		=>  '',
+                    'billet_expiration_date'=>  ''
+                );
+            }
             else if( isset($response->success)  && !$response->success) {
                 $message = '';
                 $code = '';
@@ -987,8 +1019,20 @@ Class IpagLib implements IPayment
                             $message = $response->message;
                         }
                     }
+                } else if(isset($response->data)){
+                    $acquirer = $response->data->attributes->acquirer;
+                    if($acquirer) {
+                        $code = $acquirer->code;
+                        $message = $acquirer->message;
+                    } else {
+                        $status = $response->data->attributes->status;
+                        if($status) {
+                            $code = $status->code;
+                            $message = $status->message;
+                        }
+
+                    }
                 }
-                
 
                 return array(
                     "success" 				=>  false,
