@@ -976,9 +976,9 @@ Class IpagLib implements IPayment
                 if(isset($response->message)) {
                     if(gettype($response->message) == 'string') {
                         $message = json_decode($response->message);
-                        if(gettype($message) == 'object') {
-                            $message = $message->message;
-                            $code = $message->code;
+                        if(gettype($message) == 'object' && $message->error) {
+                            $code = $message->error->code;
+                            $message = $message->error->message;
                         } else {
                             $message = $response->message;
                         }
