@@ -169,7 +169,7 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
-	'ipag_expiration_time'		=> 'Tempo de Expiração do Pix',
+	'ipag_expiration_time'		=> 'Tempo de Expiração do Pix (min)',
 	'ipag_version'				=> 'Versão do IPag',
 	'ipag_version_1'			=> 'Versão 1',
 	'ipag_version_2'			=> 'Versão 2',
