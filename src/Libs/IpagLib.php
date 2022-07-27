@@ -956,7 +956,8 @@ Class IpagLib implements IPayment
                 $response->success &&
                 isset($response->data->attributes) &&
                 isset($response->data->attributes->status) &&
-                $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT
+                ($response->data->attributes->status->code == self::CODE_CREATED ||
+                $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT)
             ) {
 
                 //add minutesin settings
@@ -981,7 +982,8 @@ Class IpagLib implements IPayment
                 $response->success &&
                 isset($response->data->attributes) &&
                 isset($response->data->attributes->status) &&
-                $response->data->attributes->status->code != self::CODE_WAITING_PAYMENT
+                ($response->data->attributes->status->code != self::CODE_WAITING_PAYMENT ||
+                $response->data->attributes->status->code != self::CODE_WAITING_PAYMENT)
             ) {
                 $message = '';
                 $code = $response->data->attributes->status->code;
