@@ -999,6 +999,8 @@ Class IpagLib implements IPayment
                     $message = $acquirer->message;
                 }
 
+                Log::error('pixCharge > Error 1:' . json_encode($response));
+                
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_charge_error',
@@ -1036,6 +1038,8 @@ Class IpagLib implements IPayment
                     }
                 }
 
+                Log::error('pixCharge > Error 2' . json_encode($response));
+
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_charge_error',
@@ -1057,7 +1061,8 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            Log::error($th->getMessage());
+            Log::error('pixCharge > Error Throwable: ' . $th->getMessage());
+
 
 			return array(
 				"success" 				=>  false,
