@@ -195,6 +195,35 @@ Class IpagLib implements IPayment
                         )
                     );
                 }
+            } else if(
+                isset($response->success) && !$response->success && // verifica se houve sucesso
+                isset($response->message) // verifica se existe o objeto data
+            ) {
+                Log::error('Error chargeWithOrNotSplit IPag: ' . json_encode($response));
+                
+                $message =  $response->message;
+                $code = ApiErrors::CARD_ERROR;
+                if(gettype($message) == 'string'){
+                    try {
+                        $message = json_decode($message);
+                    } catch (\Throwable $th) {}
+                    
+                    if(isset($message->error)){
+                        $code = $message->error->code;
+                        $message = $message->error->message;
+                    }
+                }
+
+                return array(
+                    "success"           => false ,
+                    'data'              => $response,
+                    'transaction_id'    => -1,
+                    'error' => array(
+                        "code"      => $code,
+                        "messages"  => $message
+                    )
+                );            
+            
             } else {
                 return array(
                     "success"           => false ,
@@ -665,6 +694,35 @@ Class IpagLib implements IPayment
                 );
                 
                 return $result;
+            } else if(
+                isset($response->success) && 
+                !$response->success &&
+                isset($response->message)
+            ) {
+                Log::error('Error refund IPag: ' . json_encode($response));
+                
+                $message =  $response->message;
+                if(gettype($message) == 'string'){
+                    try {
+                        $message = json_decode($message);
+                    } catch (\Throwable $th) {
+                        //throw $th;
+                    }
+                    
+                    $code = 'api_refund_error';
+                    if(isset($message->error)){
+                        $code = $message->error->code;
+                        $message = $message->error->message;
+                    } 
+                }
+                
+                return array(
+                    "success" 			=> false ,
+                    "type" 				=> 'api_refund_error' ,
+                    "code" 				=> $code,
+                    "message" 			=> $message,
+                    "transaction_id" 	=> ''
+                );
             }
 		
 		} catch (\Throwable $ex) {
