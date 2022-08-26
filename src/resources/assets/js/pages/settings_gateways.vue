@@ -2,11 +2,23 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "PixGateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
+  props: [
+    "PaymentMethods", 
+    "Gateways", 
+    "PixGateways", 
+    "Carto", 
+    "Bancryp", 
+    "Prepaid", 
+    "Settings", 
+    "Certificates", 
+    "Nomenclatures",
+    "EnviromentActive"
+  ],
   data() {
     return {
       isLoading: false,
       listWebhooks: null,
+      messageWebhook: '',
       gateways: {},
       pix_gateways : {},
       payment_methods: {},
@@ -91,12 +103,17 @@ export default {
 
     retrievePixWebHooks() {
       this.isLoading = true;
+      this.messageWebhook = '';
       new Promise((resolve, reject) => {
         axios
           .get("/libs/settings/retrieve/webhooks")
           .then((response) => {
             this.isLoading = false;
             this.listWebhooks = response.data.data.webhooks;
+            this.messageWebhook = this.trans("setting.failed_retreive_webhook");
+            if(response.data.data.message) {
+              this.messageWebhook = this.trans(`setting.${response.data.data.message}`);
+            }
           })
           .catch((error) => {
             this.isLoading = false;
@@ -2852,6 +2869,9 @@ export default {
               <h3 class="panel-title">
                 {{ trans("setting.ipag_settings") }}
               </h3>
+              <span class="enviroment" v-if="EnviromentActive">
+                {{ trans("setting.enviromentActive") }}: <b>{{ trans(`setting.${EnviromentActive}`) || '' }}</b>
+              </span>
               <hr />
             </div>
             <div class="panel-body">
@@ -2932,29 +2952,6 @@ export default {
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
-                <div class="col-lg-6">
-                  <div class="form-group">
-                    <label for="usr">
-                      {{ trans("setting.operation_mode") }}
-                      <a
-                        href="#"
-                        class="question-field"
-                        data-toggle="tooltip"
-                        :title="trans('setting.operation_mode')"
-                        ><span class="mdi mdi-comment-question-outline"></span
-                      ></a>
-                      <span class="required-field">*</span>
-                    </label>
-                    <select
-                      v-model="pix_gateways.ipag.pix_ipag_sandbox"
-                      class="select form-control"
-                      required
-                    >
-                      <option value="0">{{ trans("setting.production") }}</option>
-                      <option value="1"> {{ trans("setting.Sandbox") }} </option>
-                    </select>
-                  </div>
-                </div>
               </div>
 
               <!-- Webhooks Ipag -->
@@ -2984,6 +2981,13 @@ export default {
                     </div>
                   </div>
                 </div>
+              </div>
+              <div v-else>
+                <ul>
+                  <li>
+                    <p class="Error-webhook">{{messageWebhook}}</p>
+                  </li>  
+                </ul>
               </div>
             </div>
           </div>
@@ -3021,5 +3025,9 @@ export default {
 
 .card-margin-top {
   margin-top: 30px !important;
+}
+
+.enviroment {
+  font-size: 11px;
 }
 </style>

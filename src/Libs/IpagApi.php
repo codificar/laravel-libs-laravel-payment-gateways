@@ -31,14 +31,11 @@ class IpagApi
      *
      * @return String
      */
-    private static function apiUrl($isPix = false)
+    private static function apiUrl()
     {
-        if($isPix && Settings::isSandboxEnviromentPix() == 0) {
-            return self::URL_PROD;
-        } else if (App::environment() == 'production') {
+        if (App::environment() == 'production') {
             return self::URL_PROD;
         }
-
         return self::URL_DEV;
     }
 
@@ -393,7 +390,7 @@ class IpagApi
 
     public static function pixCharge($amount, $user)
     {
-        $url = sprintf('%s/payment', self::apiUrl(true));
+        $url = sprintf('%s/payment', self::apiUrl());
 
         $header     =   self::getHeader(true, true);
         $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
@@ -741,7 +738,7 @@ class IpagApi
     {
         $body       =   null;
         $header     =   self::getHeader(false, $isPix);
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl($isPix));
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
 
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
@@ -751,7 +748,7 @@ class IpagApi
     public static function registerHook($postbackUrl, $isPix = false)
     {
         $header     =   self::getHeader(false, $isPix);
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl($isPix));
+        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
 
         $actions = [
             'TransactionCreated',

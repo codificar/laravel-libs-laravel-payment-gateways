@@ -144,8 +144,7 @@ class GatewaysController extends Controller
             'pix_ipag_api_id',
             'pix_ipag_api_key',
             'pix_ipag_expiration_time',
-            'pix_ipag_version',
-            'pix_ipag_sandbox'
+            'pix_ipag_version'
 
         ]
     ];
@@ -291,7 +290,8 @@ class GatewaysController extends Controller
                 'prepaid' => $prepaid,
                 'settings' => $settings,
                 'certificates' => $certificates,
-                'nomenclatures' => $nomenclatures
+                'nomenclatures' => $nomenclatures,
+                'enviroment' => \App::environment()
             ]);
     }
 

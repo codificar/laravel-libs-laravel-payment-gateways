@@ -215,4 +215,11 @@ return array(
 	'pix_juno_resource_token'	=> 'Token de recurso (token privado)',
 	'pix_juno_public_token'		=> 'Token Público',
 	'pix_juno_sandbox'			=> 'Modo de operación',
+
+	'enviromentActive' 			=> 'Entorno activo',
+	'local'						=> 'Prueba  (Sandbox)',
+	'production'	      		=> 'Producción',
+
+	'failed_retreive_webhook'	=> 'Error al recuperar la lista de webhooks',
+	'Unauthorized'	 			=> 'Error al autenticar las claves de acceso',
 );

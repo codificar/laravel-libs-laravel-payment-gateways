@@ -217,4 +217,11 @@ return array(
 	'pix_juno_resource_token'	=> 'Resource Token (private)',
 	'pix_juno_public_token'		=> 'Public Token',
 	'pix_juno_sandbox'			=> 'Operation Mode',
+
+	'enviromentActive' 			=> 'Active environment',
+	'local'						=> 'Test  (Sandbox)',
+	'production'	      		=> 'Production',
+
+	'failed_retreive_webhook'	=> 'Failed to Retrieve List of Webhooks',
+	'Unauthorized'	 			=> 'Failed to authenticate access keys',
 );
