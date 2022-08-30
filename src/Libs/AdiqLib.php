@@ -44,7 +44,7 @@ Class AdiqLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */      
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
     {
         $paymentId = null ;
 

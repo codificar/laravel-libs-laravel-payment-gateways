@@ -149,7 +149,7 @@ class ZoopLib implements IPayment
      * @param $capture Boolean - definição de captura da transação
      * @return array
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
     {
         try
         {

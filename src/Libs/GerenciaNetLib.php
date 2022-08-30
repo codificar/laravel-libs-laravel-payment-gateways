@@ -144,7 +144,7 @@ class GerenciaNetLib implements IPayment
 	 * @param $user User - usuário da transação
 	 * @return array
 	 */
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
 	{
 		return $this->createAndPayCharge([
 			'items'		=> $this->formatItems($description, $amount),

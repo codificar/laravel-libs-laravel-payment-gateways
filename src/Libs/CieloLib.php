@@ -196,7 +196,7 @@ class CieloLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])

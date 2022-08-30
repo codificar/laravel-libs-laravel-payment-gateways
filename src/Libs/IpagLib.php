@@ -140,11 +140,12 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */      
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null, $providerAmount = null)
     {
         try
         {
-            $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $amount, $providerAmount, $capture);
+            
             $sysAntifraud = filter_var(Settings::findByKey('ipag_antifraud'), FILTER_VALIDATE_BOOLEAN);
 
 			if(isset($response->success) && $response->success && // verifica se houve sucesso

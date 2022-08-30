@@ -234,37 +234,37 @@ class IpagApi
 
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        if(
-            $ledgerBankAccount->recipient_id != '' && 
-            $ledgerBankAccount->recipient_id != 'empty' && 
-            $ledgerBankAccount->recipient_id !== null
-        )
-            $response = self::getSeller($ledgerBankAccount->recipient_id);
-        else
-            $response = null;
-
-        if(!isset($response->data->id))
-        {
-            $url = sprintf('%s/resources/sellers', self::apiUrl());
-            $verb = self::POST_REQUEST;
+        $response = self::createOrUpdateSellerByLedger($ledgerBankAccount);
+        if(isset($response->data->attributes->is_active) && $response->data->attributes->is_active === false) {
+            $response = self::activeSeller($response->data->id);
         }
-        else
-        {
-            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
-            $verb = self::PUT_REQUEST;
-        }
+        return $response;
+    }
 
-        $phoneRemask    =   null;
+    public static function getSellerByRecipientId($sellerId)
+    {
+        $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
+
+        $body       =   null;
+        $header     =   self::getHeader();
+        $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+
+        return $sellerRequest;
+    }
+
+    public static function createOrUpdateSellerByLedger(LedgerBankAccount $ledgerBankAccount)
+    {
+
+        $phoneRemask    =   '(31) 99999-9999';
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
         //mobile or fixed phone remask BR
-        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches))
+        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches)) {
             $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches))
+        } else if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches)) {
             $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(!$phoneRemask)
-            $phoneRemask = '(31) 99999-9999'; //if the phone has save error
+        }
 
         $fields = (object)array(
             'login'         =>  $provider->email,
@@ -279,12 +279,19 @@ class IpagApi
             )
         );
 
-        if(!$response)
+        $query = "";
+        if(isset($provider->email) && !empty($provider->email)) {
+            $query = "?email=$provider->email";
+        } 
+
+        if($ledgerBankAccount->document) {
+            $query = "?cpf_cnpj=$ledgerBankAccount->document";
             $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
+        }
 
         //to juridical bank account
         $birthday = $ledgerBankAccount->birthday_date;
-        if(strlen($ledgerBankAccount->document) > 11)
+        if(strlen($ledgerBankAccount->document) > 11) {
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
@@ -292,36 +299,47 @@ class IpagApi
                 'phone'     =>  $phoneRemask,
                 'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
             );
+        }
 
+        $url = sprintf('%s/resources/sellers%s', self::apiUrl(), $query);
         $header     =   self::getHeader();
         $body       =   json_encode($fields);
-        $accountRequest = self::apiRequest($url, $body, $header, $verb);
-
-        if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
-            $accountRequest = self::activeSeller($accountRequest->data->id);
-
-        return $accountRequest;
-    }
-
-    public static function getSeller($sellerId)
-    {
-        $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
-
-        $body       =   null;
         $header     =   self::getHeader();
-        $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
-        return $sellerRequest;
+        // verificar se está cadastrado e existe o recipient_id
+        if(isset($ledgerBankAccount->recipient_id) && !empty($ledgerBankAccount->recipient_id)) {
+            $response = self::getSellerByRecipientId($ledgerBankAccount->recipient_id);
+            if($response->data->id) {
+                return $response;
+            }
+        } 
+        // Verificar se está cadastrado  e caso não estiver, cadastrar
+        else { 
+            $sellerRequest = self::apiRequest($url, $body, $header, self::GET_REQUEST);
+
+            if(isset($sellerRequest->data->id)) {
+                return $sellerRequest;
+            } 
+            // Cadastrar um novo seller
+            else {
+
+                return self::apiRequest($url, $body, $header, self::POST_REQUEST);
+            }
+
+        }
+
     }
 
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $sellerId = $ledgerBankAccount->recipient_id;
 
-        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null)
+        
+        if(empty($sellerId) || !isset($sellerId)) {
             $response = self::createOrUpdateAccount($ledgerBankAccount);
-        else
-            $response = self::getSeller($sellerId);
+        } else {
+            $response = self::getSellerByRecipientId($sellerId);
+        }
 
         if(!isset($response->data->id))
         {

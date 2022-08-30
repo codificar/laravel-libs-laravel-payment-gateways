@@ -114,7 +114,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null) {
+    public function charge(Payment $payment, $amount, $description, $capture = true, $user = null, Provider $provider = null) {
 
         try {
 

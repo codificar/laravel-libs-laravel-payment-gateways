@@ -192,7 +192,7 @@ class PagarmeLib2 implements IPayment
 	}
 
 	//realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null){
+	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null){
 
 		try
 		{
