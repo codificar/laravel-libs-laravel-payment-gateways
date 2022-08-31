@@ -29,7 +29,7 @@ class CartoLib implements IPayment
 		);
 	}
     
-    public function charge(Payment $payment, $amount, $description, $capture = false, User $user = null, Provider $provider = null)
+    public function charge(Payment $payment, $amount, $description, $capture = false, User $user = null)
 	{
 		//Se for para realizar a captura sem pre autorizacao, chama o metodo capture
 		if($capture) {

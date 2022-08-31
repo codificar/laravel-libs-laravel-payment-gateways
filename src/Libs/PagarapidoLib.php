@@ -29,7 +29,7 @@ Class PagarapidoLib implements IPayment
         );
     }
     
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
 
         try {

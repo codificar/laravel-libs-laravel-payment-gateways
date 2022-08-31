@@ -58,7 +58,7 @@ class HandleResponseIpag
                 return array(
                     'success' 		=> true,
                     'data' 		    => $response->data->data,
-                    'message' 		=> trans('payment.webhook_retrieved')
+                    'message' 		=> trans('payment.success')
                 );
 
             } else if( $isSuccess && $isAttributes &&
@@ -82,7 +82,7 @@ class HandleResponseIpag
                     }
                 }
 
-                Log::error('pixCharge > Error 1:' . json_encode($response));
+                Log::error('HandleResponseIpag > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
@@ -100,13 +100,19 @@ class HandleResponseIpag
                 if(isset($response->message)) {
                     if(is_string($response->message)) {
                         $message = json_decode($response->message);
-                        
                         // converteu para json e vai capturar a mensagem de erro
                         if(is_object($message)) {
                             if(isset($message->message)) {
                                 $message = $message->message;
                             } else if(isset($message->error)) {
-                                $message = $message->error->message;
+                                $error = $message->error;
+                                if(isset($error->message)) {
+                                    $message = $error->message;
+                                }
+
+                                if(isset($error->code)) {
+                                    $code = $error->code;
+                                }
                             } 
 
                             if(isset($message->code)) {
@@ -132,7 +138,7 @@ class HandleResponseIpag
                     }
                 }
 
-                Log::error('pixCharge > Error 2' . json_encode($response));
+                Log::error('HandleResponseIpag > Error 2' . json_encode($response));
 
                 return array(
                     "success" 				=>  false,
@@ -144,7 +150,7 @@ class HandleResponseIpag
                 );
 
             } else {
-                Log::error('pixCharge > Error 3' . json_encode($response));
+                Log::error('HandleResponseIpag > Error 3' . json_encode($response));
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',

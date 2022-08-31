@@ -24,7 +24,7 @@ class DirectPayLib  implements IPayment
         return $response;
 	}
 
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
 	{
 		try {
 			$response = DirectPayApi::chargeOrCapture($amount, $capture, $payment);
