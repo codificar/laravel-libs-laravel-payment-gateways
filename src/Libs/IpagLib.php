@@ -72,7 +72,18 @@ Class IpagLib implements IPayment
     {
         try
         {
+            \Log::info($payment);
+            \Log::info($provider);
+            \Log::info($totalAmount);
+            \Log::info($providerAmount);
+            \Log::info($capture);
+            \Log::info('chargeWithSplit');
+            
             $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
+            
+            \Log::info('chargeWithOrNotSplit > response:', $response);
+            
+            //dd('chargeWithSplit: ', $response);
             $sysAntifraud = Settings::findByKey('ipag_antifraud');
 
             if (
