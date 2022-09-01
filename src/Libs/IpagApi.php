@@ -615,7 +615,6 @@ class IpagApi
         Log::info('$capture' . $capture);
         Log::info('$provider' . $provider);
         Log::info('$type' . $type);
-        Log::info('$fields' . $fields);
         
         Log::info('getBody');
 
