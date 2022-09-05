@@ -72,46 +72,34 @@ Class IpagLib implements IPayment
     {
         try
         {
-            Log::info('$provider' . $provider);
-            Log::info('$providerAmount' . $providerAmount);
-            Log::info('$capture'. $capture);
-            Log::info('chargeWithSplit');
-            
             $response = IpagApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
-            
-            Log::info('chargeWithOrNotSplit > response:', $response);
-            
-            //dd('chargeWithSplit: ', $response);
-            $sysAntifraud = Settings::findByKey('ipag_antifraud');
+            $response = HandleResponseIpag::handle($response);
 
-            if (
-                isset($response->success) && 
-                $response->success && 
-                isset($response->data) && 
-                (
-                    (
-                        $sysAntifraud &&
-                        isset($response->data->attributes->antifraud->status) &&
-                        $response->data->attributes->antifraud->status == 'approved'
-                    ) 
-                    ||
-                    (
-                        !$sysAntifraud
-                    )
-                )
+            if(!$response['success']) {
+                return $response;
+            }
+            
+            $response = $response['data'];
+
+            $sysAntifraud = Settings::findByKey('ipag_antifraud');
+            $isAttributes = isset($response->attributes) && !empty($response->attributes);
+            $isStatusGeneral = $isAttributes && isset($response->attributes->status) && !empty($response->attributes->status);
+            $isStatusAntiFraud = $isAttributes && isset($response->attributes->antifraud->status) && !empty($response->attributes->antifraud->status);
+            $isApprovedAntiFraud = $isStatusAntiFraud && strtolower($response->attributes->antifraud->status) == 'approved';
+            $isCaptured = $isStatusGeneral && strtoupper($response->attributes->status->message) == 'CAPTURED';
+            $isPreAuthorized = $isStatusGeneral && strtoupper($response->attributes->status->message) == 'PRE-AUTHORIZED';
+
+            if ( ($sysAntifraud && $isApprovedAntiFraud) || (!$sysAntifraud)
                 && 
-                (
-                    $response->data->attributes->status->message == 'CAPTURED' ||
-                    $response->data->attributes->status->message == 'PRE-AUTHORIZED'
-                )
-            ){
-                $statusMessage = $response->data->attributes->status->message;
+                ( $isCaptured || $isPreAuthorized )
+            ) {
+                $statusMessage = $response->attributes->status->message;
 				$result = array (
 					'success' 		    => true,
 					'status' 		    => $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
 					'captured' 			=> $statusMessage == 'CAPTURED' ? true : false,
 					'paid' 		        => $statusMessage == 'CAPTURED' ? 'paid' : 'denied',
-					'transaction_id'    => (string)$response->data->id
+					'transaction_id'    => (string)$response->id
 				);
 				return $result;
 			} else {
@@ -155,102 +143,70 @@ Class IpagLib implements IPayment
         {
             $response = IpagApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
             $sysAntifraud = filter_var(Settings::findByKey('ipag_antifraud'), FILTER_VALIDATE_BOOLEAN);
+            $response = HandleResponseIpag::handle($response);
 
-			if(isset($response->success) && $response->success && // verifica se houve sucesso
-                isset($response->data) // verifica se existe o objeto data
-            ) {
-                //verifica se o sistema antifraude está ativo e se houve algum retorno via ipag
-                $isAntiFraudIpag = $sysAntifraud && 
-                    isset($response->data->attributes->antifraud) && 
-                    $response->data->attributes->antifraud->status == 'approved';
-                
-                $statusMessage = $response->data->attributes->status->message;
+            if(!$response['success']) {
+                return $response;
+            }
 
-                $isApproved = $statusMessage == 'CAPTURED' || $statusMessage == 'PRE-AUTHORIZED';
+            $response = $response['data'];
 
-                if($isApproved && ($isAntiFraudIpag || !$sysAntifraud) ) {
-                    return array (
-                        'success'           =>  true,
-                        'captured'          =>  $statusMessage == 'CAPTURED' ? true : false,
-                        'paid'              =>  $statusMessage == 'CAPTURED' ? true : false,
-                        'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
-                        'transaction_id'    =>  (string)$response->data->id
-                    );
-                } else {
-                    Log::error('IPAG ERROR TRANSACTION:' . json_encode($response));
-                    $code = ApiErrors::CARD_ERROR;
-                    $message = array(trans('creditCard.customerCreationFail'));
-                    if(isset($response->message)) {
-                        try {
-                            $jsonErrors = json_decode($response->message);
-                            $message = $jsonErrors->error->message; 
-                            $code = $jsonErrors->error->code;
-                        } catch (Exception $e) {
-                            if(gettype($response->message) == 'string') {
-                                $message = $response->message;
-                            }
-                        }
-                    } else if(isset($statusMessage)) {
-                        $message = $statusMessage;
-                    }
+            //verifica se o sistema antifraude está ativo e se houve retorno aprovado via ipag
+            $isAntiFraudApproved = $sysAntifraud && 
+                isset($response->attributes->antifraud) && 
+                $response->attributes->antifraud->status == 'approved';
+            
+            $isStatus = isset($response->attributes->status) && !empty($response->attributes->status);
+            $statusMessage = "";
+            if($isStatus) {
+                $statusMessage =  $response->attributes->status->message;
+            }
 
-                    return array(
-                        "success"           => false ,
-                        'data'              => null,
-                        'transaction_id'    => -1,
-                        'error' => array(
-                            "code"      => $code,
-                            "messages"  => $this->getTranslateMessage($message)
-                        )
-                    );
-                }
-            } else if(
-                isset($response->success) && !$response->success && // verifica se houve sucesso
-                isset($response->message) // verifica se existe o objeto data
-            ) {
-                Log::error('Error chargeWithOrNotSplit IPag: ' . json_encode($response));
-                
-                $message =  $response->message;
+            $isApproved = $statusMessage == 'CAPTURED' || $statusMessage == 'PRE-AUTHORIZED';
+
+            if($isApproved && ($isAntiFraudApproved || !$sysAntifraud) ) {
+                return array (
+                    'success'           =>  true,
+                    'captured'          =>  $statusMessage == 'CAPTURED' ? true : false,
+                    'paid'              =>  $statusMessage == 'CAPTURED' ? true : false,
+                    'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
+                    'transaction_id'    =>  (string)$response->id
+                );
+            } else {
+                \Log::info('IPagLib > charge > Error Transaction:' . json_encode($response));
                 $code = ApiErrors::CARD_ERROR;
-                if(gettype($message) == 'string'){
+                $message = array(trans('creditCard.customerCreationFail'));
+                if(isset($response->message)) {
                     try {
-                        $message = json_decode($message);
-                    } catch (\Throwable $th) {}
-                    
-                    if(isset($message->error)){
-                        $code = $message->error->code;
-                        $message = $message->error->message;
+                        $jsonErrors = json_decode($response->message);
+                        $message = $jsonErrors->error->message; 
+                        $code = $jsonErrors->error->code;
+                    } catch (Exception $e) {
+                        if(gettype($response->message) == 'string') {
+                            $message = $response->message;
+                        }
                     }
+                } else if(isset($statusMessage)) {
+                    $message = $statusMessage;
                 }
 
                 return array(
                     "success"           => false ,
-                    'data'              => $response,
+                    'data'              => null,
                     'transaction_id'    => -1,
                     'error' => array(
                         "code"      => $code,
-                        "messages"  => $message
-                    )
-                );            
-            
-            } else {
-                return array(
-                    "success"           => false ,
-                    'data'              => $response,
-                    'transaction_id'    => -1,
-                    'error' => array(
-                        "code"      => ApiErrors::CARD_ERROR,
-                        "messages"  => trans('creditCard.errorTransaction')
+                        "messages"  => $this->getTranslateMessage($message)
                     )
                 );
-
             }
 		} catch (Exception $th) {
-            Log::error($th);
+            \Log::info('IPagLib > charge > Exception: ' . $th->getMessage());
+            \Log::error($th);
 
             $transaction_id = null;
             if($response) {
-                $transaction_id = $response->data->Payment->PaymentId;
+                $transaction_id = $response->Payment->PaymentId;
             }
 
 			return array(

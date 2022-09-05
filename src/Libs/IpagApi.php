@@ -86,16 +86,8 @@ class IpagApi
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         
-        Log::info('$providerAmount' . $providerAmount);
-        Log::info('$capture' . $capture);
-        Log::info('$provider' . $provider);
-        Log::info('$body' . $body);
-        
-        Log::info('chargeWithOrNotSplit > body:');
-            
         //dd($url, $header, $body);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
-
         return $chargeSplitRequest;
     }
 
@@ -611,12 +603,6 @@ class IpagApi
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
         }
-
-        Log::info('$capture' . $capture);
-        Log::info('$provider' . $provider);
-        Log::info('$type' . $type);
-        
-        Log::info('getBody');
 
         return json_encode($fields);
     }

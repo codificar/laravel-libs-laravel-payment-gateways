@@ -57,7 +57,7 @@ class HandleResponseIpag
             if( $isSuccess && $isData ) {
                 return array(
                     'success' 		=> true,
-                    'data' 		    => $response->data->data,
+                    'data' 		    => $response->data,
                     'message' 		=> trans('payment.success')
                 );
 
