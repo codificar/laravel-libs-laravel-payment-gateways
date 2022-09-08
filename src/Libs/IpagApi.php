@@ -480,9 +480,10 @@ class IpagApi
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
 
-        $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-
-        $client->document = vsprintf($mask, str_split($client->document));
+        if(isset($client->document) && !empty($client->document)) {
+            $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
+            $client->document = vsprintf($mask, str_split($client->document));
+        }
 
         if($payment)
         {

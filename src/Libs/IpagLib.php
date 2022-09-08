@@ -418,8 +418,6 @@ Class IpagLib implements IPayment
                     'status'        =>  '',
                     'transaction_id'=>  ''
                 ];
-            
-            Log::debug("postback ipag billet: " . print_r($request->all(), 1));
             if($transaction_id)
             {
                 $transaction    =   Transaction::find($transaction_id);
@@ -649,7 +647,7 @@ Class IpagLib implements IPayment
                 !$response->success &&
                 isset($response->message)
             ) {
-                Log::error('Error refund IPag: ' . json_encode($response));
+                Log::info('Error refund IPag: ' . json_encode($response));
                 
                 $message =  $response->message;
                 if(gettype($message) == 'string'){
@@ -1007,7 +1005,7 @@ Class IpagLib implements IPayment
                     $message = $acquirer->message;
                 }
 
-                Log::error('pixCharge > Error 1:' . json_encode($response));
+                Log::info('pixCharge > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
