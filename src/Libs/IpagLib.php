@@ -205,8 +205,13 @@ Class IpagLib implements IPayment
             \Log::error($th);
 
             $transaction_id = null;
-            if($response) {
-                $transaction_id = $response->Payment->PaymentId;
+            $isResponse = isset($response) && !empty($response);
+            $isPayment = $isResponse && isset($response->Payment) && !empty($response->Payment); 
+            
+            if($isPayment) {
+                $transaction_id = $response->Payment->PaymentId 
+                    ? $response->Payment->PaymentId 
+                    : null;
             }
 
 			return array(
