@@ -479,10 +479,11 @@ class IpagApi
 
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
-
+        
+        $document = null;
         if(isset($client->document) && !empty($client->document)) {
             $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-            $client->document = vsprintf($mask, str_split($client->document));
+            $document = vsprintf($mask, str_split($client->document));
         }
 
         if($payment)
@@ -533,7 +534,7 @@ class IpagApi
                 'name'          =>  $client->first_name.' '.$client->last_name,
                 'email'         =>  $client->email,
                 'phone'         =>  $phone,
-                'cpf_cnpj'      =>  $client->document,
+                'cpf_cnpj'      =>  $document,
                 'billing_address'=>  (object)array(
                     'street'    =>  $client->address,
                     'number'    =>  $client->address_number,
