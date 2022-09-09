@@ -82,7 +82,7 @@ class HandleResponseIpag
                     }
                 }
 
-                Log::error('HandleResponseIpag > Error 1:' . json_encode($response));
+                \Log::error('HandleResponseIpag > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
@@ -138,7 +138,7 @@ class HandleResponseIpag
                     }
                 }
 
-                Log::error('HandleResponseIpag > Error 2' . json_encode($response));
+                \Log::error('HandleResponseIpag > Error 2' . json_encode($response));
 
                 return array(
                     "success" 				=>  false,
@@ -150,7 +150,7 @@ class HandleResponseIpag
                 );
 
             } else {
-                Log::error('HandleResponseIpag > Error 3' . json_encode($response));
+                \Log::error('HandleResponseIpag > Error 3' . json_encode($response));
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
@@ -162,7 +162,7 @@ class HandleResponseIpag
             }
 
         } catch (\Exception $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 
 			return array(
 				"success" 	=> false ,

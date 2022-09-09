@@ -38,6 +38,7 @@ return array(
 	'compensate_provider_msg'	=> 'Define how many days the provider will receive the balance on your account statement when payment is made with a card. For the provider to receive the moment the request is finalized, enter 0. If no value is selected, the gateway compensation time (usually 31 days) will be considered.',
 	'uploaded'					=> 'uploaded',
 	'select'					=> 'Select',
+	'billet_gateway_provider'	=> 'Payment method by ticket',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pay me',
@@ -56,6 +57,14 @@ return array(
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
 	'ipag'						=> 'Ipag',
+	'pagseguro'					=> 'PagSeguro',
+	'sicoob'					=> 'Sicoob',
+	'sicredi'					=> 'Sicredi',
+	'santander'					=> 'Santander',
+	'bancoDoBrasil'				=> 'Banco do Brasil',
+	'itau'						=> 'Itaú',
+	'bradesco'					=> 'Bradesco',
+	'bradescoNet'				=> 'Bradesco Net',
 	
 
 	

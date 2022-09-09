@@ -3486,6 +3486,57 @@ var render = function render() {
     }
   }), _vm._v(" "), _c("div", {
     staticClass: "help-block with-errors"
+  })])]), _vm._v(" "), _c("div", {
+    staticClass: "col-lg-6"
+  }, [_c("div", {
+    staticClass: "form-group"
+  }, [_c("label", {
+    attrs: {
+      "for": "usr"
+    }
+  }, [_vm._v("\n                      " + _vm._s(_vm.trans("setting.billet_gateway_provider")) + "\n                      "), _c("a", {
+    staticClass: "question-field",
+    attrs: {
+      href: "#",
+      "data-toggle": "tooltip",
+      title: _vm.trans("settingTableSeeder.billet_gateway_provider")
+    }
+  }, [_c("span", {
+    staticClass: "mdi mdi-comment-question-outline"
+  })]), _vm._v(" "), _c("span", {
+    staticClass: "required-field"
+  }, [_vm._v("*")])]), _vm._v(" "), _c("select", {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: _vm.gateways.ipag.billet_gateway_provider,
+      expression: "gateways.ipag.billet_gateway_provider"
+    }],
+    staticClass: "select form-control",
+    attrs: {
+      name: "billet_gateway_provider"
+    },
+    on: {
+      change: function change($event) {
+        var $$selectedVal = Array.prototype.filter.call($event.target.options, function (o) {
+          return o.selected;
+        }).map(function (o) {
+          var val = "_value" in o ? o._value : o.value;
+          return val;
+        });
+
+        _vm.$set(_vm.gateways.ipag, "billet_gateway_provider", $event.target.multiple ? $$selectedVal : $$selectedVal[0]);
+      }
+    }
+  }, _vm._l(_vm.gateways.billets, function (methodBillet) {
+    return _c("option", {
+      key: methodBillet.value,
+      domProps: {
+        value: methodBillet.value
+      }
+    }, [_vm._v("\n                        " + _vm._s(_vm.trans(methodBillet.name)) + "\n                      ")]);
+  }), 0), _vm._v(" "), _c("div", {
+    staticClass: "help-block with-errors"
   })])])])])]) : _vm._e(), _vm._v(" "), _vm.gateways.default_payment == "adiq" ? _c("div", {
     staticClass: "panel panel-default adiq"
   }, [_c("div", {

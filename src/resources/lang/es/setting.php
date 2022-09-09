@@ -38,6 +38,7 @@ return array(
 	'compensate_provider_msg'	=> 'Defina cuántos días recibirá el proveedor el saldo en su estado de cuenta cuando el pago se realice con una tarjeta. Para que el proveedor lo reciba en el momento en que finalice la solicitud, ingrese 0. Si no se selecciona ningún valor, se considerará el tiempo de compensación de la puerta de enlace (generalmente 31 días).',
 	'uploaded'					=> 'enviado',
 	'select'					=> 'Seleccione',
+	'billet_gateway_provider'	=> 'Forma de pago por ticket',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Págame',
@@ -56,6 +57,14 @@ return array(
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
 	'ipag'						=> 'Ipag',
+	'pagseguro'					=> 'PagSeguro',
+	'sicoob'					=> 'Sicoob',
+	'sicredi'					=> 'Sicredi',
+	'santander'					=> 'Santander',
+	'bancoDoBrasil'				=> 'Banco do Brasil',
+	'itau'						=> 'Itaú',
+	'bradesco'					=> 'Bradesco',
+	'bradescoNet'				=> 'Bradesco Net',
 	
 	
 	//Chaves dos gateways

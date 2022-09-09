@@ -38,6 +38,7 @@ return array(
 	'compensate_provider_msg'	=> 'Defina em quantos dias o prestador receberá o saldo em seu extrato de conta quando o pagamento é feito com cartão. Para o prestador receber no momento que for finalizado a solicitação, coloque 0. Se nenhum valor for selecionado, será considerado o tempo de compensação do gateway (geralmente 31 dias)',
 	'uploaded'					=> 'enviado',
 	'select'					=> 'Selecione',
+	'billet_gateway_provider'	=> 'Metódo de pagamento por boleto',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pagar.me',
@@ -56,6 +57,14 @@ return array(
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
 	'ipag'						=> 'Ipag',
+	'pagseguro'					=> 'PagSeguro',
+	'sicoob'					=> 'Sicoob',
+	'sicredi'					=> 'Sicredi',
+	'santander'					=> 'Santander',
+	'bancoDoBrasil'				=> 'Banco do Brasil',
+	'itau'						=> 'Itaú',
+	'bradesco'					=> 'Bradesco',
+	'bradescoNet'				=> 'Bradesco Net',
 	
 	
 	//Chaves dos gateways

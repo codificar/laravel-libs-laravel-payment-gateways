@@ -756,6 +756,38 @@ export default {
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.billet_gateway_provider") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.billet_gateway_provider')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <select
+                      v-model="gateways.ipag.billet_gateway_provider"
+                      name="billet_gateway_provider"
+                      class="select form-control"
+                    >
+                      <option
+                        v-for="methodBillet in gateways.billets"
+                        v-bind:value="methodBillet.value"
+                        v-bind:key="methodBillet.value"
+                      >
+                        {{ trans(methodBillet.name) }}
+                      </option>
+                    </select>
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
