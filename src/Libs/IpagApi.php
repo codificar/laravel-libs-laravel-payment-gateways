@@ -741,7 +741,7 @@ class IpagApi
     {
         $body       =   null;
         $header     =   self::getHeader(false, $isPix);
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+        $url        =   sprintf('%s/resources/webhooks?limit=1000', self::apiUrl());
 
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 

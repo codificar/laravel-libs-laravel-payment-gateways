@@ -279,42 +279,43 @@ Class IpagLib implements IPayment
             $url = route('GatewayPostbackPix') . '/ipag';
             $exists = false;
 			$response = IpagApi::retrieveHooks(true);
+            $response = HandleResponseIpag::handle($response);
 
-            if(isset($response->success) && 
-                $response->success && 
-                isset($response->data) 
-            ) {
-                foreach($response->data->data as $webhook) {
+            if(!$response['success']) {
+                return $response;
+            }
+
+            $webhooks = $response['data']->data;
+            
+            if(gettype($webhooks) == 'array') {
+                foreach($webhooks as $webhook) {
                     if($webhook->attributes->url == $url) {
                         $exists = true;
                         break;                        
                     }
                 }
-
-                if($exists) {
-                    return array (
-                        'success' 		 => true,
-                        'status' 		 => trans('payment.webhook_exists')
-                    );
-                }
-
-                $response = IpagApi::registerHook($url, true);
-
+                
+            }
+            
+            if($exists) {
                 return array (
                     'success' 		 => true,
-                    'status' 		 => trans('payment.webhook_created')
-                );
-
-            } else {
-                return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('payment.webhook_error'))
-                    )
+                    'status' 		 => trans('payment.webhook_exists')
                 );
             }
+            
+            $response = IpagApi::registerHook($url, true);
+            $response = HandleResponseIpag::handle($response);
+            
+            if(!$response['success']) {
+                return $response;
+            }
+            
+            return array (
+                'success' 		 => true,
+                'status' 		 => trans('payment.webhook_created')
+            );
+
 		} catch (\Throwable $th) {
             Log::error($th->__toString());
 
