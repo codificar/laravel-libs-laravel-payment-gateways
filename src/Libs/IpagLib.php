@@ -236,17 +236,19 @@ Class IpagLib implements IPayment
                 return $response;
             }
 
-            $webhooks = $response['data'];
+            $webhooks = $response['data']->data;
 
-            $webhooks = array_filter($webhooks, function($webhook) {
-                if(isset($webhook->attributes->url) && strpos($webhook->attributes->url, url('/')) !== false) {
-                    return true;
-                }
-            });
+            if (gettype($webhooks)  == 'array') {
+                $webhooks = array_filter($webhooks, function ($webhook) {
+                    if (isset($webhook->attributes->url) && strpos($webhook->attributes->url, url('/')) !== false) {
+                        return true;
+                    }
+                });
 
-            $webhooks = array_map(function($webhook) {
-                return $webhook->attributes;
-            }, $webhooks);
+                $webhooks = array_map(function($webhook) {
+                    return $webhook->attributes;
+                }, $webhooks);
+            }
 
             return array (
                 'success' 		 => true,
@@ -385,6 +387,7 @@ Class IpagLib implements IPayment
             }
 
             $response = $response['data'];
+            $boleto = $response->attributes->boleto;
 
             return array (
                 'success'                   =>  true,
@@ -392,9 +395,9 @@ Class IpagLib implements IPayment
                 'paid'                      =>  false,
                 'status'                    =>  self::WAITING_PAYMENT,
                 'transaction_id'            =>  (string)$response->id,
-                'billet_url'                =>  $response->attributes->boleto->link,
-                'digitable_line'            =>  $response->attributes->boleto->digitable_line,
-                'billet_expiration_date'    =>  $response->attributes->boleto->due_date
+                'billet_url'                =>  $boleto->link,
+                'digitable_line'            =>  $boleto->digitable_line,
+                'billet_expiration_date'    =>  $boleto->due_date
             );
 
         } catch (\Throwable $th) {
