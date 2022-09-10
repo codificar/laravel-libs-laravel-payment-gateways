@@ -244,13 +244,11 @@ class IpagApi
         else
             $response = null;
 
-        if(!isset($response->data->id))
-        {
+
+        if(!isset($response->data->id)){
             $url = sprintf('%s/resources/sellers', self::apiUrl());
             $verb = self::POST_REQUEST;
-        }
-        else
-        {
+        } else {
             $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
             $verb = self::PUT_REQUEST;
         }

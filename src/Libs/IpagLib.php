@@ -258,7 +258,7 @@ Class IpagLib implements IPayment
 
             
 		} catch (\Throwable $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 
 			return array(
 				"success" 	=> false ,
@@ -317,7 +317,7 @@ Class IpagLib implements IPayment
             );
 
 		} catch (\Throwable $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 
 			return array(
 				"success" 	=> false ,
@@ -402,7 +402,7 @@ Class IpagLib implements IPayment
             );
 
         } catch (\Throwable $th) {
-            Log::error($th->getMessage());
+            \Log::error($th->getMessage());
 
 			return array(
 				"success" 				=> false ,
@@ -458,7 +458,7 @@ Class IpagLib implements IPayment
                 ];
             }
         } catch (Exception $ex) {
-            Log::error($ex->getMessage());
+            \Log::error($ex->getMessage());
 
             return [
                 'success'       =>  false,
@@ -529,7 +529,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 			
 			return array(
 				"success" 	=> false ,
@@ -584,7 +584,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 
 			return array(
 				"success" 	=> false ,
@@ -656,7 +656,7 @@ Class IpagLib implements IPayment
                 !$response->success &&
                 isset($response->message)
             ) {
-                Log::info('Error refund IPag: ' . json_encode($response));
+                \Log::info('Error refund IPag: ' . json_encode($response));
                 
                 $message =  $response->message;
                 if(gettype($message) == 'string'){
@@ -725,7 +725,7 @@ Class IpagLib implements IPayment
             }
             else
             {
-                Log::error($response->message);
+                \Log::error($response->message);
 
                 return array(
                     "success" 			=> false ,
@@ -735,7 +735,7 @@ Class IpagLib implements IPayment
                 );
             }
         } catch (\Throwable $th) {
-            Log::error($th->__toString());
+            \Log::error($th->__toString());
 
             return array(
                 "success" 			=>  false ,
@@ -808,28 +808,26 @@ Class IpagLib implements IPayment
         try
         {
             $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
+            $newAccount = HandleResponseIpag::handle($newAccount);
+            
+            if(!$newAccount['success']) {
+                return $newAccount;
+            }
+            
+            $newAccount = $newAccount['data'];
 
-            if($newAccount->success && isset($newAccount->data->id))
+            if( isset($newAccount->id))
             {
-                $ledgerBankAccount->recipient_id = $newAccount->data->id;
+                $ledgerBankAccount->recipient_id = $newAccount->id;
                 $ledgerBankAccount->save();
-                $result = array(
+                return array(
                     'success'       =>  true,
                     'recipient_id'  =>  $ledgerBankAccount->recipient_id
                 );
             }
-            else
-            {
-                $result = array(
-                    'success'       =>  false,
-                    'recipient_id'  =>  ""
-                );
-            }
-
-            return $result;
 
         } catch (\Throwable $ex) {
-            Log::error($ex->__toString());
+            \Log::error($ex->__toString());
 
 			$result = array(
 				"success"               =>  false ,
@@ -893,7 +891,7 @@ Class IpagLib implements IPayment
         }
         catch(Exception $ex)
         {
-            Log::error($ex);
+            \Log::error($ex);
 
             return(false);
         }
@@ -902,7 +900,7 @@ Class IpagLib implements IPayment
     //finish
     public function debit(Payment $payment, $amount, $description)
     {
-        Log::error('debit_not_implemented');
+        \Log::error('debit_not_implemented');
 
         return array(
             "success" 			=> false,
@@ -916,7 +914,7 @@ Class IpagLib implements IPayment
     //finish
     public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
     {
-        Log::error('debit_split_not_implemented');
+        \Log::error('debit_split_not_implemented');
 
         return array(
             "success" 			=> false,
@@ -1014,7 +1012,7 @@ Class IpagLib implements IPayment
                     $message = $acquirer->message;
                 }
 
-                Log::info('pixCharge > Error 1:' . json_encode($response));
+                \Log::info('pixCharge > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
@@ -1053,7 +1051,7 @@ Class IpagLib implements IPayment
                     }
                 }
 
-                Log::error('pixCharge > Error 2' . json_encode($response));
+                \Log::error('pixCharge > Error 2' . json_encode($response));
 
                 return array(
                     "success" 				=>  false,
@@ -1076,7 +1074,7 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            Log::error('pixCharge > Error Throwable: ' . $th->getMessage());
+            \Log::error('pixCharge > Error Throwable: ' . $th->getMessage());
 
 
 			return array(
@@ -1149,7 +1147,7 @@ Class IpagLib implements IPayment
     //         $this->checkException(["success" => false], 'api_recharge_params_error');
 
     //     } catch (\Throwable $th) {
-    //         Log::error($th->getMessage());
+    //         \Log::error($th->getMessage());
 
 	// 		return array(
 	// 			"success" 				=>  false,
