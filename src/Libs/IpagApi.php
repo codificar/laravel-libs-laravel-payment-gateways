@@ -294,6 +294,7 @@ class IpagApi
 
         $header     =   self::getHeader();
         $body       =   json_encode($fields);
+
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
 
         if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)

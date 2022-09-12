@@ -88,7 +88,9 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  $message,
+                    "message" 				=>  str_replace(' ', '_', $message),
+                    "original_message"      =>  $message,
+                    "response"              =>  $response,
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
@@ -144,7 +146,9 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  $message,
+                    "message" 				=>  str_replace(' ', '_', $message),
+                    "original_message"      =>  $message,
+                    "response"              =>  $response,
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
