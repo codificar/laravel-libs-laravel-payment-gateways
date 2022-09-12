@@ -90,7 +90,7 @@ class HandleResponseIpag
                     "code" 					=>  $code,
                     "message" 				=>  str_replace(' ', '_', $message),
                     "original_message"      =>  $message,
-                    "response"              =>  $response,
+                    "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
@@ -148,7 +148,7 @@ class HandleResponseIpag
                     "code" 					=>  $code,
                     "message" 				=>  str_replace(' ', '_', $message),
                     "original_message"      =>  $message,
-                    "response"              =>  $response,
+                    "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
@@ -160,6 +160,8 @@ class HandleResponseIpag
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  '',
                     "message" 				=>  '',
+                    "original_message"      =>  '',
+                    "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
                     'billet_expiration_date'=>  ''
                 );
