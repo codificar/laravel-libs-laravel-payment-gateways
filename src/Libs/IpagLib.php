@@ -556,21 +556,25 @@ Class IpagLib implements IPayment
         try
         {
 			$response = IpagApi::capture($transaction, $amount);
+            $response = HandleResponseIpag::handle($response);
 
-            if(
-                isset($response->success) && 
-                $response->success && 
-                isset($response->data) && 
-                $response->data->attributes->status->message == 'CAPTURED'
-            ){
-                $statusMessage = $response->data->attributes->status->message;
 
+            if(!$response['success']) {
+                return $response;
+            }
+            
+            $response = $response['data'];
+
+            $isAttributes = isset($response->attributes);
+            $isCaptured = $isAttributes && $response->attributes->status->message == 'CAPTURED';
+            
+            if($isCaptured){
 				return array (
 					'success' 		 => true,
-					'captured' 		 => $statusMessage == 'CAPTURED' ? true : false,
-					'paid' 			 => $statusMessage == 'CAPTURED' ? true : false,
-					'status' 		 => $statusMessage == 'CAPTURED' ? 'paid' : '',
-					'transaction_id' => (string)$response->data->id
+					'captured' 		 => $isCaptured ? true : false,
+					'paid' 			 => $isCaptured ? true : false,
+					'status' 		 => $isCaptured ? 'paid' : '',
+					'transaction_id' => (string)$response->id
 				);
 
 			} else {
@@ -809,12 +813,24 @@ Class IpagLib implements IPayment
         {
             $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
             $newAccount = HandleResponseIpag::handle($newAccount);
+            if(strpos($newAccount['original_message'], 'already exists') !== false) {
+                $newAccount = IpagApi::getSellerByLedgerBankAccount($ledgerBankAccount);
+                $newAccount = HandleResponseIpag::handle($newAccount, );    
+            }
             
             if(!$newAccount['success']) {
                 return $newAccount;
             }
-            
+
             $newAccount = $newAccount['data'];
+            if(isset($newAccount->data) && !empty($newAccount->data)) {
+                $newAccount = $newAccount->data;
+                
+                if(gettype($newAccount) == 'array') {
+                    $newAccount = $newAccount[0];
+                }
+            }
+
 
             if( isset($newAccount->id))
             {

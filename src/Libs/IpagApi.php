@@ -296,7 +296,7 @@ class IpagApi
         $body       =   json_encode($fields);
 
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
-
+        
         if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
 
@@ -311,6 +311,35 @@ class IpagApi
         $header     =   self::getHeader();
         $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
+        return $sellerRequest;
+    }
+
+    public static function getSellerByLedgerBankAccount(\LedgerBankAccount $ledgerBankAccount)
+    {
+        $sellerId = $ledgerBankAccount->recipient_id;
+
+        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null) {
+            
+            $isDocument = isset($ledgerBankAccount->document) && !empty($ledgerBankAccount->document);
+            $isUser = isset($ledgerBankAccount->user_id) && !empty($ledgerBankAccount->user_id);
+            $isProvider = isset($ledgerBankAccount->provider_id) && !empty($ledgerBankAccount->provider_id);
+            
+            if($isUser) {
+                $userEmail = \User::where(['id' => $ledgerBankAccount->user_id])->first()->email;
+                $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $userEmail);
+            } else if($isProvider) {
+                $providerEmail = \Provider::where(['id' => $ledgerBankAccount->provider_id])->first()->email;
+                $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $providerEmail);
+            }
+        } else {
+            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
+        }
+
+        $body       =   null;
+        $header     =   self::getHeader();
+        
+        $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+        
         return $sellerRequest;
     }
 
