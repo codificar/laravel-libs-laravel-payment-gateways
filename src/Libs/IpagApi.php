@@ -19,8 +19,9 @@ class IpagApi
     const URL_PROD  =   "https://api.ipag.com.br/service";
     const URL_DEV   =   "https://sandbox.ipag.com.br/service";
 
-    const ROUND_VALUE   =   100;
-    const APP_TIMEOUT   =   200;
+    const ROUND_VALUE           =   100;
+    const APP_TIMEOUT           =   200;
+    const APP_TIMEOUT_SANDBOX   =   1000;
 
     const POST_REQUEST  =   'POST';
     const GET_REQUEST   =   'GET';
@@ -296,7 +297,7 @@ class IpagApi
         $body       =   json_encode($fields);
 
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
-        
+
         if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
 
@@ -720,8 +721,10 @@ class IpagApi
                 curl_setopt($session, CURLOPT_POSTFIELDS, ($fields));
             else
                 array_push($header, 'Content-Length: 0');
+            
+            $timeout = \App::environment() == 'production' ? self::APP_TIMEOUT : self::APP_TIMEOUT_SANDBOX;
 
-            curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
+            curl_setopt($session, CURLOPT_TIMEOUT, $timeout);
             curl_setopt($session, CURLOPT_HTTPHEADER, $header);            
 
             $msg_chk    =   curl_exec($session);  
