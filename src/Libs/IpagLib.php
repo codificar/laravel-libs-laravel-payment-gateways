@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\IpagApi;
 
 use ApiErrors;
-use Codificar\PaymentGateways\Libs\handle\ipag\HandleResponseIpag;
 use Exception;
 //models do sistema
 use Payment;
@@ -347,39 +346,27 @@ Class IpagLib implements IPayment
         try
         {
             //it's a system var, adm don't changes
-            if(!Settings::findByKey('ipag_webhook_isset')) // if null/false criates a new hook
-            {
-                $responseHooks = IpagApi::retrieveHooks();
-
-                if(
-                    !isset($responseHooks->success) ||
-                    !$responseHooks->success ||
-                    !isset($responseHooks->data->data) ||
-                    !count($responseHooks->data->data)
-                ){
-                    $responseHook = IpagApi::registerHook($postbackUrl);//criates a new hook
-
-                    if(
-                        !isset($responseHook->success) ||
-                        !$responseHook->success ||
-                        !isset($responseHook->data->id)
-                    )
-                        return array(
-                            "success" 				=> false,
-                            "type" 					=> 'api_charge_error',
-                            "code" 					=> '',
-                            "message" 				=> '',
-                            "transaction_id"		=> ''
-                        );
-                }
-
-                if($objectHook = Settings::findObjectByKey('ipag_webhook_isset'))// if have key save true
-                {
-                    $objectHook->value = 1;
-                    $objectHook->save();
-                }
+            $responseHooks = IpagApi::retrieveHooks();
+            $responseHooks = HandleResponseIpag::handle($responseHooks);
+            
+            if(!$responseHooks['success']) {
+                return $responseHooks;
             }
 
+            $webhooks = $this->getHostWebhooks($responseHooks['data']->data, $postbackUrl);
+            
+            if(empty($webhooks) || !isset($webhooks)) {
+                $responseHooks = IpagApi::registerHook($postbackUrl);//criates a new hook
+                $responseHooks = HandleResponseIpag::handle($responseHooks);
+                
+                if(!$responseHooks['success']) {
+                    return $responseHooks;
+                }
+                
+                $objectHook = Settings::findObjectByKey('ipag_webhook_isset');
+                $objectHook->value = 1;
+                $objectHook->save();
+            }
 
             $response = IpagApi::billetCharge($amount, $client, $billetExpirationDate, $billetInstructions);            
             $response = HandleResponseIpag::handle($response);
@@ -413,6 +400,33 @@ Class IpagLib implements IPayment
 				"transaction_id"		=> ''
 			);
         }
+    }
+
+    /**
+     * @param array $webhooks
+     * @param string $searchUrl string will be used as search url for webhooks
+     * @return array array of webhook by hostname
+     */
+    private function getHostWebhooks(array $webhooks, string $searchUrl = '')
+    {
+        if(!isset($searchUrl) || empty($searchUrl)) {
+            $searchUrl = url('/');
+        }
+
+        if (gettype($webhooks)  == 'array') {
+            $webhooks = array_filter($webhooks, function ($webhook) use ($searchUrl) {
+                if (isset($webhook->attributes->url) 
+                    && strpos($webhook->attributes->url, $searchUrl) !== false) {
+                        return true;
+                }
+            });
+
+            $webhooks = array_map(function($webhook) {
+                return $webhook->attributes;
+            }, $webhooks);
+        }
+
+        return $webhooks;
     }
 
     /**
@@ -832,7 +846,7 @@ Class IpagLib implements IPayment
                 }
             }
 
-            
+
             if( isset($newAccount->id))
             {
                 $ledgerBankAccount->recipient_id = $newAccount->id;
