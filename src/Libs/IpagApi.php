@@ -671,10 +671,15 @@ class IpagApi
             'Authorization: Basic '.$basic
         );
 
+        
         $versionSettings  =   Settings::findObjectByKey('pix_ipag_version', '1');
+        $isVersion2 = isset($versionSettings) && !empty($versionSettings) && 
+            isset($versionSettings->value) && !empty($versionSettings->value) &&
+            $versionSettings->value == '2';
 
-        if($useVersion || $versionSettings->value == '2')
+        if($useVersion || $isVersion2) {
             $header = array_merge($header, $version);
+        }
 
         return $header;
     }
