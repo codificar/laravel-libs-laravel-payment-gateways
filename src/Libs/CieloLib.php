@@ -203,7 +203,7 @@ class CieloLib implements IPayment
             return $responseConf;
 
         $captureStatus = self::CODE_NOTFINISHED;
-        $amount = floor($amount * 100);
+        $amount = floor(floatval($amount) * 100);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');
@@ -211,24 +211,24 @@ class CieloLib implements IPayment
         $cardNumber = $payment->getCardNumber();
         $cardCvv    = $payment->getCardCvc();
 
+        // Crie uma instância de Sale
+        $saleData = new Sale(Uuid::uuid4()->toString());
+
+        // Crie uma instância de Payment informando o valor do pagamento
+        $cieloPayment = $saleData->payment($amount);
+
+        $cardType = strtolower($payment->card_type) == "mastercard" ? 'master' : $payment->card_type;
+
+        // Crie uma instância de Credit Card
+        $cieloPayment->setType(CieloPayment::PAYMENTTYPE_CREDITCARD)
+            ->creditCard($cardCvv, $cardType)
+            ->setCardNumber($cardNumber)
+            ->setHolder($payment->getCardHolder())
+            ->setExpirationDate($payment->getCardExpirationFull())
+            ->setCardToken($payment->card_token);
+
         // Crie o pagamento na Cielo
         try {
-            // Crie uma instância de Sale
-            $saleData = new Sale(Uuid::uuid4()->toString());
-
-            // Crie uma instância de Payment informando o valor do pagamento
-            $cieloPayment = $saleData->payment($amount);
-
-            $cardType = strtolower($payment->card_type) == "mastercard" ? 'master' : $payment->card_type;
-
-            // Crie uma instância de Credit Card
-            $cieloPayment->setType(CieloPayment::PAYMENTTYPE_CREDITCARD)
-                ->creditCard($cardCvv, $cardType)
-                ->setCardNumber($cardNumber)
-                ->setHolder($payment->getCardHolder())
-                ->setExpirationDate($payment->getCardExpirationFull())
-                ->setCardToken($payment->card_token);
-
             // Configure o SDK com seu merchant e o ambiente apropriado para criar a venda
             $sale = $this->cieloEcommerce->createSale($saleData);
 
@@ -411,7 +411,7 @@ class CieloLib implements IPayment
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
 
-        $amount = floor($amount * 100);
+        $amount = floor(floatval($amount) * 100);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');
@@ -724,7 +724,7 @@ class CieloLib implements IPayment
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
 
-        $amount = floor($amount * 100);
+        $amount = floor(floatval($amount) * 100);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');

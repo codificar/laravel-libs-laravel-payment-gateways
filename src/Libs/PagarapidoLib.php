@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\PagarapidoApi;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 //models do sistema
 use Payment;
 use Provider;
@@ -53,6 +54,14 @@ Class PagarapidoLib implements IPayment
             $isProd = Settings::findByKey('pagarapido_production');
             $isProd = (int)$isProd ? true : false;
             $pagarapido = new PagarapidoApi($gatewayKey, $isProd);
+            
+            $phone = $user->phone;
+            try {
+                $phoneLib = new PhoneNumber( $user->phone);
+                $phone = $phoneLib->getFullPhoneNumber();
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
 
             $transaction = $pagarapido->transactionCard(array(
                 'installments' => 1, //optional, default 1
@@ -67,7 +76,7 @@ Class PagarapidoLib implements IPayment
                     'document' => $userDoc,
                     'type' => $docType, //cpf 'private' - cnpj 'legal'
                     'email' => $user->email,
-                    'phone' => $user->phone,
+                    'phone' => $phone,
                     'addresses' => [
                         'city' => $user->address_city,
                         'neighborhood' => $user->address_neighbour,
@@ -98,7 +107,7 @@ Class PagarapidoLib implements IPayment
                     "transaction_id"			=> ''
                 );
             }
-		} catch (Exception $th) {
+		} catch (\Exception $th) {
 			\Log::error('Error Pagarapido charge 2');
 			return array(
                 "success" 					=> false ,
@@ -163,7 +172,7 @@ Class PagarapidoLib implements IPayment
                     "success" 				=> false ,
                     "type" 					=> 'api_charge_error' ,
                     "code" 					=> '',
-                    "message" 				=> $th->getMessage(),
+                    "message" 				=> 'Error Pagarapido billet 1',
                     "transaction_id"		=> ''
                 );
             }
@@ -265,7 +274,7 @@ Class PagarapidoLib implements IPayment
                     "transaction_id" 	=> $transaction->gateway_transaction_id
                 );
             }
-		} catch (Exception $th) {
+		} catch (\Exception $th) {
 			\Log::error('Error Pagarapido refund 2 ');
 			return array(
                 "success" 					=> false ,

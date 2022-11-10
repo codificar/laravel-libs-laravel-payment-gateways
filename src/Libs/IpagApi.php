@@ -13,6 +13,7 @@ use User;
 use LedgerBankAccount;
 use Settings;
 use Bank;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class IpagApi
 {
@@ -253,24 +254,28 @@ class IpagApi
             $verb = self::PUT_REQUEST;
         }
 
-        $phoneRemask    =   null;
+        $phone    =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        //mobile or fixed phone remask BR
-        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(!$phoneRemask)
-            $phoneRemask = '(31) 99999-9999'; //if the phone has save error
+
+        try {
+            $phoneLib = new PhoneNumber($provider->phone);
+            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
+        if(!$phone) {
+            $phone = '(31) 99999-9999'; //if the phone has save error
+        }
 
         $fields = (object)array(
             'login'         =>  $provider->email,
             'password'      =>  preg_replace('/\D/', '', $provider->document),
             'name'          =>  $ledgerBankAccount->holder,
             'email'         =>  $provider->email,
-            'phone'         =>  $phoneRemask,
+            'phone'         =>  $phone,
             'bank'      =>  (object)array(
                 'code'          =>  $bank->code,
                 'agency'        =>  $ledgerBankAccount->agency,
@@ -288,7 +293,7 @@ class IpagApi
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
                 'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
-                'phone'     =>  $phoneRemask,
+                'phone'     =>  $phone,
                 'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
             );
 
@@ -552,8 +557,13 @@ class IpagApi
             : $orderId;
 
         $phone = preg_replace('/\D/', '', $client->phone);
-        if(strlen($phone) > 11)
-            $phone = substr($phone, 2);
+        try {
+            $phoneLib = new PhoneNumber($client->phone);
+            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+    
 
         $fields         =   (object)array(
             'amount'            =>  $amount,
