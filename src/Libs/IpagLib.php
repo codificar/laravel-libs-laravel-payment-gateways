@@ -776,8 +776,10 @@ Class IpagLib implements IPayment
 		$cardExpirationYear 	= $payment->getCardExpirationYear();
 		$cardCvc 				= $payment->getCardCvc();
 		$cardHolder 			= $payment->getCardHolder();
-		$userName				= $user->first_name." ".$user->last_name;
-		$userDocument				= str_replace(".", "", $user->document);
+		if($user) {
+            $userName				= $user->first_name." ".$user->last_name;
+            $userDocument				= str_replace(".", "", $user->document);
+        }
 
 		// $cpf = $this->cleanCpf($user->document);
 
