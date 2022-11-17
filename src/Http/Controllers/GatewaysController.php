@@ -499,18 +499,64 @@ class GatewaysController extends Controller
     public function getNomenclatures() {
 
         $nomenclatures = array();
+        $payment_nomenclature = "";
         if((bool)Settings::findByKey('payments_custom_name')) {
             foreach ($this->name_keys_payment_methods as $key) {
-                $nomenclatures[$key] = Settings::findByKey($key);
+
+                if(Settings::findByKey($key) == ''){
+                    
+                    $payment_nomenclature = $this->paymentNomenclature($key);
+                }
+                $nomenclatures[$key] = Settings::findByKey($key) != "" ? Settings::findByKey($key) : $payment_nomenclature;
             }
         } else {
             foreach ($this->name_keys_payment_methods as $key) {
-                $nomenclatures[$key] = "";
+                $nomenclatures[$key] = $this->paymentNomenclature($key);
             }
         }
 
         return response()->json($nomenclatures);
 
+    }
+
+    private function paymentNomenclature($key){
+        $payment_nomenclature = "";
+        switch ($key) {
+            case 'name_payment_money':
+                $payment_nomenclature = trans('payment.cash');
+                break;
+            case 'name_payment_card':
+                $payment_nomenclature = trans('payment.creditCard');
+                break;
+            case 'name_payment_machine':
+                $payment_nomenclature = trans('payment.machine');
+                break;
+            case 'name_payment_carto':
+                $payment_nomenclature = trans('payment.carto');
+                break;
+            case 'name_payment_crypt':
+                $payment_nomenclature = trans('payment.crypt');
+                break;
+            case 'name_payment_debitCard':
+                $payment_nomenclature = trans('payment.debitCard');
+                break;
+            case 'name_payment_balance':
+                $payment_nomenclature = trans('payment.balance');
+                break;
+            case 'name_payment_prepaid':
+                $payment_nomenclature = trans('payment.prePaid');
+                break;
+            case 'name_payment_billing':
+                $payment_nomenclature = trans('payment.billing');
+                break;
+            case 'name_payment_direct_pix':
+                $payment_nomenclature = trans('payment.direct_pix');
+                break;
+            case 'name_payment_gateway_pix':
+                $payment_nomenclature = trans('payment.gateway_pix');
+                break;
+        }
+        return $payment_nomenclature;
     }
 
     private function updateOrCreateSettingKey($key, $value) {
