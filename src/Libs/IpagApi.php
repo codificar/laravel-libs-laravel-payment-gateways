@@ -14,6 +14,7 @@ use LedgerBankAccount;
 use Settings;
 use Bank;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
+use DateTime;
 
 class IpagApi
 {
@@ -149,7 +150,7 @@ class IpagApi
                 !isset($ruleResponse->success) ||
                 !$ruleResponse->success
             ){
-                Log::error("Set split rule new fail: " . print_r($ruleResponse, 1));
+                \Log::error("Set split rule new fail: " . print_r($ruleResponse, 1));
                 return (object)array(
                     "success"   => false,
                     "message"   => 'Set split rule new fail'
@@ -166,7 +167,7 @@ class IpagApi
                     !isset($deleteRuleResponse->success) ||
                     !$deleteRuleResponse->success
                 ){
-                    Log::error("Delete split rule fail: " . print_r($deleteRuleResponse, 1));
+                    \Log::error("Delete split rule fail: " . print_r($deleteRuleResponse, 1));
                     return (object)array(
                         "success"   => false,
                         "message"   => 'Delete split rule fail'
@@ -180,7 +181,7 @@ class IpagApi
                     !isset($ruleResponse->success) ||
                     !$ruleResponse->success
                 ){
-                    Log::error("Set split rule change fail: " . print_r($ruleResponse, 1));
+                    \Log::error("Set split rule change fail: " . print_r($ruleResponse, 1));
                     return (object)array(
                         "success"   => false,
                         "message"   => 'Set split rule change fail'
@@ -246,15 +247,17 @@ class IpagApi
             $response = null;
 
 
-        if(!isset($response->data->id)){
+        if(!isset($response) || !isset($response->data->id)){
+            // to create a new account
             $url = sprintf('%s/resources/sellers', self::apiUrl());
             $verb = self::POST_REQUEST;
         } else {
+            // to update a previously created account
             $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
             $verb = self::PUT_REQUEST;
         }
 
-        $phone    =   null;
+        $phone          =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
@@ -283,19 +286,26 @@ class IpagApi
             )
         );
 
-        if(!$response)
-            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
+        $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
 
-        //to juridical bank account
-        $birthday = $ledgerBankAccount->birthday_date;
-        if(strlen($ledgerBankAccount->document) > 11)
+        if(strlen($ledgerBankAccount->document) > 11) {
+            $birthday = $ledgerBankAccount->birthday_date;
+            $date = DateTime::createFromFormat('Y-m-d', $birthday);
+            
+            if ($date) {
+                $birthday = $date->format('Y-m-d');
+            } else {
+                $birthday = '1970-01-01';
+            }
+
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
                 'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
                 'phone'     =>  $phone,
-                'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
+                'birthdate' =>  $birthday
             );
+        }
 
         $header     =   self::getHeader();
         $body       =   json_encode($fields);
@@ -352,18 +362,14 @@ class IpagApi
     {
         $sellerId = $ledgerBankAccount->recipient_id;
 
-        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null)
-            $response = self::createOrUpdateAccount($ledgerBankAccount);
-        else
+        $response  = null;
+        if(isset($sellerId)) {
             $response = self::getSeller($sellerId);
+        }
 
-        if(!isset($response->data->id))
+        if(!$response || !isset($response->data->id))
         {
-            Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
-            $response = (object)array(
-                'success'       =>  false,
-                'recipient_id'  =>  ""
-            );
+            $response = self::createOrUpdateAccount($ledgerBankAccount);
         }
 
         if($response->success)
@@ -714,7 +720,7 @@ class IpagApi
             $token->save();
         }
         catch (Exception $ex){
-            Log::error($ex->getMessage().$ex->getTraceAsString());
+            \Log::error($ex->getMessage().$ex->getTraceAsString());
         }
 
         return $concateString;
@@ -754,7 +760,7 @@ class IpagApi
                     "success"   => false,
                     "message"   => $msg_chk
                 );
-                Log::error('Error message Exception: '.$msg_chk);
+                \Log::error('Error message Exception: '.$msg_chk);
             }            
 
         }
@@ -765,7 +771,7 @@ class IpagApi
                 "message"       => $ex->getMessage()
             );
 
-            Log::error(($ex));
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return $return;
         }
