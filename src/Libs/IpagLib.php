@@ -16,7 +16,6 @@ use LedgerBankAccount;
 use Requests;
 use Settings;
 // use RequestCharging;
-use Log;
 
 Class IpagLib implements IPayment
 {
@@ -112,8 +111,8 @@ Class IpagLib implements IPayment
                     )
                 );
             }
-		} catch (Exception $th) {
-			
+		} catch (\Exception $th) {
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 			return array(
 				"success"           =>  false ,
 				'data'              =>  null,
@@ -181,7 +180,8 @@ Class IpagLib implements IPayment
                         $jsonErrors = json_decode($response->message);
                         $message = $jsonErrors->error->message; 
                         $code = $jsonErrors->error->code;
-                    } catch (Exception $e) {
+                    } catch (\Exception $e) {
+                        \Log::error($e->getMessage() . $e->getTraceAsString());
                         if(gettype($response->message) == 'string') {
                             $message = $response->message;
                         }
@@ -200,9 +200,8 @@ Class IpagLib implements IPayment
                     )
                 );
             }
-		} catch (Exception $th) {
-            \Log::info('IPagLib > charge > Exception: ' . $th->getMessage());
-            \Log::error($th);
+		} catch (\Exception $th) {
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
             $transaction_id = null;
             $isResponse = isset($response) && !empty($response);
@@ -247,7 +246,7 @@ Class IpagLib implements IPayment
 
             
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -306,7 +305,7 @@ Class IpagLib implements IPayment
             );
 
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -379,7 +378,7 @@ Class IpagLib implements IPayment
             );
 
         } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 				=> false ,
@@ -473,8 +472,8 @@ Class IpagLib implements IPayment
                     'transaction_id'    =>  $retrieve['transaction_id']
                 ];
             }
-        } catch (Exception $ex) {
-            \Log::error($ex->getMessage());
+        } catch (\Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return [
                 'success'       =>  false,
@@ -545,7 +544,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 			
 			return array(
 				"success" 	=> false ,
@@ -604,7 +603,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -632,7 +631,7 @@ Class IpagLib implements IPayment
 			return $this->refund($transaction, $payment);
 
 		} catch (\Throwable $ex) {
-			Log::error($ex->__toString());
+			\Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
@@ -683,6 +682,7 @@ Class IpagLib implements IPayment
                     try {
                         $message = json_decode($message);
                     } catch (\Throwable $th) {
+                        \Log::error($th->getMessage() . $th->getTraceAsString());
                         //throw $th;
                     }
                     
@@ -703,7 +703,7 @@ Class IpagLib implements IPayment
             }
 		
 		} catch (\Throwable $ex) {
-			Log::error($ex->__toString());
+			\Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
@@ -749,7 +749,7 @@ Class IpagLib implements IPayment
                 'card_last_digits' 	    => $payment ? $payment->last_four : ''
             );
         } catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success" 			=>  false ,
@@ -855,7 +855,7 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $ex) {
-            \Log::error($ex->__toString());
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
 			$result = array(
 				"success"               =>  false ,
@@ -919,7 +919,7 @@ Class IpagLib implements IPayment
         }
         catch(Exception $ex)
         {
-            \Log::error($ex);
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return(false);
         }
@@ -1102,8 +1102,7 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            \Log::error('pixCharge > Error Throwable: ' . $th->getMessage());
-
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 				=>  false,
