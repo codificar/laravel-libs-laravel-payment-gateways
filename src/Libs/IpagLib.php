@@ -825,10 +825,6 @@ Class IpagLib implements IPayment
         {
             $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
             $newAccount = HandleResponseIpag::handle($newAccount);
-            if(strpos($newAccount['original_message'], 'already exists') !== false) {
-                $newAccount = IpagApi::getSellerByLedgerBankAccount($ledgerBankAccount);
-                $newAccount = HandleResponseIpag::handle($newAccount, );    
-            }
             
             if(!$newAccount['success']) {
                 return $newAccount;

@@ -272,7 +272,7 @@ class IpagApi
         $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
 
         $documentRemask = null;
-        if(strlen($ledgerBankAccount->document) > 11) {
+        if(strlen($ledgerBankAccount->document) >= 11) {
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
             
@@ -299,12 +299,9 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
         // caso dê erro pq já existe o seller ele tenta realizar uma busca por document ou email
-        \Log::debug(json_encode($accountRequest));
-        if(!$accountRequest['success'] && strpos($accountRequest['message'], 'already exists') !== false) {
+        if(!$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
             if($documentRemask) {
-                $accountRequest = self::getSellerBy($documentRemask);
-            } else if($provider->email) {
-                $accountRequest = self::getSellerBy(null, $provider->email);
+                $accountRequest = self::getSellerByDocument($documentRemask);
             }
         }
         
@@ -325,12 +322,9 @@ class IpagApi
         return $sellerRequest;
     }
 
-    public static function getSellerBy($sellerDocument = null, $email = null)
+    public static function getSellerByDocument($sellerDocument)
     {
         $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $sellerDocument);
-        if($email) {
-            $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $email);
-        }
 
         $body           =   null;
         $header         =   self::getHeader();
