@@ -299,6 +299,7 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
         // caso dê erro pq já existe o seller ele tenta realizar uma busca por document ou email
+        \Log::debug(json_encode($accountRequest));
         if(!$accountRequest['success'] && strpos($accountRequest['message'], 'already exists') !== false) {
             if($documentRemask) {
                 $accountRequest = self::getSellerBy($documentRemask);
