@@ -269,9 +269,9 @@ class IpagApi
             )
         );
 
-        $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
+        $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
+        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
 
-        $documentRemask = null;
         if(strlen($ledgerBankAccount->document) >= 11) {
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
@@ -281,12 +281,12 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
-            $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
+            $documentOwnerRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
 
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
-                'cpf'       =>  $documentRemask, //document remask BR
+                'cpf'       =>  $documentOwnerRemask, //document remask BR
                 'phone'     =>  $phone,
                 'birthdate' =>  $birthday
             );
@@ -299,7 +299,7 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
         // caso dê erro pq já existe o seller ele tenta atualizar por document
-        if(!$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
+        if($documentRemask && !$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
             $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
             $verb = self::PUT_REQUEST;
             // tenta atualizar o seller
