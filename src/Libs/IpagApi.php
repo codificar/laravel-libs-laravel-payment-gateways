@@ -237,30 +237,13 @@ class IpagApi
 
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        if(
-            $ledgerBankAccount->recipient_id != '' && 
-            $ledgerBankAccount->recipient_id != 'empty' && 
-            $ledgerBankAccount->recipient_id !== null
-        )
-            $response = self::getSeller($ledgerBankAccount->recipient_id);
-        else
-            $response = null;
-
-
-        if(!isset($response) || !isset($response->data->id)){
-            // to create a new account
-            $url = sprintf('%s/resources/sellers', self::apiUrl());
-            $verb = self::POST_REQUEST;
-        } else {
-            // to update a previously created account
-            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
-            $verb = self::PUT_REQUEST;
-        }
+        // to create a new account
+        $url = sprintf('%s/resources/sellers', self::apiUrl());
+        $verb = self::POST_REQUEST;
 
         $phone          =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
-
 
         try {
             $phoneLib = new PhoneNumber($provider->phone);
@@ -288,6 +271,7 @@ class IpagApi
 
         $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
 
+        $documentRemask = null;
         if(strlen($ledgerBankAccount->document) > 11) {
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
@@ -297,11 +281,12 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
+            $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
 
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
-                'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
+                'cpf'       =>  $documentRemask, //document remask BR
                 'phone'     =>  $phone,
                 'birthdate' =>  $birthday
             );
@@ -312,7 +297,15 @@ class IpagApi
 
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
-        if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
+        if(!$accountRequest['success'] && strpos($accountRequest['message'], 'already exists') !== false) {
+            if($documentRemask) {
+                $accountRequest = self::getSellerBy($documentRemask);
+            } else if($provider->email) {
+                $accountRequest = self::getSellerBy(null, $provider->email);
+            }
+        }
+        
+        if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
 
         return $accountRequest;
@@ -325,6 +318,20 @@ class IpagApi
         $body       =   null;
         $header     =   self::getHeader();
         $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+
+        return $sellerRequest;
+    }
+
+    public static function getSellerBy($sellerDocument = null, $email = null)
+    {
+        $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $sellerDocument);
+        if($email) {
+            $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $email);
+        }
+
+        $body           =   null;
+        $header         =   self::getHeader();
+        $sellerRequest  =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $sellerRequest;
     }
@@ -513,14 +520,19 @@ class IpagApi
 
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
-        if($payment)
-            $client = User::find($payment->user_id);
+        if($payment) {
+            if($payment->user_id) {
+                $client = User::find($payment->user_id);
+            } else if($payment->provider_id) {
+                $client = Provider::find($payment->provider_id);
+            }
+        }
 
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
         
         $document = null;
-        if(isset($client->document) && !empty($client->document)) {
+        if($client && isset($client->document) && !empty($client->document)) {
             $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
             $document = vsprintf($mask, str_split($client->document));
         }
@@ -553,7 +565,7 @@ class IpagApi
             $method = Settings::getBilletProvider();
         }
 
-        if(strlen($client->state) > 2) {
+        if($client && strlen($client->state) > 2) {
             $client->state = self::getMinStateString($client->state);
         }
 
@@ -562,12 +574,15 @@ class IpagApi
             ? $client->getLastRequest()->id 
             : $orderId;
 
-        $phone = preg_replace('/\D/', '', $client->phone);
-        try {
-            $phoneLib = new PhoneNumber($client->phone);
-            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage() . $e->getTraceAsString());
+        $phone = '(31) 99999-9999';
+        if($client) {
+            $phone = preg_replace('/\D/', '', $client->phone);
+            try {
+                $phoneLib = new PhoneNumber($client->phone);
+                $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
     
 
