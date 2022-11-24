@@ -298,11 +298,12 @@ class IpagApi
         // tenta criar o seller
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
-        // caso dê erro pq já existe o seller ele tenta realizar uma busca por document ou email
+        // caso dê erro pq já existe o seller ele tenta atualizar por document
         if(!$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
-            if($documentRemask) {
-                $accountRequest = self::getSellerByDocument($documentRemask);
-            }
+            $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
+            $verb = self::PUT_REQUEST;
+            // tenta atualizar o seller
+            $accountRequest = self::apiRequest($url, $body, $header, $verb);
         }
         
         if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
