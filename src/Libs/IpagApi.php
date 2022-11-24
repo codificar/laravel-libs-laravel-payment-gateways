@@ -255,6 +255,18 @@ class IpagApi
         if(!$phone) {
             $phone = '(31) 99999-9999'; //if the phone has save error
         }
+        $bankObject = (object) array();
+        if($bank && $ledgerBankAccount &&
+            $bank->code && $ledgerBankAccount->agency &&
+            $ledgerBankAccount->account && 
+            $ledgerBankAccount->account_digit
+        ) {
+            $bankObject = (object)array(
+                'code'          =>  $bank->code,
+                'agency'        =>  $ledgerBankAccount->agency,
+                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
+            );
+        }
 
         $fields = (object)array(
             'login'         =>  $provider->email,
@@ -262,11 +274,7 @@ class IpagApi
             'name'          =>  $ledgerBankAccount->holder,
             'email'         =>  $provider->email,
             'phone'         =>  $phone,
-            'bank'      =>  (object)array(
-                'code'          =>  $bank->code,
-                'agency'        =>  $ledgerBankAccount->agency,
-                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
-            )
+            'bank'          => $bankObject  
         );
 
         $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
