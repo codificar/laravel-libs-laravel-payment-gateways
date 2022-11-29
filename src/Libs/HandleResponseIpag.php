@@ -3,8 +3,6 @@ namespace Codificar\PaymentGateways\Libs;
 
 use ApiErrors;
 use Log;
-use PhpOffice\PhpSpreadsheet\Calculation\MathTrig\Exp;
-
 class HandleResponseIpag
 {
 

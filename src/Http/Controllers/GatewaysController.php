@@ -499,18 +499,30 @@ class GatewaysController extends Controller
     public function getNomenclatures() {
 
         $nomenclatures = array();
+        $payment_nomenclature = "";
         if((bool)Settings::findByKey('payments_custom_name')) {
             foreach ($this->name_keys_payment_methods as $key) {
-                $nomenclatures[$key] = Settings::findByKey($key);
+
+                if(Settings::findByKey($key) == ''){
+                    
+                    $payment_nomenclature = $this->paymentNomenclature($key);
+                }
+                $nomenclatures[$key] = Settings::findByKey($key) != "" ? Settings::findByKey($key) : $payment_nomenclature;
             }
         } else {
             foreach ($this->name_keys_payment_methods as $key) {
-                $nomenclatures[$key] = "";
+                $nomenclatures[$key] = $this->paymentNomenclature($key);
             }
         }
 
         return response()->json($nomenclatures);
 
+    }
+
+    private function paymentNomenclature($key){
+
+        $payment_nomenclature = trans('payment.'.$key);
+        return $payment_nomenclature;
     }
 
     private function updateOrCreateSettingKey($key, $value) {
