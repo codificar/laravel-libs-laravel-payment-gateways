@@ -8,7 +8,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7;
 
 use Codificar\PaymentGateways\Libs\CardFlag;
-
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class PagarapidoApi {
 
@@ -87,6 +87,14 @@ class PagarapidoApi {
             $cityId = "3106200"; //default
         }
 
+        $phone = $params['customer']['phone'];
+        try {
+            $phoneLib = new PhoneNumber( $params['customer']['phone']);
+            $phone = $phoneLib->getFullPhoneNumber();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $formparams = array(
             'installments' => $params['installments'] ? $params['installments'] : 1,
             'cardNumber' => $params['cardNumber'],
@@ -104,7 +112,7 @@ class PagarapidoApi {
                 'document' => $params['customer']['document'],
                 'type' => $params['customer']['type'],
                 'email' => $params['customer']['email'],
-                'phoneNumbers' => [ $params['customer']['phone'] ],
+                'phoneNumbers' => [ $phone ],
                 'addresses' => [
                     'billing' => [
                         'city' => $cityId,
@@ -156,6 +164,14 @@ class PagarapidoApi {
             $cityId = "3106200"; //default
         }
 
+        $phone = $params['customer']['phone'];
+        try {
+            $phoneLib = new PhoneNumber( $params['customer']['phone']);
+            $phone = $phoneLib->getFullPhoneNumber();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $formparams = array(
             'paymentType' => "boleto",
             'gatewayKey' => $this->gatewayKey,
@@ -167,7 +183,7 @@ class PagarapidoApi {
                 'document' => $params['customer']['document'],
                 'type' => $params['customer']['type'],
                 'email' => $params['customer']['email'],
-                'phoneNumbers' => [ $params['customer']['phone'] ],
+                'phoneNumbers' => [ $phone ],
                 'addresses' => [
                     'billing' => [
                         'city' => $cityId,

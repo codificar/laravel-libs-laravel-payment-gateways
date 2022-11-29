@@ -6,25 +6,25 @@ use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Class GatewaysResource
+ * Class WebhookResource
  *
  * @package MotoboyApp
  *
  *
  * @OA\Schema(
- *         schema="GatewaysResource",
+ *         schema="WebhookResource",
  *         type="object",
- *         description="Retorno ao salvar confs dos gateways",
+ *         description="Retorno ao recuperar os webhooks",
  *         title="Generic Details Resource",
  *        allOf={
- *           @OA\Schema(ref="#/components/schemas/GatewaysResource"),
+ *           @OA\Schema(ref="#/components/schemas/WebhookResource"),
  *           @OA\Schema(
  *              required={"success", "request"},
  *           )
  *       }
  * )
  */
-class GatewaysResource extends JsonResource
+class WebhookResource extends JsonResource
 {
 
     /**
@@ -37,9 +37,9 @@ class GatewaysResource extends JsonResource
     {
 
         return [
-            'success' => true,
-            'is_updating_cards' => $this['is_updating_cards'],
-            'estimate_update_cards' => $this['estimate_update_cards']
+            'success' => $this['success'],
+            'data' => $this['data'],
+            'message' => $this['message'],
         ];
     }
 }

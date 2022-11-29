@@ -2,6 +2,7 @@
 
 namespace Codificar\PaymentGateways\Libs;
 
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
 use Illuminate\Support\Facades\App;
 use Ledger, Input;
@@ -108,6 +109,19 @@ class BancardApi
             $token_vars = array($private_key, $card_id, $customer_id, "request_new_card");
             $token = self::generateToken($token_vars);
 
+            $phoneNumber = null;
+            try {
+                if($user) {
+                    $phoneLib = new PhoneNumber($user->phone);
+                    $phoneNumber = $phoneLib->getFullPhoneNumber();
+                } else if($provider) {
+                    $phoneLib = new PhoneNumber($provider->phone);
+                    $phoneNumber = $phoneLib->getFullPhoneNumber();
+                }
+            } catch (Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
+
             //monta os campos para solicitação
             $fields = array(
                 "public_key" => $public_key,
@@ -115,7 +129,7 @@ class BancardApi
                     "token" => $token,
                     "card_id" => $card_id,
                     "user_id" => $customer_id,
-                    "user_cell_phone" => $user ? $user->phone : ($provider ? $provider->phone : null),
+                    "user_cell_phone" => $phoneNumber,
                     "user_mail" => $user ? $user->email : ($provider ? $provider->email : null),
                     "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/return/" . ($user ? $user->id : 0) . "/" . ($provider ? $provider->id : 0)
                 )

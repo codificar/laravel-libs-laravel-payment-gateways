@@ -12,6 +12,7 @@ use User;
 use LedgerBankAccount;
 use Settings;
 use Bank;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class PagarmeApi
 {
@@ -355,8 +356,13 @@ class PagarmeApi
         }
 
         $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
-        $clientPhone    =   self::phoneDivide($client->phone);
         $orderId        =   self::getOrderId();
+
+        try {
+            $phoneLib = new PhoneNumber($client->phone);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
 
         $fields = (object)array(
             "items"     => [
@@ -374,9 +380,9 @@ class PagarmeApi
                 "type"      =>  $personType,
                 "phones"    =>  (object)array(
                     "home_phone"        =>  (object)array(
-                        "country_code"  =>  $clientPhone['country_code'],
-                        "number"        =>  $clientPhone['number'],
-                        "area_code"     =>  $clientPhone['area_code']
+                        "country_code"  =>  $phoneLib->getDDI(),
+                        "number"        =>  $phoneLib->getFullPhoneNumber(),
+                        "area_code"     =>  $phoneLib->getDDD()
                     )
                 )
             ),
@@ -583,16 +589,6 @@ class PagarmeApi
             return $return;
         }
     }
-
-    private static function phoneDivide($phone)
-	{
-        $numeralPhone = preg_replace('/\D/', '', $phone);
-        $objPhone['area_code'] = substr($numeralPhone, -11, -9);
-        $objPhone['number'] = substr($numeralPhone, -9);
-        $objPhone['country_code'] = str_replace($objPhone['area_code'].$objPhone['number'], '', $numeralPhone);
-
-		return $objPhone;
-	}
 
     private static function countryInitials($country)
     {
