@@ -15,6 +15,7 @@ use Zoop\Exceptions\ZoopException;
 //models do sistema
 use ApiErrors;
 use Bank;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Payment;
 use Provider;
 use Transaction;
@@ -749,13 +750,20 @@ class ZoopLib implements IPayment
 
             if(!$zoopBank || !isset($zoopBank->id) || !$zoopBank->id)
                 throw new ZoopException("Falha ao criar conta recipient", 1);
-
+            
+            $phone = $provider->phone;
+            try {
+                $phoneLib = new PhoneNumber( $provider->phone);
+                $phone = $phoneLib->getFullPhoneNumber();
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
             //define dados do vendedor
             $dataSeller = array(
                 'first_name' => $provider->first_name,
                 'last_name' => $provider->last_name,
                 'email' => $provider->email,
-                'phone_number' => $provider->phone,
+                'phone_number' => $phone,
                 'description' => "Seller for " . $provider->email,
                 'type' => 'individual',
                 'taxpayer_id' => $ledgerBankAccount->document,
@@ -909,12 +917,19 @@ class ZoopLib implements IPayment
      */
     private function createCustomer($user)
     {
+        $phone = $user->phone;
+        try {
+            $phoneLib = new PhoneNumber( $user->phone);
+            $phone = $phoneLib->getFullPhoneNumber();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
         //define dados do comprador e cria na zoop
         $customer = ZoopBuyers::create([
             'first_name' => (string)$user->first_name,
             'last_name' => (string)$user->last_name,
             'email' => (string)$user->email,
-            'phone_number' => (string)$user->phone,
+            'phone_number' => $phone,
             'taxpayer_id' => (string)$user->document,
             'birthdate' => (string)$user->birthdate,
             'description' => "Customer for " . (string)$user->email,

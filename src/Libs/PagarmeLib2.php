@@ -5,6 +5,7 @@ namespace Codificar\PaymentGateways\Libs;
 use ApiErrors;
 use Bank;
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
 use PagarMe;
 use PagarMe_Card;
@@ -409,6 +410,12 @@ class PagarmeLib2 implements IPayment
         $zipcode = $user->getZipcode();
         $zipcode = $this->cleanWord($zipcode);
 
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $customer = array(
             "name" 				=> $user->getFullName(),
             "document_number"	=> $user->document,
@@ -429,9 +436,9 @@ class PagarmeLib2 implements IPayment
             "type"				=> $type,
             "country"			=> "br",
             "phone" 	=> array(
-                "ddi"	=>	"55",
-                "ddd"	=>	$user->getLongDistance(),
-                "number"	=>	$user->getPhoneNumber()
+                "ddi"	=>	$phoneLib->getDDI(),
+                "ddd"	=>	$phoneLib->getDDD(),
+                "number"	=>	$phoneLib->getPhoneNumber()
             )
         );
 
@@ -446,6 +453,12 @@ class PagarmeLib2 implements IPayment
         $zipcode = $user->getZipcode();
         $zipcode = $this->cleanWord($zipcode);
 
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $customer = array(
             "name" 				=> $user->getFullName(),
             "document_number"	=> $user->document,
@@ -458,9 +471,9 @@ class PagarmeLib2 implements IPayment
             ),
             "external_id"		=> (string) $user->id,
             "phone" 	=> array(
-                "ddi"	=>	"55",
-                "ddd"	=>	$user->getLongDistance(),
-                "number"	=>	$user->getPhoneNumber()
+                "ddi"	=>	$phoneLib->getDDI(),
+                "ddd"	=>	$phoneLib->getDDD(),
+                "number"	=>	$phoneLib->getPhoneNumber()
             )
         );
 

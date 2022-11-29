@@ -1,5 +1,6 @@
-<?php 
+<?php
 
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class ByeBankApi
 {
@@ -520,7 +521,14 @@ class ByeBankApi
                         'token:' .$token          
                     );   
 
-                    \Log::debug('[createUser]Header: '.json_encode($header));                 
+                    \Log::debug('[createUser]Header: '.json_encode($header));     
+                    
+                    try {
+                        $phoneLib = new PhoneNumber($phone);
+                        $phone = $phoneLib->getFullPhoneNumberInt();
+                    } catch (Exception $e) {
+                        \Log::error($e->getMessage() . $e->getTraceAsString());
+                    }
 
                     $fields = array (
                         'name'                  => $firstName,
@@ -753,7 +761,7 @@ class ByeBankApi
 
     
     //Criação de Conta de empresa
-    public static function createBusinessAccount($name, $website, $email, $phone, $description, $mcc, $metadata,$ein, $firstName, $lastName, $owner_email, $owner_phone, $owner_cpf, $address)
+    public static function createBusinessAccount($name, $website, $email, $phone, $description, $mcc, $metadata,$ein, $firstName, $lastName, $ownerEmail, $ownerPhone, $ownerCPF, $address)
     {
         try
         {
@@ -774,6 +782,17 @@ class ByeBankApi
 
             $address = (object)$address;
 
+            try {
+                $phoneLib = new PhoneNumber($phone);
+                $phone = $phoneLib->getFullPhoneNumber();
+                
+                $phoneLib = new PhoneNumber($ownerPhone);
+                $ownerPhone = $phoneLib->getFullPhoneNumber();
+
+            } catch (Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
+
             $fields = array (
                 'name' => $name,
                 'website' => $website,
@@ -785,9 +804,9 @@ class ByeBankApi
                 'ein' => $ein,
                 'owner_first_name' => $firstName,
                 'owner_last_name' => $lastName,
-                'owner_email' => $owner_email,
-                'owner_phone' => $owner_phone,
-                'owner_cpf' => $owner_cpf,
+                'owner_email' => $ownerEmail,
+                'owner_phone' => $ownerPhone,
+                'owner_cpf' => $ownerCPF,
                 'address_attributes' => $address,
             );  
 

@@ -474,7 +474,7 @@ class GatewaysController extends Controller
             if(isset($defaultGatewaPix) && !empty($defaultGatewaPix) && $defaultGatewaPix == 'ipag') {
                 try {
                     $gateway = PaymentFactory::createPixGateway();
-                    $webhooks = $gateway->retrieveWebhooks();
+                    $webhooks = $gateway->retrieveWebhooks(true);
                     $success = true;
                     $message = 'Webhooks recuperados com sucesso';
                 } catch (Exception $th) {

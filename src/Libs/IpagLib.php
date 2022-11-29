@@ -16,7 +16,6 @@ use LedgerBankAccount;
 use Requests;
 use Settings;
 // use RequestCharging;
-use Log;
 
 Class IpagLib implements IPayment
 {
@@ -112,8 +111,8 @@ Class IpagLib implements IPayment
                     )
                 );
             }
-		} catch (Exception $th) {
-			
+		} catch (\Exception $th) {
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 			return array(
 				"success"           =>  false ,
 				'data'              =>  null,
@@ -181,7 +180,8 @@ Class IpagLib implements IPayment
                         $jsonErrors = json_decode($response->message);
                         $message = $jsonErrors->error->message; 
                         $code = $jsonErrors->error->code;
-                    } catch (Exception $e) {
+                    } catch (\Exception $e) {
+                        \Log::error($e->getMessage() . $e->getTraceAsString());
                         if(gettype($response->message) == 'string') {
                             $message = $response->message;
                         }
@@ -200,9 +200,8 @@ Class IpagLib implements IPayment
                     )
                 );
             }
-		} catch (Exception $th) {
-            \Log::info('IPagLib > charge > Exception: ' . $th->getMessage());
-            \Log::error($th);
+		} catch (\Exception $th) {
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
             $transaction_id = null;
             $isResponse = isset($response) && !empty($response);
@@ -226,29 +225,18 @@ Class IpagLib implements IPayment
 		}
     }
 
-    public function retrieveWebhooks() 
+    public function retrieveWebhooks($isPix = false) 
     {
         try {
-			$response = IpagApi::retrieveHooks(true);
+			$response = IpagApi::retrieveHooks($isPix);
             $response = HandleResponseIpag::handle($response);
 
             if(!$response['success']) {
                 return $response;
             }
 
-            $webhooks = $response['data']->data;
-
-            if (gettype($webhooks)  == 'array') {
-                $webhooks = array_filter($webhooks, function ($webhook) {
-                    if (isset($webhook->attributes->url) && strpos($webhook->attributes->url, url('/')) !== false) {
-                        return true;
-                    }
-                });
-
-                $webhooks = array_map(function($webhook) {
-                    return $webhook->attributes;
-                }, $webhooks);
-            }
+            $host = url('/');
+            $webhooks = $this->getHostWebhooks($response['data']->data, $host, $isPix);
 
             return array (
                 'success' 		 => true,
@@ -258,7 +246,7 @@ Class IpagLib implements IPayment
 
             
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -317,7 +305,7 @@ Class IpagLib implements IPayment
             );
 
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -390,7 +378,7 @@ Class IpagLib implements IPayment
             );
 
         } catch (\Throwable $th) {
-            \Log::error($th->getMessage());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 				=> false ,
@@ -407,21 +395,33 @@ Class IpagLib implements IPayment
      * @param string $searchUrl string will be used as search url for webhooks
      * @return array array of webhook by hostname
      */
-    private function getHostWebhooks(array $webhooks, string $searchUrl = '')
+    private function getHostWebhooks(array $webhooks, string $searchUrl = '', $isPix = false)
     {
         if(!isset($searchUrl) || empty($searchUrl)) {
             $searchUrl = url('/');
         }
 
         if (gettype($webhooks)  == 'array') {
-            $webhooks = array_filter($webhooks, function ($webhook) use ($searchUrl) {
-                if (isset($webhook->attributes->url) 
-                    && strpos($webhook->attributes->url, $searchUrl) !== false) {
+            $webhooks = array_filter($webhooks, function ($webhook) use ($searchUrl, $isPix) {
+                if (isset($webhook->attributes->url)
+                    && strpos($webhook->attributes->url, $searchUrl) !== false
+                ) {
+
+                    // retorna as urls que contenha o nome pix
+                    $isUrlPix = strpos($webhook->attributes->url, 'pix') !== false;
+                    if($isPix && $isUrlPix) {
                         return true;
+                    }
+                    //retorna as url que não contenha o nome pix
+                    if(!$isPix && !$isUrlPix) {
+                        return true;
+                    }
+
+                    
                 }
             });
 
-            $webhooks = array_map(function($webhook) {
+            $webhooks = array_map(function ($webhook) {
                 return $webhook->attributes;
             }, $webhooks);
         }
@@ -472,8 +472,8 @@ Class IpagLib implements IPayment
                     'transaction_id'    =>  $retrieve['transaction_id']
                 ];
             }
-        } catch (Exception $ex) {
-            \Log::error($ex->getMessage());
+        } catch (\Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return [
                 'success'       =>  false,
@@ -544,7 +544,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 			
 			return array(
 				"success" 	=> false ,
@@ -603,7 +603,7 @@ Class IpagLib implements IPayment
                 );
             }
 		} catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
@@ -631,7 +631,7 @@ Class IpagLib implements IPayment
 			return $this->refund($transaction, $payment);
 
 		} catch (\Throwable $ex) {
-			Log::error($ex->__toString());
+			\Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
@@ -682,6 +682,7 @@ Class IpagLib implements IPayment
                     try {
                         $message = json_decode($message);
                     } catch (\Throwable $th) {
+                        \Log::error($th->getMessage() . $th->getTraceAsString());
                         //throw $th;
                     }
                     
@@ -702,7 +703,7 @@ Class IpagLib implements IPayment
             }
 		
 		} catch (\Throwable $ex) {
-			Log::error($ex->__toString());
+			\Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
@@ -726,35 +727,29 @@ Class IpagLib implements IPayment
         try
         {
             $response = IpagApi::retrieve($transaction);
+            $response = HandleResponseIpag::handle($response);
 
-            if(
-                isset($response->success) && 
-                $response->success && 
-                isset($response->data) && 
-                isset($response->data->attributes->status->code)
-            ){
-                return array(
-                    'success' 			=> true,
-                    'transaction_id' 	=> (string)$response->data->id,
-                    'amount' 			=> $response->data->attributes->amount,
-                    'destination' 		=> '',	
-                    'status' 			=> $this->getStatusString($response->data->attributes->status->code),
-                    'card_last_digits' 	=> $payment ? $payment->last_four : ''
-                );
+            if(!$response['success']) {
+                return $response;
             }
-            else
-            {
-                \Log::error($response->message);
+            
+            $response = $response['data'];
 
-                return array(
-                    "success" 			=> false ,
-                    "type" 				=> 'api_retrieve_error' ,
-                    "code" 				=> 'api_retrieve_error',
-                    "message" 			=> $response->message
-                );
-            }
+            $statusCode = isset($response->attributes->status->code)
+                ? $response->attributes->status->code
+                : '';
+
+            return array(
+                'success' 			    => true,
+                'transaction_id' 	    => (string)$response->id,
+                'transaction_local_id'  => (string)$transaction->id,
+                'amount' 			    => $response->attributes->amount,
+                'destination' 		    => '',	
+                'status' 			    => $this->getStatusString($statusCode),
+                'card_last_digits' 	    => $payment ? $payment->last_four : ''
+            );
         } catch (\Throwable $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success" 			=>  false ,
@@ -781,8 +776,10 @@ Class IpagLib implements IPayment
 		$cardExpirationYear 	= $payment->getCardExpirationYear();
 		$cardCvc 				= $payment->getCardCvc();
 		$cardHolder 			= $payment->getCardHolder();
-		$userName				= $user->first_name." ".$user->last_name;
-		$userDocument				= str_replace(".", "", $user->document);
+		if($user) {
+            $userName				= $user->first_name." ".$user->last_name;
+            $userDocument				= str_replace(".", "", $user->document);
+        }
 
 		// $cpf = $this->cleanCpf($user->document);
 
@@ -828,10 +825,6 @@ Class IpagLib implements IPayment
         {
             $newAccount = IpagApi::createOrUpdateAccount($ledgerBankAccount);
             $newAccount = HandleResponseIpag::handle($newAccount);
-            if(strpos($newAccount['original_message'], 'already exists') !== false) {
-                $newAccount = IpagApi::getSellerByLedgerBankAccount($ledgerBankAccount);
-                $newAccount = HandleResponseIpag::handle($newAccount, );    
-            }
             
             if(!$newAccount['success']) {
                 return $newAccount;
@@ -858,7 +851,7 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $ex) {
-            \Log::error($ex->__toString());
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
 			$result = array(
 				"success"               =>  false ,
@@ -922,7 +915,7 @@ Class IpagLib implements IPayment
         }
         catch(Exception $ex)
         {
-            \Log::error($ex);
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return(false);
         }
@@ -1105,8 +1098,7 @@ Class IpagLib implements IPayment
             }
 
         } catch (\Throwable $th) {
-            \Log::error('pixCharge > Error Throwable: ' . $th->getMessage());
-
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 				=>  false,

@@ -3,7 +3,6 @@ namespace Codificar\PaymentGateways\Libs;
 
 use ApiErrors;
 use Log;
-
 class HandleResponseIpag
 {
 
@@ -140,13 +139,18 @@ class HandleResponseIpag
                     }
                 }
 
+                $replaceMessage = $message;
+                if(is_array($message) || is_string($message)) {
+                    $replaceMessage = str_replace(' ', '_', $message);
+                }
+
                 \Log::error('HandleResponseIpag > Error 2' . json_encode($response));
 
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  str_replace(' ', '_', $message),
+                    "message" 				=>  $replaceMessage,
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',

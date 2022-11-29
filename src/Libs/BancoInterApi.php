@@ -2,6 +2,7 @@
 namespace Codificar\PaymentGateways\Libs;
 
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Illuminate\Support\Facades\Storage;
 
 use Log, Exception;
@@ -201,11 +202,19 @@ class BancoInterApi{
 
         $docType = strlen($client->getDocument()) > 11 ? "JURIDICA" : "FISICA";
 
+        $phoneNumber = null;
+        try {
+            $phoneLib = new PhoneNumber($client->getPhoneNumber());
+            $phoneNumber = $phoneLib->getFullPhoneNumberInt();
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
 		$pagador = array(
             "cnpjCpf"       => $client->document,
             "nome"          => $client->getFullName(),
             "email"         => $client->email,
-            "telefone"      => self::formatPhone($client->getPhoneNumber()),
+            "telefone"      => $phoneNumber,
             "cep"           => $zipcode,
             "numero"        => $client->getStreetNumber(),
             "complemento"   => self::formatComplements($client->address_complements),
@@ -233,17 +242,6 @@ class BancoInterApi{
     private static function formatComplements($complements)
     {
         return strlen($complements) > 30 ? substr($complements, 0, -29) : $complements;
-    }
-    private static function formatPhone($phone)
-    {
-        $phone = str_replace('(', '', $phone);
-        $phone = str_replace(')', '', $phone);
-        $phone = str_replace('-', '', $phone);
-        $phone = str_replace('+', '', $phone);
-        $phone = str_replace(' ', '', $phone);
-        $phone = substr($phone, -11);
-
-        return $phone;
     }
 
     public static function createBilletPdf($nossoNumero)
