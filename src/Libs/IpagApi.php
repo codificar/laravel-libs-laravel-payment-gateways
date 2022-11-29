@@ -708,7 +708,6 @@ class IpagApi
             'Authorization: Basic '.$basic
         );
 
-        
         $versionSettings  =   Settings::findObjectByKey('pix_ipag_version', '1');
         $isVersion2 = isset($versionSettings) && !empty($versionSettings) && 
             isset($versionSettings->value) && !empty($versionSettings->value) &&
