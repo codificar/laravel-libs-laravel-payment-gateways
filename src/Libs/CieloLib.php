@@ -224,7 +224,7 @@ class CieloLib implements IPayment
             ->creditCard($cardCvv, $cardType)
             ->setCardNumber($cardNumber)
             ->setHolder($payment->getCardHolder())
-            ->setExpirationDate($payment->getCardExpirationFull())
+            ->setExpirationDate($payment->getCardExpirationFull('/', true))
             ->setCardToken($payment->card_token);
 
         // Crie o pagamento na Cielo
