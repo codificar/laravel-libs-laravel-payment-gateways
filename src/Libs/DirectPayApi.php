@@ -5,6 +5,7 @@ namespace Codificar\PaymentGateways\Libs;
 //models do sistema
 use Log, Exception;
 use App;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Payment;
 use Provider;
 use Transaction;
@@ -322,14 +323,22 @@ class DirectPayApi
         
         $operationUUID          = Settings::where('key', 'directpay_working_operation_uuid')->first()->value;
 
+        $phone = $user->phone;
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+            $phone = $phoneLib->getFullPhoneNumber();
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $fields = array(
             'cardHolder'    =>  (object)array(
                 'entity'    =>  (object)array(
                     // 'entityTypeId'      =>  1,
                     'name'              =>  $userName,
                     "namePrefix"        =>  $user->first_name,
-                    "phoneCelular"      =>  $user->phone,
-                    "phoneHome"         =>  $user->phone,
+                    "phoneCelular"      =>  $phone,
+                    "phoneHome"         =>  $phone,
                     'email'             =>  $user->email,
                     'vatNumber'         =>  $userDocument,
                     "identificationTypeId" =>  0,

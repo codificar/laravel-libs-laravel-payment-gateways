@@ -36,4 +36,6 @@ return array(
 	,'ipag_api_key'							=> 'Ipag API Key'
 	,'ipag_antifraud_title'					=> 'Las transacciones con antifraude se someten a una validación de datos previa. La puntuación debe ser inferior a 0,3'
 	,'gateway_product_title'				=> 'Nomenclatura de producto / servicio utilizada en la puerta de enlace (ej .: servicio de movilidad)'
+
+	,'billet_gateway_provider'				=> 'Selecciona el método de pago por boleto que está configurado en tu pasarela'
 );

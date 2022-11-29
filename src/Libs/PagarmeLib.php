@@ -55,6 +55,7 @@ class PagarmeLib implements IPayment
     const PAYMENT_PENDING      =   'pending';
     const PAYMENT_ABORTED      =   'aborted';
     const PAYMENT_SCHEDULED    =   'scheduled';
+    const PAYMENT_ERROR        =   'error';
 
     const WAITING_PAYMENT = 'waiting_payment';
 
@@ -154,6 +155,7 @@ class PagarmeLib implements IPayment
             } else {
                 return array(
                     "success"           => false ,
+                    'status'            => self::PAYMENT_ERROR,
                     'data'              => null,
                     'transaction_id'    => -1,
                     'error' => array(
@@ -165,14 +167,15 @@ class PagarmeLib implements IPayment
         } catch (Exception $th) {
             Log::error($th->__toString());
 
-            return array(
-                "success"           =>  false ,
-                'data'              =>  null,
-                'transaction_id'    =>  '',
-                'error' => array(
-                    "code"      =>  ApiErrors::CARD_ERROR,
-                    "messages"  =>  array(trans('creditCard.customerCreationFail'))
-                )
+			return array(
+				"success"           =>  false ,
+				'data'              =>  null,
+                'status'            => self::PAYMENT_ERROR,
+				'transaction_id'    =>  '',
+				'error' => array(
+					"code"      =>  ApiErrors::CARD_ERROR,
+					"messages"  =>  array(trans('creditCard.customerCreationFail'))
+				)
             );
         }
     }

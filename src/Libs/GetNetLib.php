@@ -2,7 +2,7 @@
 
 namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
-
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Getnet\API\Getnet;
 use Getnet\API\Transaction as GetNetTransaction;
 use Getnet\API\Token;
@@ -218,6 +218,14 @@ class GetNetLib implements IPayment
                 ->setCardholderName($cardHolder)
                 ->setSecurityCode($cardCvv);
 
+            $phone = preg_replace('/(\D)/', '', $client->phone);
+            try {
+                $phoneLib = new PhoneNumber($client->phone);
+                $phone = $phoneLib->getFullPhoneNumberInt();
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
+
             // Dados pessoais do comprador
             $transaction->customer($customerId)
             ->setDocumentType("CPF")
@@ -225,7 +233,7 @@ class GetNetLib implements IPayment
             ->setFirstName($client->first_name)
             ->setLastName($client->last_name)
             ->setName($client->first_name . " " . $client->last_name)
-            ->setPhoneNumber(preg_replace('/(\D)/', '', $client->phone))
+            ->setPhoneNumber($phone)
             ->setDocumentNumber(preg_replace('/(\D)/', '', $client->document))
             ->billingAddress($client->zipcode)
                 ->setCity($client->address_city)
@@ -460,13 +468,20 @@ class GetNetLib implements IPayment
                 ->setProvider("santander")
                 ->setInstructions($billetInstructions);
 
+            $phone = preg_replace('/(\D)/', '', $client->phone);
+            try {
+                $phoneLib = new PhoneNumber($client->phone);
+                $phone = $phoneLib->getFullPhoneNumberInt();
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
             //Adicionar dados do cliente
             $transaction->customer($custumerId)
                 ->setDocumentType("CPF")
                 ->setFirstName($client->first_name)
                 ->setLastName($client->last_name)
                 ->setName($client->first_name . " " . $client->last_name)
-                ->setPhoneNumber(preg_replace('/(\D)/', '', $client->phone))
+                ->setPhoneNumber($phone)
                 ->setDocumentNumber(preg_replace('/(\D)/', '', $client->document))
                 ->billingAddress($client->zipcode)
                     ->setCity($client->address_city)

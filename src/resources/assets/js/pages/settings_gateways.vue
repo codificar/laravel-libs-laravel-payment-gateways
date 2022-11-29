@@ -2,9 +2,23 @@
 import axios from "axios";
 import moment from "moment";
 export default {
-  props: ["PaymentMethods", "Gateways", "PixGateways", "Carto", "Bancryp", "Prepaid", "Settings", "Certificates", "Nomenclatures"],
+  props: [
+    "PaymentMethods", 
+    "Gateways", 
+    "PixGateways", 
+    "Carto", 
+    "Bancryp", 
+    "Prepaid", 
+    "Settings", 
+    "Certificates", 
+    "Nomenclatures",
+    "EnviromentActive"
+  ],
   data() {
     return {
+      isLoading: false,
+      listWebhooks: null,
+      messageWebhook: '',
       gateways: {},
       pix_gateways : {},
       payment_methods: {},
@@ -24,6 +38,7 @@ export default {
         cancelButtonText: this.trans("setting.no"),
       }).then((result) => {
         if (result.value) {
+          this.isLoading = true;
           //Submit form if its valid and email doesnt exists
           new Promise((resolve, reject) => {
             axios
@@ -61,6 +76,8 @@ export default {
                       type: "success",
                     }).then((result) => {});
                   }
+                  //Atualizar a lista de webhooks pix
+                  this.retrievePixWebHooks();
                 } else {
                   this.$swal({
                     title: this.trans("setting.failed_set_gateway"),
@@ -71,14 +88,39 @@ export default {
                     type: "error",
                   }).then((result) => {});
                 }
+                this.isLoading = false;
               })
               .catch((error) => {
+                this.isLoading = false;
                 console.log(error);
                 reject(error);
                 return false;
               });
           });
         }
+      });
+    },
+
+    retrievePixWebHooks() {
+      this.isLoading = true;
+      this.messageWebhook = '';
+      new Promise((resolve, reject) => {
+        axios
+          .get("/libs/settings/retrieve/webhooks")
+          .then((response) => {
+            this.isLoading = false;
+            this.listWebhooks = response.data.data.webhooks;
+            this.messageWebhook = this.trans("setting.failed_retreive_webhook");
+            if(response.data.data.message) {
+              this.messageWebhook = this.trans(`setting.${response.data.data.message}`);
+            }
+          })
+          .catch((error) => {
+            this.isLoading = false;
+            console.log(error);
+            reject(error);
+            return false;
+          });
       });
     },
 
@@ -111,11 +153,22 @@ export default {
     this.Certificates ? (this.certificates = JSON.parse(this.Certificates)) : null;
     this.Nomenclatures ? (this.nomenclatures = JSON.parse(this.Nomenclatures)) : null;
     this.nomenclatures.payments_custom_name = parseInt(this.nomenclatures.payments_custom_name) == 1 ? true : false;
+    //Atualizar a lista de webhooks pix
+    this.retrievePixWebHooks();
   },
 };
 </script>
 <template>
   <div>
+    <!-- loading -->
+    <loading 
+        :active.sync="isLoading" 
+        :is-full-page="true"
+        :loader="'dots'"
+        :color="'#007bff'"
+    ></loading>
+    <!-- loading -->
+
     <!-- formas de pagamento -->
     <div class="tab-content">
       <div class="card-outline-info">
@@ -700,6 +753,38 @@ export default {
                       maxlength="80"
                       v-model="gateways.ipag.gateway_product_title"
                     />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.billet_gateway_provider") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('settingTableSeeder.billet_gateway_provider')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <select
+                      v-model="gateways.ipag.billet_gateway_provider"
+                      name="billet_gateway_provider"
+                      class="select form-control"
+                    >
+                      <option
+                        v-for="methodBillet in gateways.billets"
+                        v-bind:value="methodBillet.value"
+                        v-bind:key="methodBillet.value"
+                      >
+                        {{ trans(methodBillet.name) }}
+                      </option>
+                    </select>
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
@@ -2596,11 +2681,19 @@ export default {
                   name="default_payment_pix"
                   class="select form-control"
                 >
-                  <option value="juno">juno</option>
+                  <option :selected="!!pix_gateways.default_payment_pix" disabled>
+                    {{ trans("setting.select") }}
+                  </option>
+                  <option 
+                    v-for="gatewayPix in pix_gateways.list_gateways" 
+                    :key="gatewayPix.value"
+                    :value="gatewayPix.value">
+                    {{trans(gatewayPix.name)}}
+                  </option>
                 </select>
               </div>
             </div>
-            <div class="col-lg-6">
+            <div v-if="pix_gateways.default_payment_pix == 'juno'" class="col-lg-6">
               <div class="form-group">
                 <label for="usr">
                   {{ trans("setting.pix_key") }}
@@ -2621,6 +2714,33 @@ export default {
                   class="form-control"
                   v-model="pix_gateways.pix_key"
                 />
+                <div class="help-block with-errors"></div>
+              </div>
+            </div>
+            <div v-if="pix_gateways.default_payment_pix == 'ipag'" class="col-lg-6">
+              <div class="form-group">
+                <label for="usr">
+                  {{ trans("setting.ipag_version") }}
+                  <a
+                    href="#"
+                    class="question-field"
+                    data-toggle="tooltip"
+                    :title="
+                      trans('setting.ipag_version')
+                    "
+                  >
+                    <span class="mdi mdi-comment-question-outline"></span>
+                  </a>
+                  <span class="required-field">*</span>
+                </label>
+                    <select
+                      v-model="pix_gateways.ipag.pix_ipag_version"
+                      class="select form-control"
+                      required
+                    >
+                      <option value="1">{{ trans("setting.ipag_version_1") }}</option>
+                      <option value="2"> {{ trans("setting.ipag_version_2") }} </option>
+                    </select>
                 <div class="help-block with-errors"></div>
               </div>
             </div>
@@ -2772,6 +2892,137 @@ export default {
               </div>
             </div>
           </div>
+          <!--Configurações de pix da juno-->
+          <div
+            class="panel panel-default juno"
+            v-if="pix_gateways.default_payment_pix == 'ipag'"
+          >
+            <div class="panel-heading">
+              <h3 class="panel-title">
+                {{ trans("setting.ipag_settings") }}
+              </h3>
+              <span class="enviroment" v-if="EnviromentActive">
+                {{ trans("setting.enviromentActive") }}: <b>{{ trans(`setting.${EnviromentActive}`) || '' }}</b>
+              </span>
+              <hr />
+            </div>
+            <div class="panel-body">
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_api_id") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_api_id')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_api_id"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_api_key") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_api_key')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_api_key"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.ipag_expiration_time") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.ipag_expiration_time')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      class="form-control input-ipag"
+                      v-model="pix_gateways.ipag.pix_ipag_expiration_time"
+                    />
+                    <div class="help-block with-errors"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Webhooks Ipag -->
+              <div v-if="listWebhooks" class="row">
+                <div class="col-lg-12">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.list_webhooks") }}
+                      <a
+                        href="#"
+                        class="question-field"
+                        data-toggle="tooltip"
+                        :title="
+                          trans('setting.list_webhooks')
+                        "
+                      >
+                        <span class="mdi mdi-comment-question-outline"></span>
+                      </a>
+                      <span class="required-field">*</span>
+                    </label>
+                    <div class="webhooks-ipag">
+                      <ol>
+                        <li v-for="webhook in listWebhooks" :key="webhook.id">
+                          {{ webhook.url }}
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else>
+                <ul>
+                  <li>
+                    <p class="Error-webhook">{{messageWebhook}}</p>
+                  </li>  
+                </ul>
+              </div>
+            </div>
+          </div>
           <!-- / Configurações de boleto do gerencianet-->
         </div>
       </div>
@@ -2806,5 +3057,9 @@ export default {
 
 .card-margin-top {
   margin-top: 30px !important;
+}
+
+.enviroment {
+  font-size: 11px;
 }
 </style>

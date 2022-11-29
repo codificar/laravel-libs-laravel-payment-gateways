@@ -13,6 +13,7 @@ use User;
 use LedgerBankAccount;
 use Settings;
 use Bank;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class BraspagCieloEcommerceApi
 {
@@ -147,6 +148,14 @@ class BraspagCieloEcommerceApi
         } else {
             $accountType = "SavingsAccount";
         }
+        
+        $phone = $provider->phone;
+        try {
+            $phoneLib = new PhoneNumber($provider->phone);
+            $phone = $phoneLib->getFullPhoneNumberInt();
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
 
         $fields = array(
             'CorporateName' =>  $ledgerBankAccount->holder,
@@ -155,7 +164,7 @@ class BraspagCieloEcommerceApi
             'DocumentType'      =>  $docType,
             'MerchantCategoryCode'  =>  self::MCC,
             'ContactName'           =>  $ledgerBankAccount->holder,
-            'ContactPhone'          =>  substr(preg_replace('/[^0-9]/', '', $provider->phone), -11),
+            'ContactPhone'          =>  $phone,
             'MailAddress'           =>  $provider->email,
             'Website'               =>  '',
             'BankAccount'           =>  (object)array(
@@ -503,7 +512,13 @@ class BraspagCieloEcommerceApi
 
         $cardNumber = $payment->getCardNumber();
 
-        $phone = preg_replace('/[^0-9]/', '', $user->phone);
+        $phone = $user->phone;
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+            $phone = $phoneLib->getFullPhoneNumberInt();
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
 
         $docType = ((strlen($user->document)) > 11) ? "CNPJ" : "CPF";
 

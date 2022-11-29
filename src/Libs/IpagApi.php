@@ -13,6 +13,8 @@ use User;
 use LedgerBankAccount;
 use Settings;
 use Bank;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
+use DateTime;
 
 class IpagApi
 {
@@ -33,9 +35,9 @@ class IpagApi
      */
     private static function apiUrl()
     {
-        if (App::environment() == 'production')
+        if (App::environment() == 'production') {
             return self::URL_PROD;
-
+        }
         return self::URL_DEV;
     }
 
@@ -85,8 +87,9 @@ class IpagApi
 
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
+        
+        //dd($url, $header, $body);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
-
         return $chargeSplitRequest;
     }
 
@@ -147,7 +150,7 @@ class IpagApi
                 !isset($ruleResponse->success) ||
                 !$ruleResponse->success
             ){
-                Log::error("Set split rule new fail: " . print_r($ruleResponse, 1));
+                \Log::error("Set split rule new fail: " . print_r($ruleResponse, 1));
                 return (object)array(
                     "success"   => false,
                     "message"   => 'Set split rule new fail'
@@ -164,7 +167,7 @@ class IpagApi
                     !isset($deleteRuleResponse->success) ||
                     !$deleteRuleResponse->success
                 ){
-                    Log::error("Delete split rule fail: " . print_r($deleteRuleResponse, 1));
+                    \Log::error("Delete split rule fail: " . print_r($deleteRuleResponse, 1));
                     return (object)array(
                         "success"   => false,
                         "message"   => 'Delete split rule fail'
@@ -178,7 +181,7 @@ class IpagApi
                     !isset($ruleResponse->success) ||
                     !$ruleResponse->success
                 ){
-                    Log::error("Set split rule change fail: " . print_r($ruleResponse, 1));
+                    \Log::error("Set split rule change fail: " . print_r($ruleResponse, 1));
                     return (object)array(
                         "success"   => false,
                         "message"   => 'Set split rule change fail'
@@ -234,70 +237,84 @@ class IpagApi
 
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
-        if(
-            $ledgerBankAccount->recipient_id != '' && 
-            $ledgerBankAccount->recipient_id != 'empty' && 
-            $ledgerBankAccount->recipient_id !== null
-        )
-            $response = self::getSeller($ledgerBankAccount->recipient_id);
-        else
-            $response = null;
+        // to create a new account
+        $url = sprintf('%s/resources/sellers', self::apiUrl());
+        $verb = self::POST_REQUEST;
 
-        if(!isset($response->data->id))
-        {
-            $url = sprintf('%s/resources/sellers', self::apiUrl());
-            $verb = self::POST_REQUEST;
-        }
-        else
-        {
-            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $ledgerBankAccount->recipient_id);
-            $verb = self::PUT_REQUEST;
-        }
-
-        $phoneRemask    =   null;
+        $phone          =   null;
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        //mobile or fixed phone remask BR
-        if(preg_match('/^\d(\d{2})(\d{4})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(preg_match('/^\d(\d{2})(\d{5})(\d{4})$/', substr($provider->phone,2),  $matches))
-            $phoneRemask = "(".$matches[1].") " . $matches[2] . '-' . $matches[3];
-        if(!$phoneRemask)
-            $phoneRemask = '(31) 99999-9999'; //if the phone has save error
+        try {
+            $phoneLib = new PhoneNumber($provider->phone);
+            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
+        if(!$phone) {
+            $phone = '(31) 99999-9999'; //if the phone has save error
+        }
+        $bankObject = (object) array();
+        if($bank && $ledgerBankAccount &&
+            $bank->code && $ledgerBankAccount->agency &&
+            $ledgerBankAccount->account && 
+            $ledgerBankAccount->account_digit
+        ) {
+            $bankObject = (object)array(
+                'code'          =>  $bank->code,
+                'agency'        =>  $ledgerBankAccount->agency,
+                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
+            );
+        }
 
         $fields = (object)array(
             'login'         =>  $provider->email,
             'password'      =>  preg_replace('/\D/', '', $provider->document),
             'name'          =>  $ledgerBankAccount->holder,
             'email'         =>  $provider->email,
-            'phone'         =>  $phoneRemask,
-            'bank'      =>  (object)array(
-                'code'          =>  $bank->code,
-                'agency'        =>  $ledgerBankAccount->agency,
-                'account'       =>  $ledgerBankAccount->account.$ledgerBankAccount->account_digit
-            )
+            'phone'         =>  $phone,
+            'bank'          => $bankObject  
         );
 
-        if(!$response)
-            $fields = array_merge((array)$fields, ['cpf_cnpj'=>self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document))]); //document remask BR
+        $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
+        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
 
-        //to juridical bank account
-        $birthday = $ledgerBankAccount->birthday_date;
-        if(strlen($ledgerBankAccount->document) > 11)
+        if(strlen($ledgerBankAccount->document) >= 11) {
+            $birthday = $ledgerBankAccount->birthday_date;
+            $date = DateTime::createFromFormat('Y-m-d', $birthday);
+            
+            if ($date) {
+                $birthday = $date->format('Y-m-d');
+            } else {
+                $birthday = '1970-01-01';
+            }
+            $documentOwnerRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
+
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
                 'email'     =>  $provider->email,
-                'cpf'       =>  self::remaskDocument(preg_replace('/\D/', '', $provider->document)), //document remask BR
-                'phone'     =>  $phoneRemask,
-                'birthdate' =>  strlen($birthday) == 10 ? $birthday : '1970-01-01' //if null birthday
+                'cpf'       =>  $documentOwnerRemask, //document remask BR
+                'phone'     =>  $phone,
+                'birthdate' =>  $birthday
             );
+        }
 
         $header     =   self::getHeader();
         $body       =   json_encode($fields);
-        $accountRequest = self::apiRequest($url, $body, $header, $verb);
 
-        if(isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
+        // tenta criar o seller
+        $accountRequest = self::apiRequest($url, $body, $header, $verb);
+        
+        // caso dê erro pq já existe o seller ele tenta atualizar por document
+        if($documentRemask && !$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
+            $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
+            $verb = self::PUT_REQUEST;
+            // tenta atualizar o seller
+            $accountRequest = self::apiRequest($url, $body, $header, $verb);
+        }
+        
+        if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
 
         return $accountRequest;
@@ -314,22 +331,58 @@ class IpagApi
         return $sellerRequest;
     }
 
+    public static function getSellerByDocument($sellerDocument)
+    {
+        $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $sellerDocument);
+
+        $body           =   null;
+        $header         =   self::getHeader();
+        $sellerRequest  =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+
+        return $sellerRequest;
+    }
+
+    public static function getSellerByLedgerBankAccount(\LedgerBankAccount $ledgerBankAccount)
+    {
+        $sellerId = $ledgerBankAccount->recipient_id;
+
+        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null) {
+            
+            $isDocument = isset($ledgerBankAccount->document) && !empty($ledgerBankAccount->document);
+            $isUser = isset($ledgerBankAccount->user_id) && !empty($ledgerBankAccount->user_id);
+            $isProvider = isset($ledgerBankAccount->provider_id) && !empty($ledgerBankAccount->provider_id);
+            
+            if($isUser) {
+                $userEmail = \User::where(['id' => $ledgerBankAccount->user_id])->first()->email;
+                $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $userEmail);
+            } else if($isProvider) {
+                $providerEmail = \Provider::where(['id' => $ledgerBankAccount->provider_id])->first()->email;
+                $url = sprintf('%s/resources/sellers?email=%s', self::apiUrl(), $providerEmail);
+            }
+        } else {
+            $url = sprintf('%s/resources/sellers?id=%s', self::apiUrl(), $sellerId);
+        }
+
+        $body       =   null;
+        $header     =   self::getHeader();
+        
+        $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
+        
+        return $sellerRequest;
+    }
+
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $sellerId = $ledgerBankAccount->recipient_id;
 
-        if($sellerId == '' || $sellerId == 'empty' || $sellerId === null)
-            $response = self::createOrUpdateAccount($ledgerBankAccount);
-        else
+        $response  = null;
+        if(isset($sellerId)) {
             $response = self::getSeller($sellerId);
+        }
 
-        if(!isset($response->data->id))
+        if(!$response || !isset($response->data->id))
         {
-            Log::error("Retrieve/create recipient fail: " . print_r($response, 1));
-            $response = (object)array(
-                'success'       =>  false,
-                'recipient_id'  =>  ""
-            );
+            $response = self::createOrUpdateAccount($ledgerBankAccount);
         }
 
         if($response->success)
@@ -392,7 +445,7 @@ class IpagApi
     {
         $url = sprintf('%s/payment', self::apiUrl());
 
-        $header     =   self::getHeader(true);
+        $header     =   self::getHeader(true, true);
         $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -471,17 +524,24 @@ class IpagApi
     //     return $amount;
     // }
 
-    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false)
+    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
-        if($payment)
-            $client = User::find($payment->user_id);
+        if($payment) {
+            if($payment->user_id) {
+                $client = User::find($payment->user_id);
+            } else if($payment->provider_id) {
+                $client = Provider::find($payment->provider_id);
+            }
+        }
 
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
-
-        $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-
-        $client->document = vsprintf($mask, str_split($client->document));
+        
+        $document = null;
+        if($client && isset($client->document) && !empty($client->document)) {
+            $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
+            $document = vsprintf($mask, str_split($client->document));
+        }
 
         if($payment)
         {
@@ -511,8 +571,26 @@ class IpagApi
             $method = Settings::getBilletProvider();
         }
 
+        if($client && strlen($client->state) > 2) {
+            $client->state = self::getMinStateString($client->state);
+        }
+
         $orderId        =   self::getOrderId();
-        $requestId      =   $client ? $client->getLastRequest()->id : $orderId;
+        $requestId      =   $client && $client->getLastRequest() 
+            ? $client->getLastRequest()->id 
+            : $orderId;
+
+        $phone = '(31) 99999-9999';
+        if($client) {
+            $phone = preg_replace('/\D/', '', $client->phone);
+            try {
+                $phoneLib = new PhoneNumber($client->phone);
+                $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
+        }
+    
 
         $fields         =   (object)array(
             'amount'            =>  $amount,
@@ -520,8 +598,8 @@ class IpagApi
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
                 'email'         =>  $client->email,
-                'phone'         =>  substr(preg_replace('/\D/', '', $client->phone), 2),
-                'cpf_cnpj'      =>  $client->document,
+                'phone'         =>  $phone,
+                'cpf_cnpj'      =>  $document,
                 'billing_address'=>  (object)array(
                     'street'    =>  $client->address,
                     'number'    =>  $client->address_number,
@@ -618,10 +696,10 @@ class IpagApi
         return $fields;
     }
 
-    private static function getHeader($useVersion = false)
+    private static function getHeader($useVersion = false, $isPix = false)
     {
         $version    =   ['x-api-version: 2'];
-        $token      =   self::makeToken();
+        $token      =   self::makeToken($isPix);
         $ipagToken  =   Settings::findObjectByKey('ipag_token');
         $basic      =   $ipagToken && isset($ipagToken->value)  ? $ipagToken->value : $token;
 
@@ -630,26 +708,40 @@ class IpagApi
             'Authorization: Basic '.$basic
         );
 
-        if($useVersion)
+        
+        $versionSettings  =   Settings::findObjectByKey('pix_ipag_version', '1');
+        $isVersion2 = isset($versionSettings) && !empty($versionSettings) && 
+            isset($versionSettings->value) && !empty($versionSettings->value) &&
+            $versionSettings->value == '2';
+
+        if($useVersion || $isVersion2) {
             $header = array_merge($header, $version);
+        }
 
         return $header;
     }
 
-    private static function makeToken()
+    private static function makeToken($isPix = false)
     {
-        $ipagId     =   Settings::findObjectByKey('ipag_api_id');
-        $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
+        
+        if($isPix) {
+            $ipagId     =   Settings::findObjectByKey('pix_ipag_api_id');
+            $ipagKey    =   Settings::findObjectByKey('pix_ipag_api_key');
+        } else {
+            $ipagId     =   Settings::findObjectByKey('ipag_api_id');
+            $ipagKey    =   Settings::findObjectByKey('ipag_api_key');
+        }
 
+        
         $concateString = base64_encode($ipagId->value.':'.$ipagKey->value);
-
+        
         try {
             $token = Settings::findObjectByKey('ipag_token');
             $token->value = $concateString;
             $token->save();
         }
         catch (Exception $ex){
-            Log::error($ex->getMessage().$ex->getTraceAsString());
+            \Log::error($ex->getMessage().$ex->getTraceAsString());
         }
 
         return $concateString;
@@ -689,7 +781,7 @@ class IpagApi
                     "success"   => false,
                     "message"   => $msg_chk
                 );
-                Log::error('Error message Exception: '.$msg_chk);
+                \Log::error('Error message Exception: '.$msg_chk);
             }            
 
         }
@@ -700,7 +792,7 @@ class IpagApi
                 "message"       => $ex->getMessage()
             );
 
-            Log::error(($ex));
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return $return;
         }
@@ -715,26 +807,41 @@ class IpagApi
         return vsprintf($mask, str_split($document));
     }
 
-    public static function retrieveHooks()
+    public static function retrieveHooks($isPix = false)
     {
         $body       =   null;
-        $header     =   self::getHeader();
-        $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
+        $header     =   self::getHeader(false, $isPix);
+        $url        =   sprintf('%s/resources/webhooks?limit=1000', self::apiUrl());
+
         $apiRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
         return $apiRequest;
     }
 
-    public static function registerHook($postbackUrl)
+    public static function registerHook($postbackUrl, $isPix = false)
     {
-        $header     =   self::getHeader();
+        $header     =   self::getHeader(false, $isPix);
         $url        =   sprintf('%s/resources/webhooks', self::apiUrl());
 
-        $body       =   (object)array(
-            'http_method'   =>  self::POST_REQUEST,
-            'url'           =>  $postbackUrl,
-            'description'   =>  'Webhook para receber notificações de atualização das transações',
-            'actions'       =>  (object)array(
+        $actions = [
+            'TransactionCreated',
+            'TransactionWaitingPayment',
+            'TransactionCanceled',
+            'TransactionPreAuthorized',
+            'TransactionCaptured',
+            'TransactionDenied',
+            'TransactionDisputed',
+            'TransactionChargedback'
+        ];
+
+        if($isPix) {
+            $actions = [
+                'PaymentLinkPaymentSucceeded',
+                'PaymentLinkPaymentFailed',
+                'SubscriptionPaymentSucceeded',
+                'SubscriptionPaymentFailed',
+                'ChargePaymentSucceeded',
+                'ChargePaymentFailed',
                 'TransactionCreated',
                 'TransactionWaitingPayment',
                 'TransactionCanceled',
@@ -742,12 +849,99 @@ class IpagApi
                 'TransactionCaptured',
                 'TransactionDenied',
                 'TransactionDisputed',
-                'TransactionChargedback'
-            )
+                'TransactionChargedback',
+                'TransferPaymentSucceeded',
+                'TransferPaymentFailed'
+            ];
+        }
+
+        $body       =   (object)array(
+            'http_method'   =>  self::POST_REQUEST,
+            'url'           =>  $postbackUrl,
+            'description'   =>  'Webhook para receber notificações de atualização das transações',
+            'actions'       =>  (object)$actions
         );
 
         $apiRequest =   self::apiRequest($url, json_encode($body), $header, self::POST_REQUEST);
 
         return $apiRequest;
+    }
+
+    public static function getMinStateString($state)
+    {
+        $minState = '';
+        // get string full state and return min string
+        switch (strtolower($state)) {
+            case 'acre':
+                $minState = 'AC';
+                break;
+            case 'alagoas':
+                $minState = 'AL';
+                break;
+            case 'amapá':
+                $minState = 'AP';
+                break;
+            case 'amazonas':
+                $minState = 'AM';
+                break;
+            case 'bahia':
+                $minState = 'BA';
+                break;
+            case 'ceará':
+                $minState = 'CE';
+                break;
+            case 'distrito federal':
+                $minState = 'DF';
+                break;
+            case 'espírito santo':
+                $minState = 'ES';
+                break;
+            case 'goiás':
+                $minState = 'GO';
+                break;
+            case 'maranhão':
+                $minState = 'MA';
+                break;
+            case 'mato grosso':
+                $minState = 'MT';
+                break;
+            case 'mato grosso do sul':
+                $minState = 'MS';
+                break;
+            case 'minas gerais':
+                $minState = 'MG';
+                break;
+            case 'pará':
+                $minState = 'PA';
+                break;
+            case 'paraíba':
+                $minState = 'PB';
+                break;
+            case 'paraná':
+                $minState = 'PR';
+                break;
+            case 'pernambuco':
+                $minState = 'PE';
+                break;
+            case 'piauí':
+                $minState = 'PI';
+                break;
+            case 'rio de janeiro':
+                $minState = 'RJ';
+                break;
+            case 'rio grande do norte':
+                $minState = 'RN';
+                break;
+            case 'rio grande do sul':
+                $minState = 'RS';
+                break;
+            case 'rondônia':
+                $minState = 'RO';
+                break;
+            case 'roraima':
+                $minState = 'RR';
+                break;
+        }
+        return $minState;
     }
 }

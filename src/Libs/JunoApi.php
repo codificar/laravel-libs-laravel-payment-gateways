@@ -8,7 +8,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7;
 
 use Codificar\PaymentGateways\Libs\CardFlag;
-
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Settings, Payment, Provider, Bank;
 
 
@@ -441,6 +441,15 @@ class JunoApi {
             if($headersOk) {
                 $provider = Provider::find($ledgerBankAccount->provider_id);
                 $bank = Bank::where('id', $ledgerBankAccount->bank_id)->first();
+                $phone = $provider->phone;
+                
+                try {
+                    $phoneLib = new PhoneNumber($provider->phone);
+                    $phone = $phoneLib->getFullPhoneNumber();
+                } catch (\Exception $e) {
+                    \Log::error($e->getMessage() . $e->getTraceAsString());
+                }
+                
                 $response = $this->guzzle->request('POST', 'digital-accounts', [
                     'headers' => $this->headers, 
                     'json' => [
@@ -449,7 +458,7 @@ class JunoApi {
                         'document' => preg_replace( '/[^0-9]/', '', $ledgerBankAccount->document),
                         'email' => $provider->email,
                         'birthDate' => (new Carbon($ledgerBankAccount->birthday_date))->format('Y-m-d'),
-                        'phone' => $provider->phone,
+                        'phone' => $phone,
                         'businessArea' => 2033, //2033 - cod da juno para todo tipo de 'servicos'
                         'linesOfBusiness' => 'Prestação de Serviço',
                         'address' => $this->getCustomerAddress($provider),

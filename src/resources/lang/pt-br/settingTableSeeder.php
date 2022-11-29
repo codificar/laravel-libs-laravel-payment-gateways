@@ -36,5 +36,7 @@ return array(
 	,'ipag_api_key'							=> 'Ipag API Key'
 	,'ipag_antifraud_title'					=> 'Transações com antifraude passam por validação prévia dos dados. Score precisa ser menor que 0.3'
 	,'gateway_product_title'				=> 'Nomenclatura do produto/serviço utilizada no gateway(ex.:Serviço de mobilidade)'
+	
+	,'billet_gateway_provider'				=> 'Selecione o metódo de pagamento por boleto que está configurado no seu gateway'
 
 );

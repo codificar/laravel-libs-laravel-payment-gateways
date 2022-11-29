@@ -29,6 +29,7 @@
 			settings="{{ json_encode($settings)}}"
 			certificates="{{ json_encode($certificates)}}"
 			nomenclatures="{{ json_encode($nomenclatures) }}"
+			enviroment-active={{$enviroment}}
 		>
 		</settingsgateways>
 		

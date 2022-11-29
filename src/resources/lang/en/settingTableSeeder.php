@@ -37,4 +37,6 @@ return array(
 	,'ipag_antifraud_title'					=> 'Transactions with anti-fraud undergo prior data validation. Score must be less than 0.3'
 	,'gateway_product_title'				=> 'Product/service nomenclature used in the gateway (ex.: Mobility service)'
 
+	,'billet_gateway_provider'				=> 'Select the payment method by boleto that is configured in your gateway'
+
 );

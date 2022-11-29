@@ -1,6 +1,7 @@
 <?php
 
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 /**
  * Class MercadoPagoLib
@@ -507,14 +508,23 @@ class MercadoPagoLib implements IPayment {
 
     public function createCustomer($user) {
 
+        $phone = $user->phone;
+        $ddd = "38";
+        try {
+            $phoneLib = new PhoneNumber( $user->phone);
+            $phone = $phoneLib->getPhoneNumber();
+            $ddd = $phoneLib->getDDD();
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
         //cria customer
         $customer = new MercadoPago\Customer();
 
         $customer->first_name = $user->first_name;
         $customer->last_name = $user->last_name;
         $customer->email = $user->email;
-        $customer->phone = array('area_code' => "38", //@#ag colocar dinamico
-            'number' => $user->phone
+        $customer->phone = array('area_code' => $ddd, //@#ag colocar dinamico
+            'number' => $phone
         );
         $customer->identification = array('type' => 'CPF',
             'number' => $user->document
