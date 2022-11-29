@@ -37,6 +37,8 @@ return array(
 	'compensate_provider_days'	=> 'Days to compensate the provider',
 	'compensate_provider_msg'	=> 'Define how many days the provider will receive the balance on your account statement when payment is made with a card. For the provider to receive the moment the request is finalized, enter 0. If no value is selected, the gateway compensation time (usually 31 days) will be considered.',
 	'uploaded'					=> 'uploaded',
+	'select'					=> 'Select',
+	'billet_gateway_provider'	=> 'Payment method by ticket',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Pay me',
@@ -54,6 +56,15 @@ return array(
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
+	'ipag'						=> 'Ipag',
+	'pagseguro'					=> 'PagSeguro',
+	'sicoob'					=> 'Sicoob',
+	'sicredi'					=> 'Sicredi',
+	'santander'					=> 'Santander',
+	'bancoDoBrasil'				=> 'Banco do Brasil',
+	'itau'						=> 'Itaú',
+	'bradesco'					=> 'Bradesco',
+	'bradescoNet'				=> 'Bradesco Net',
 	
 
 	
@@ -155,6 +166,10 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
+	'ipag_expiration_time'		=> 'Pix Expiration Time',
+	'ipag_version'				=> 'Ipag Version',
+	'ipag_version_1'			=> 'Version 1',
+	'ipag_version_2'			=> 'Version 2',
 	'ipag_antifraud_title'		=> 'Do you want to make transactions with anti-fraud?',
 
 	'adiq_client_id'			=> 'Adiq Client Id',
@@ -167,6 +182,7 @@ return array(
 	'banco_inter_crt'			=> 'Certificate',
 	'banco_inter_key'			=> 'Key',
 
+	'ipag_settings'				=> 'Ipag Settings',
 	'juno_settings'				=> 'Juno',
 	'juno_client_id'			=> 'Client ID',
 	'juno_secret'				=> 'Secret (Client Secret)',
@@ -202,6 +218,7 @@ return array(
 	'prepaid_pix'				=> 'Pix Gateway balance entry',
 	'obs_pix_prepaid'			=> '- Payments per pix need payment gateway.',
 	'pix_key'					=> 'Pix Random Key',
+	'list_webhooks'				=> 'Webhooks',
 	
 	'pix_juno_settings'			=> 'Juno Settings',
 	'pix_juno_client_id'		=> 'Client ID',
@@ -209,4 +226,11 @@ return array(
 	'pix_juno_resource_token'	=> 'Resource Token (private)',
 	'pix_juno_public_token'		=> 'Public Token',
 	'pix_juno_sandbox'			=> 'Operation Mode',
+
+	'enviromentActive' 			=> 'Active environment',
+	'local'						=> 'Test  (Sandbox)',
+	'production'	      		=> 'Production',
+
+	'failed_retreive_webhook'	=> 'Failed to Retrieve List of Webhooks',
+	'Unauthorized'	 			=> 'Failed to authenticate access keys',
 );

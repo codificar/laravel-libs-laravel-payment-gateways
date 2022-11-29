@@ -5,6 +5,7 @@ namespace Codificar\PaymentGateways\Libs;
 use ApiErrors;
 use Bank;
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
 use PagarMe;
 use PagarMe_Card;
@@ -33,6 +34,7 @@ class PagarmeLib2 implements IPayment
     const PAGARME_WAITING 			= 'waiting_payment';
     const PAGARME_PENDING_REFUND 	= 'pending_refund';
     const PAGARME_REFUSED 			= 'refused';
+	const PAGARME_ERROR 			= 'error';
 
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
@@ -219,43 +221,49 @@ class PagarmeLib2 implements IPayment
 
             \Log::debug("[charge]response:". print_r($pagarMeTransaction, 1));
 
-            if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
-                return array(
-                    "success" 					=> false,
-                    "type" 						=> 'api_charge_error',
-                    "code" 						=> 'api_charge_error',
-                    "message" 					=> trans("paymentError.refused"),
-                    "transaction_id"			=> $pagarMeTransaction->id
-                );
-            }
+			if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
+				return array(
+					"success" 					=> false,
+					"type" 						=> 'api_charge_error',
+					"code" 						=> 'api_charge_error',
+					"message" 					=> trans("paymentError.refused"),
+					"transaction_id"			=> $pagarMeTransaction->id,
+					'status' 					=> self::PAGARME_ERROR,
+				);
+			}
 
-            return array(
-                'success' => true,
-                'captured' => $capture,
-                'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
-                'status' => $pagarMeTransaction->status,
-                'transaction_id' => strval($pagarMeTransaction->id)
-            );
-        } catch (PagarMe_Exception $ex) {
-            \Log::error($ex->getMessage().$ex->getTraceAsString());
+			return array (
+				'success' 			=> true,
+				'captured' 			=> $capture,
+				'paid' 				=> ($pagarMeTransaction->status == self::PAGARME_PAID),
+				'status' 			=> self::PAGARME_ERROR,
+				'transaction_id' 	=> strval($pagarMeTransaction->id)
+			);
+		}
+		catch(PagarMe_Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
 
-            return array(
-                "success" 					=> false ,
-                "type" 						=> 'api_charge_error' ,
-                "code" 						=> $ex->getReturnCode() ,
-                "message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
-                "transaction_id"			=> ''
-            );
-        }
-    }
-    
-    //relaliza cobrança no cartão do usuário com repasse ao prestador
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
-    {
-        try {
-            $admin_value 	= $totalAmount - $providerAmount;
-            $admin_value 	= round($admin_value * 100);
-            $providerAmount = round($providerAmount * 100);
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getReturnCode() ,
+				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
+	}
+	
+	//relaliza cobrança no cartão do usuário com repasse ao prestador
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+		
+		try
+		{
+
+			$admin_value 	= $totalAmount - $providerAmount;
+			$admin_value 	= round($admin_value * 100);
+			$providerAmount = round($providerAmount * 100);
 
             if ($admin_value + $providerAmount == (round($totalAmount*100))) {
                 $totalAmount =  round($totalAmount*100);
@@ -402,6 +410,12 @@ class PagarmeLib2 implements IPayment
         $zipcode = $user->getZipcode();
         $zipcode = $this->cleanWord($zipcode);
 
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $customer = array(
             "name" 				=> $user->getFullName(),
             "document_number"	=> $user->document,
@@ -422,9 +436,9 @@ class PagarmeLib2 implements IPayment
             "type"				=> $type,
             "country"			=> "br",
             "phone" 	=> array(
-                "ddi"	=>	"55",
-                "ddd"	=>	$user->getLongDistance(),
-                "number"	=>	$user->getPhoneNumber()
+                "ddi"	=>	$phoneLib->getDDI(),
+                "ddd"	=>	$phoneLib->getDDD(),
+                "number"	=>	$phoneLib->getPhoneNumber()
             )
         );
 
@@ -439,6 +453,12 @@ class PagarmeLib2 implements IPayment
         $zipcode = $user->getZipcode();
         $zipcode = $this->cleanWord($zipcode);
 
+        try {
+            $phoneLib = new PhoneNumber($user->phone);
+        } catch (\Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
+
         $customer = array(
             "name" 				=> $user->getFullName(),
             "document_number"	=> $user->document,
@@ -451,9 +471,9 @@ class PagarmeLib2 implements IPayment
             ),
             "external_id"		=> (string) $user->id,
             "phone" 	=> array(
-                "ddi"	=>	"55",
-                "ddd"	=>	$user->getLongDistance(),
-                "number"	=>	$user->getPhoneNumber()
+                "ddi"	=>	$phoneLib->getDDI(),
+                "ddd"	=>	$phoneLib->getDDD(),
+                "number"	=>	$phoneLib->getPhoneNumber()
             )
         );
 
@@ -521,24 +541,26 @@ class PagarmeLib2 implements IPayment
             } catch (Exception $ex) {
                 \Log::error($ex->__toString().$ex->getTraceAsString());
 
-                return array(
-                    "success" 			=> false ,
-                    "type" 				=> 'api_refund_error' ,
-                    "code" 				=> $ex->getCode(),
-                    "message" 			=> $ex->getMessage(),
-                    "transaction_id" 	=> $refund->id ,
-                );
-            }
-        } else {
-            $error = array(
-                "success" 			=> false ,
-                "type" 				=> 'api_refund_error' ,
-                "code" 				=> 1 ,
-                "message" 			=> trans("paymentError.noTrasactionRefundFound"),
-                "transaction_id" 	=> null ,
-            );
-            
-            \Log::error(print_r($error, 1));
+				return array(
+					"success" 			=> false ,
+					"type" 				=> 'api_refund_error' ,
+					"code" 				=> $ex->getCode(),
+					"message" 			=> $ex->getMessage(),
+					"transaction_id" 	=> $transaction->id ,
+				);
+		
+		   }
+		}
+		else {
+			$error = array(
+				"success" 			=> false ,
+				"type" 				=> 'api_refund_error' ,
+				"code" 				=> 1 ,
+				"message" 			=> trans("paymentError.noTrasactionRefundFound"),
+				"transaction_id" 	=> null ,
+			);
+			
+			\Log::error(print_r($error,1));
 
             return $error;
         }

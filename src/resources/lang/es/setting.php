@@ -37,6 +37,8 @@ return array(
 	'compensate_provider_days'	=> 'Días para compensar al proveedor',
 	'compensate_provider_msg'	=> 'Defina cuántos días recibirá el proveedor el saldo en su estado de cuenta cuando el pago se realice con una tarjeta. Para que el proveedor lo reciba en el momento en que finalice la solicitud, ingrese 0. Si no se selecciona ningún valor, se considerará el tiempo de compensación de la puerta de enlace (generalmente 31 días).',
 	'uploaded'					=> 'enviado',
+	'select'					=> 'Seleccione',
+	'billet_gateway_provider'	=> 'Forma de pago por ticket',
 
 	//Gateways de pagamento
 	'pagarme'					=> 'Págame',
@@ -54,6 +56,15 @@ return array(
 	'bancinter'					=> 'Banco Inter',
 	'ipag'						=> 'Ipag',
 	'juno'						=> 'Juno',
+	'ipag'						=> 'Ipag',
+	'pagseguro'					=> 'PagSeguro',
+	'sicoob'					=> 'Sicoob',
+	'sicredi'					=> 'Sicredi',
+	'santander'					=> 'Santander',
+	'bancoDoBrasil'				=> 'Banco do Brasil',
+	'itau'						=> 'Itaú',
+	'bradesco'					=> 'Bradesco',
+	'bradescoNet'				=> 'Bradesco Net',
 	
 	
 	//Chaves dos gateways
@@ -163,8 +174,13 @@ return array(
 	'ipag_api_id'				=> 'Ipag API Id',
 	'ipag_api_key'				=> 'Ipag API Key',
 	'ipag_token'				=> 'Ipag Token',
+	'ipag_expiration_time'		=> 'Tiempo de expiración de Pix',
+	'ipag_version'				=> 'Versión de IPag',
+	'ipag_version_1'			=> 'Versión 1',
+	'ipag_version_2'			=> 'Versión 2',
 	'ipag_antifraud_title'		=> '¿Quieres realizar transacciones con antifraude?',
 
+	'ipag_settings'				=> 'Ipag Configuración',
 	'juno_settings'				=> 'Juno',
 	'juno_client_id'			=> 'Client ID',
 	'juno_secret'				=> 'Secret (Client Secret)',
@@ -200,6 +216,7 @@ return array(
 	'prepaid_pix'				=> 'Inserción de equilibrio Pix Gateway',
 	'obs_pix_prepaid'			=> '- Los pagos con Pix necesitan una pasarela de pago.',
 	'pix_key'					=> 'Clave de Pix Aleatoria',
+	'list_webhooks'				=> 'Webhooks',
 	
 	'pix_juno_settings'			=> 'Juno ajustes',
 	'pix_juno_client_id'		=> 'Client ID',
@@ -207,4 +224,11 @@ return array(
 	'pix_juno_resource_token'	=> 'Token de recurso (token privado)',
 	'pix_juno_public_token'		=> 'Token Público',
 	'pix_juno_sandbox'			=> 'Modo de operación',
+
+	'enviromentActive' 			=> 'Entorno activo',
+	'local'						=> 'Prueba  (Sandbox)',
+	'production'	      		=> 'Producción',
+
+	'failed_retreive_webhook'	=> 'Error al recuperar la lista de webhooks',
+	'Unauthorized'	 			=> 'Error al autenticar las claves de acceso',
 );

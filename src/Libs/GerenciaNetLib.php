@@ -2,6 +2,7 @@
 
 namespace Codificar\PaymentGateways\Libs;
 
+use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
 use Gerencianet\Exception\GerencianetException;
 use Gerencianet\Gerencianet;
@@ -127,7 +128,6 @@ class GerenciaNetLib implements IPayment
 				return ['error' => $e->getMessage()];
 			}
 		} else {
-			// dd($valid);
 			return $valid;
 		}
 	}
@@ -242,15 +242,14 @@ class GerenciaNetLib implements IPayment
 
 	private function formatCustomer($user, $fisical_person = true)
 	{
-		$phone = (string) preg_replace('/[^0-9]/', '', $user->getPhone());
+        $phone = $user->getPhone();
+        try {
+            $phoneLib = new PhoneNumber($user->getPhone());
+            $phone = $phoneLib->getPhoneNumber(true);
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+        }
 
-		if(strlen($phone) < self::MIN_PHONE ) {
-			$phone = str_pad($phone, self::MIN_PHONE, '9', STR_PAD_LEFT);
-		}
-		//Se for maior que 11, remove o codigo do pais (primeiros 2 caracteres, no brasil e 55)
-		else if (strlen($phone) > 11) {
-			$phone = substr($phone, 2);
-		}
 		if ($fisical_person) {
 			return [
 				'name' => $user->getFullName(),

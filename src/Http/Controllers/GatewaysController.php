@@ -11,6 +11,7 @@ use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
 // Importar Resource
 use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
+use Codificar\PaymentGateways\Http\Resources\WebhookResource;
 use Config;
 use Exception;
 use Input, Validator, View, Response;
@@ -115,7 +116,8 @@ class GatewaysController extends Controller
             'ipag_api_key',
             'ipag_token',
             'ipag_antifraud',
-            'gateway_product_title'
+            'gateway_product_title',
+            'billet_gateway_provider'
         ],
         'juno' => [
             'juno_client_id',
@@ -138,6 +140,13 @@ class GatewaysController extends Controller
             'pix_juno_auth_token',
             'pix_juno_auth_token_expiration_date',
             'pix_juno_sandbox'
+        ] ,
+        'ipag' => [
+            'pix_ipag_api_id',
+            'pix_ipag_api_key',
+            'pix_ipag_expiration_time',
+            'pix_ipag_version'
+
         ]
     ];
 
@@ -155,6 +164,24 @@ class GatewaysController extends Controller
         array('value' => 'transbank', 'name' => 'setting.transbank'),
         array('value' => 'pagarapido', 'name' => 'setting.pagarapido'),
         array('value' => 'adiq', 'name' => 'setting.adiq'),
+        array('value' => 'ipag', 'name' => 'setting.ipag'),
+        array('value' => 'juno', 'name' => 'setting.juno'),
+    );
+
+    public $type_billets =  array(
+        array('value' => 'boletozoop', 'name' => 'setting.zoop'),
+        array('value' => 'boletopagseguro', 'name' => 'setting.pagseguro'),
+        array('value' => 'boletosicoob', 'name' => 'setting.sicoob'),
+        array('value' => 'boletosicredi', 'name' => 'setting.sicredi'),
+        array('value' => 'boleto_banespasantander', 'name' => 'setting.santander'),
+        array('value' => 'boletobb', 'name' => 'setting.bancoDoBrasil'),
+        array('value' => 'boletoitaushopline', 'name' => 'setting.itau'),
+        array('value' => 'boletoshopfacil', 'name' => 'setting.bradesco'),
+        array('value' => 'boletobradesconet', 'name' => 'setting.bradescoNet'),
+    );
+
+    public $payment_pix_gateways =  array(
+        //array('value' => 'zoop', 'name' => 'setting.zoop'),
         array('value' => 'ipag', 'name' => 'setting.ipag'),
         array('value' => 'juno', 'name' => 'setting.juno'),
     );
@@ -203,6 +230,7 @@ class GatewaysController extends Controller
         $gateways['default_payment_boleto'] = Settings::findByKey('default_payment_boleto');
         $gateways['compensate_provider_days'] = Settings::findByKey('compensate_provider_days');
         $gateways['list_gateways'] = $this->payment_gateways;
+        $gateways['billets'] = $this->type_billets;
 
         //recupera as chaves de todos os gateways
         foreach ($this->keys_gateways as $key => $values) {
@@ -214,8 +242,10 @@ class GatewaysController extends Controller
 
         //configuracoes dos gateways pix
         $pix_gateways = array();
+        $pix_gateways['list_gateways'] = $this->payment_pix_gateways;
         $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
         $pix_gateways['pix_key'] = Settings::findByKey('pix_key');
+        $pix_gateways['billet_gateway_provider'] = Settings::getBilletProvider();
         //recupera as chaves de todos os gateways de pix
         foreach ($this->keys_pix_gateways as $key => $values) {
             foreach ($values as $value) {
@@ -276,7 +306,8 @@ class GatewaysController extends Controller
                 'prepaid' => $prepaid,
                 'settings' => $settings,
                 'certificates' => $certificates,
-                'nomenclatures' => $nomenclatures
+                'nomenclatures' => $nomenclatures,
+                'enviroment' => \App::environment()
             ]);
     }
 
@@ -298,7 +329,7 @@ class GatewaysController extends Controller
                 }
             }
         }
-
+        
         //Salva as formas de pagamento escolhidas
         foreach ($request->payment_methods as $key => $value) {
             //Verifica se a key do gateway existe
@@ -306,13 +337,13 @@ class GatewaysController extends Controller
                 $this->updateOrCreateSettingKey($key, (bool)$value ? '1' : '0');
             }
         }
-
+        
         //pega o gateway antigo (antes de salvar)
         $oldGateway = Settings::findByKey('default_payment');
-
+        
         //Pega o novo gateway escolhido
         $newGateway = $request->gateways['default_payment'];
-
+        
         $isUpdatingCards = false;
         $estimateUpdateCards = "";
         //Se o gateway antigo for diferante do atual, entao chama a seed para atualizar todos os cartoes
@@ -364,7 +395,7 @@ class GatewaysController extends Controller
         //se o gateway for juno, entao chama o metodo para configurar o webhooks
         if(isset($request->payment_methods['payment_gateway_pix']) && 
             $request->payment_methods['payment_gateway_pix'] && 
-            $pixGateway == 'juno'
+            ($pixGateway == 'juno' || $pixGateway == 'ipag') 
         ) {
             try {
                 $gateway = PaymentFactory::createPixGateway();
@@ -422,6 +453,46 @@ class GatewaysController extends Controller
         return new GatewaysResource([
             'is_updating_cards' => $isUpdatingCards,
             'estimate_update_cards' => $estimateUpdateCards
+        ]);
+    }
+
+    /**
+     * @api{post}/libs/settings/retrieve/webhooks
+     * retrieve Webhooks pix
+     * @return Json
+     */
+    public function retrieveWebhooks()
+    {
+        $success = false;
+        $message = '';
+        $webhooks = [];
+
+        //verificar se o pix gateway está ativo
+        $isGatewayPix = Settings::getPaymentGatewayPix();
+        if($isGatewayPix == 1) {
+            $defaultGatewaPix = Settings::getDefaultPaymentPix();
+            if(isset($defaultGatewaPix) && !empty($defaultGatewaPix) && $defaultGatewaPix == 'ipag') {
+                try {
+                    $gateway = PaymentFactory::createPixGateway();
+                    $webhooks = $gateway->retrieveWebhooks(true);
+                    $success = true;
+                    $message = 'Webhooks recuperados com sucesso';
+                } catch (Exception $th) {
+                    \Log::error($th->getMessage());
+                    $message = 'Erro ao recuperar webhooks: ' . $th->getMessage();
+                }
+            } else {
+                $message = 'Para recuperar webhooks, é necessário ter o gateway ipag ativo';
+            }
+        } else {
+            $message = 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo';
+        }
+
+        // Return data
+        return new webhookResource([
+            'success' => $success,
+            'data' => $webhooks,
+            'message' => $message
         ]);
     }
 
