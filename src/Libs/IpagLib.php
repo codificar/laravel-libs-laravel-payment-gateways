@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\IpagApi;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Libs\handle\ipag\HandleResponseIpag;
 use Exception;
 //models do sistema
 use Payment;
