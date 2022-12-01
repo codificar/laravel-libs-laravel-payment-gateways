@@ -13,6 +13,7 @@ use LedgerBankAccount;
 use Settings;
 use Bank;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
+use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class PagarmeApi
 {
@@ -353,6 +354,7 @@ class PagarmeApi
         {
 			$client     =   $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
             $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
+            $document = preg_replace( '/[^0-9]/', '', $client->document );
         }
 
         $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
@@ -376,7 +378,7 @@ class PagarmeApi
             "customer"      =>  (object)array(
                 "name"      =>  $client->first_name.' '.$client->last_name,
                 "email"     =>  $client->email,
-                "document"  =>  $client->document,
+                "document"  =>  $document,
                 "type"      =>  $personType,
                 "phones"    =>  (object)array(
                     "home_phone"        =>  (object)array(
