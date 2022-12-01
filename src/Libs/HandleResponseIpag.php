@@ -41,19 +41,19 @@ class HandleResponseIpag
     const CUSTOMER_BLACK_LIST = 'Customer has been blacklisted';
     const DECLINED = 'DECLINED';
 
-    public static function handle($response) {
-
+    public static function handle($response) 
+    {
         try {
             $isSuccess = isset($response->success) && filter_var($response->success, FILTER_VALIDATE_BOOLEAN);
             $isData = isset($response->data) && !empty($response->data);
             $isAttributes = $isData && isset($response->data->attributes);
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
-            $statusWaitingPayment = $isStatus && $response->data->attributes->status->code != self::CODE_WAITING_PAYMENT;
-            $statusCreate = $isStatus && $response->data->attributes->status->code != self::CODE_CREATED;
+            $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
+            $statusCreate = $isStatus && $response->data->attributes->status->code == self::CODE_CREATED;
             
             // Em caso de sucesso retorn o data para maniular
-            if( $isSuccess && $isData ) {
+            if( $isSuccess && ($statusWaitingPayment || $statusCreate) ) {
                 return array(
                     'success' 		=> true,
                     'data' 		    => $response->data,
@@ -61,7 +61,7 @@ class HandleResponseIpag
                 );
 
             } else if( $isSuccess && $isAttributes &&
-                ($statusCreate || $statusWaitingPayment) 
+                (!$statusCreate || !$statusWaitingPayment) 
             ) {
                 $message = '';
                 $code = -1;
@@ -81,13 +81,18 @@ class HandleResponseIpag
                     }
                 }
 
+                $replaceMessage = $message;
+                if(is_array($message) || is_string($message)) {
+                    $replaceMessage = str_replace(' ', '_', $message);
+                }
+
                 \Log::error('HandleResponseIpag > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  str_replace(' ', '_', $message),
+                    "message" 				=>  $replaceMessage,
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -142,6 +147,10 @@ class HandleResponseIpag
                 $replaceMessage = $message;
                 if(is_array($message) || is_string($message)) {
                     $replaceMessage = str_replace(' ', '_', $message);
+                }
+
+                if(strpos($message, '504 Gateway Time-out') !== false) {
+                    $message = trans('payment.gateway_timeout');
                 }
 
                 \Log::error('HandleResponseIpag > Error 2' . json_encode($response));

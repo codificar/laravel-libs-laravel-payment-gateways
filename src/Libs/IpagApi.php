@@ -88,7 +88,6 @@ class IpagApi
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         
-        //dd($url, $header, $body);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
         return $chargeSplitRequest;
     }
@@ -581,7 +580,7 @@ class IpagApi
             : $orderId;
 
         $phone = '(31) 99999-9999';
-        if($client) {
+        if($client && $client->phone) {
             $phone = preg_replace('/\D/', '', $client->phone);
             try {
                 $phoneLib = new PhoneNumber($client->phone);

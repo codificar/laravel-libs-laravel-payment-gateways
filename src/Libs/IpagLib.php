@@ -145,6 +145,7 @@ Class IpagLib implements IPayment
             $response = HandleResponseIpag::handle($response);
 
             if(!$response['success']) {
+                \Log::info('IPagLib > charge > Error Transaction:' . json_encode($response));
                 return $response;
             }
 
