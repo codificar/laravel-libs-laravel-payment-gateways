@@ -50,9 +50,12 @@ class HandleResponseIpag
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
             $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
             $statusCreate = $isStatus && $response->data->attributes->status->code == self::CODE_CREATED;
+            $statusPreAuth = $isStatus && $response->data->attributes->status->code == self::CODE_PRE_AUTHORIZED;
             
             // Em caso de sucesso retorn o data para maniular
-            if( $isSuccess && ($statusWaitingPayment || $statusCreate) ) {
+            if( $isSuccess &&
+                ( $statusWaitingPayment || $statusCreate || $statusPreAuth) 
+            ) {
                 return array(
                     'success' 		=> true,
                     'data' 		    => $response->data,
@@ -60,7 +63,7 @@ class HandleResponseIpag
                 );
 
             } else if( $isSuccess && $isAttributes &&
-                (!$statusCreate || !$statusWaitingPayment) 
+                (!$statusCreate || !$statusWaitingPayment || !$statusPreAuth) 
             ) {
                 $message = '';
                 $code = -1;
@@ -180,7 +183,7 @@ class HandleResponseIpag
             }
 
         } catch (\Exception $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
