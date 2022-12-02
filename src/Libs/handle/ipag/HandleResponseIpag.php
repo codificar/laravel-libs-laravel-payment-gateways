@@ -45,16 +45,21 @@ class HandleResponseIpag
         try {
             $isSuccess = isset($response->success) && filter_var($response->success, FILTER_VALIDATE_BOOLEAN);
             $isData = isset($response->data) && !empty($response->data);
+            $isWebhookResponse = $isData && isset($response->data->data) && !empty($response->data->data);
             $isAttributes = $isData && isset($response->data->attributes);
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
             $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
             $statusCreate = $isStatus && $response->data->attributes->status->code == self::CODE_CREATED;
+            $statusCaptured = $isStatus && $response->data->attributes->status->code == self::CODE_CAPTURED;
             $statusPreAuth = $isStatus && $response->data->attributes->status->code == self::CODE_PRE_AUTHORIZED;
             
             // Em caso de sucesso retorn o data para maniular
             if( $isSuccess &&
-                ( $statusWaitingPayment || $statusCreate || $statusPreAuth) 
+                (   $isWebhookResponse || $statusCaptured || 
+                    $statusWaitingPayment || $statusCreate || 
+                    $statusPreAuth
+                ) 
             ) {
                 return array(
                     'success' 		=> true,
@@ -63,7 +68,7 @@ class HandleResponseIpag
                 );
 
             } else if( $isSuccess && $isAttributes &&
-                (!$statusCreate || !$statusWaitingPayment || !$statusPreAuth) 
+                (!$statusCreate || !$statusCaptured && !$statusWaitingPayment || !$statusPreAuth) 
             ) {
                 $message = '';
                 $code = -1;
