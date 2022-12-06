@@ -245,7 +245,7 @@ class GatewaysController extends Controller
         $pix_gateways['list_gateways'] = $this->payment_pix_gateways;
         $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
         $pix_gateways['pix_key'] = Settings::findByKey('pix_key');
-        $pix_gateways['billet_gateway_provider'] = Settings::findByKey('billet_gateway_provider');
+        $pix_gateways['billet_gateway_provider'] = Settings::getBilletProvider();
         //recupera as chaves de todos os gateways de pix
         foreach ($this->keys_pix_gateways as $key => $values) {
             foreach ($values as $value) {

@@ -115,10 +115,26 @@ class HandleResponseIpag
                         $message = json_decode($response->message);
                         // converteu para json e vai capturar a mensagem de erro
                         if(is_object($message)) {
-                            if(isset($message->message)) {
-                                $message = $message->message;
-                            } else if(isset($message->error)) {
-                                $error = $message->error;
+                            $response = get_object_vars($message);
+                            // verifica se tem message
+                            if(isset($response['message'])) {
+                                $message = $response['message'];
+                                //verifica se o message tem objetos de erro
+                                if(is_object($message)) {
+                                    $messagesArray = get_object_vars($message);
+                                    foreach($messagesArray as $messageArray) {
+                                        if(is_string($messageArray)) {
+                                            $message = trim($messageArray);
+                                        }
+                                        if(is_array($messageArray)) {
+                                            $message = $messageArray[0];    
+                                        }
+                                    }
+                                }
+                            } 
+                            // verifica se tem obj error
+                            else if(isset($response['error'])) {
+                                $error = $response['error'];
                                 if(isset($error->message)) {
                                     $message = $error->message;
                                 }
@@ -126,10 +142,10 @@ class HandleResponseIpag
                                 if(isset($error->code)) {
                                     $code = $error->code;
                                 }
-                            } 
+                            }
 
-                            if(isset($message->code)) {
-                                $code = $message->error->code;    
+                            if(isset($response['code'])) {
+                                $code = $response['code'];    
                             }
                         // Não converteu para objeto e vai retornar a resposta completa
                         } else {
@@ -152,11 +168,11 @@ class HandleResponseIpag
                 }
 
                 $replaceMessage = $message;
-                if(is_array($message) || is_string($message)) {
+                if(is_string($message)) {
                     $replaceMessage = str_replace(' ', '_', $message);
                 }
 
-                if(strpos($message, '504 Gateway Time-out') !== false) {
+                if(is_string($message) && strpos($message, '504 Gateway Time-out') !== false) {
                     $message = trans('payment.gateway_timeout');
                 }
 
