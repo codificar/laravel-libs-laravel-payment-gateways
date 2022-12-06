@@ -567,7 +567,7 @@ class IpagApi
         else
         {
             $type   = 'boleto';
-            $method = Settings::getBilletProvider();
+            $method = Settings::findByKey('billet_gateway_provider');;
         }
 
         if($client && strlen($client->state) > 2) {
