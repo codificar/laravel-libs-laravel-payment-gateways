@@ -293,5 +293,49 @@ class GatewaysLibModel extends Eloquent
             }
         }
     }
+
+    public static function UpdateBankAccounts(Array $ledgerBankAccounts){
+
+        foreach ($ledgerBankAccounts as $ledgerBankAccount)
+        {
+            $ledgerBankAccount = \LedgerBankAccount::where(['id' => $ledgerBankAccount['id']])->first();
+            
+            if($ledgerBankAccount) {
+                echo print_r("\n - ID: [ " . $ledgerBankAccount->id . " ]");
+                echo print_r("\n - Name: [" . $ledgerBankAccount->holder . "]");
+
+                try {
+                    $ledgerBankAccount = \LedgerBankAccount::createOrUpdateByGateway(
+                        $ledgerBankAccount->provider_id,
+                        $ledgerBankAccount->holder,
+                        $ledgerBankAccount->document,
+                        $ledgerBankAccount->bank_id,
+                        $ledgerBankAccount->agency,
+                        $ledgerBankAccount->agency_digit,
+                        $ledgerBankAccount->account,
+                        $ledgerBankAccount->account_digit,
+                        $ledgerBankAccount->account_type,
+                        $ledgerBankAccount->person_type,
+                        $ledgerBankAccount->birthday_date,
+                        $ledgerBankAccount->provider_document_id
+                    );
+
+                    if($ledgerBankAccount && isset($ledgerBankAccount['success'])) {
+                        $isSave = filter_var($ledgerBankAccount['success'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) 
+                            ? 'Salvo/Atualizado' 
+                            : 'Não Salvo/Atualizado'; 
+                        echo print_r("\n # status: " . $isSave . "\n\n");
+                    } else {
+                        echo print_r("\n # Não atualizado \n\n" );
+                    }
+
+                } catch (Exception $e) {
+                    \Log::error($e->getMessage() . $e->getTraceAsString());
+                    continue;
+                }
+
+            }
+        }
+    }
     
 }

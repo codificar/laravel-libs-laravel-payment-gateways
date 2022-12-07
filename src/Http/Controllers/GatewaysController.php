@@ -11,6 +11,7 @@ use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
 // Importar Resource
 use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
+use Codificar\PaymentGateways\Commands\UpdateLedgerBankJob;
 use Codificar\PaymentGateways\Http\Resources\WebhookResource;
 use Config;
 use Exception;
@@ -326,6 +327,28 @@ class GatewaysController extends Controller
                 //Verifica se a key existe
                 if(in_array($key, $this->keys_settings)) {
                     $this->updateOrCreateSettingKey($key, $value);
+                }
+            }
+             // atualiza os dados bancários pelo gateway se split estiver ativo
+            $isSplit = filter_var(\Settings::findByKey('auto_transfer_provider_payment', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $actualGateway = \Settings::findByKey('default_payment', 'cielo');
+
+            if($isSplit &&($actualGateway == 'ipag' || $actualGateway == 'pagarme')) {
+                try {
+                    $ledgerBankAccounts = \LedgerBankAccount::where('gateway', '!=', $actualGateway)
+                        ->whereNotNull('provider_id')
+                        ->where(function($query) {
+                            $query->whereNull('recipient_id')
+                                ->orWhere('recipient_id', '==', 'empty')
+                                ->orWhere('recipient_id', '==', '');
+                        })
+                        ->get()
+                        ->toArray();
+                    foreach(array_chunk($ledgerBankAccounts, 50) as $banks) { 
+                        UpdateLedgerBankJob::dispatch($banks);
+                    }
+                } catch(Exception $e) {
+                    \Log::error($e->getMessage() . $e->getTraceAsString());
                 }
             }
         }

@@ -33,6 +33,8 @@ class HandleResponseIpag
     const PAYMENT_SCHEDULED    =   'scheduled';
 
     const WAITING_PAYMENT = 'waiting_payment';
+    
+    const RESOURCE_SELLER = 'sellers';
 
     /**
      * ERROR MESSAGES
@@ -47,6 +49,7 @@ class HandleResponseIpag
             $isData = isset($response->data) && !empty($response->data);
             $isWebhookResponse = $isData && isset($response->data->data) && !empty($response->data->data);
             $isAttributes = $isData && isset($response->data->attributes);
+            $isSellerResource = $isData && $response->data->resource == self::RESOURCE_SELLER;
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
             $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
@@ -56,9 +59,9 @@ class HandleResponseIpag
             
             // Em caso de sucesso retorn o data para maniular
             if( $isSuccess &&
-                (   $isWebhookResponse || $statusCaptured || 
-                    $statusWaitingPayment || $statusCreate || 
-                    $statusPreAuth
+                (   $isSellerResource || $isWebhookResponse || 
+                    $statusCaptured || $statusWaitingPayment || 
+                    $statusCreate || $statusPreAuth
                 ) 
             ) {
                 return array(

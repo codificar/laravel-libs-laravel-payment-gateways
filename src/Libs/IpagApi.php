@@ -244,16 +244,17 @@ class IpagApi
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        try {
-            $phoneLib = new PhoneNumber($provider->phone);
-            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage() . $e->getTraceAsString());
+        $phone = '(31) 99999-9999';
+        if($provider && $provider->phone) {
+            $phone = preg_replace("/[^0-9]/", "", $provider->phone);
+            try {
+                $phoneLib = new PhoneNumber($phone);
+                $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
 
-        if(!$phone) {
-            $phone = '(31) 99999-9999'; //if the phone has save error
-        }
         $bankObject = (object) array();
         if($bank && $ledgerBankAccount &&
             $bank->code && $ledgerBankAccount->agency &&
@@ -276,10 +277,11 @@ class IpagApi
             'bank'          => $bankObject  
         );
 
-        $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
-        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
-
-        if(strlen($ledgerBankAccount->document) >= 11) {
+        
+        if($ledgerBankAccount->document && strlen($ledgerBankAccount->document) >= 11) {
+            $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
+            $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
+            
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
             
@@ -306,11 +308,27 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
         // caso dê erro pq já existe o seller ele tenta atualizar por document
-        if($documentRemask && !$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
-            $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
-            $verb = self::PUT_REQUEST;
-            // tenta atualizar o seller
+        if($documentRemask && !$accountRequest->success && 
+        strpos($accountRequest->message, 'already exists') !== false) {
+            if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
+                $fields['login'] = uniqid() . $provider->email;
+                $body = json_encode($fields);
+            } else {
+                $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
+                $verb = self::PUT_REQUEST;
+                unset($fields['login']);
+                $body = json_encode($fields);    
+            }
+            // tenta criar/atualizar o seller
             $accountRequest = self::apiRequest($url, $body, $header, $verb);
+            
+            // verifica se é o login que está duplicado e altera
+            if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
+                $fields['login'] = uniqid() . $provider->email;
+                $body = json_encode($fields);
+                // tenta atualizar o seller
+                $accountRequest = self::apiRequest($url, $body, $header, $verb);
+            }
         }
         
         if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
