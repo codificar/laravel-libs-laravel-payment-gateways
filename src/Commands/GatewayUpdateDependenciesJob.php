@@ -34,6 +34,6 @@ class GatewayUpdateDependenciesJob implements ShouldQueue
     public function handle()
     {
         GatewaysLibModel::gatewayUpdateCards();
-        GatewaysLibModel::gatewayUpdateBankAccounts();
+        //GatewaysLibModel::gatewayUpdateBankAccounts();
     }
 }
