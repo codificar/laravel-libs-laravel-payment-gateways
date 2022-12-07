@@ -277,10 +277,9 @@ class IpagApi
             'bank'          => $bankObject  
         );
 
-        
+        $documentRemask = self::remaskDocument(preg_replace('/[^0-9]/', '', $ledgerBankAccount->document));
+        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
         if($ledgerBankAccount->document && strlen($ledgerBankAccount->document) >= 11) {
-            $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
-            $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
             
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
@@ -290,7 +289,7 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
-            $documentOwnerRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
+            $documentOwnerRemask = self::remaskDocument(preg_replace('/[^0-9]/', '', $provider->document));
 
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,

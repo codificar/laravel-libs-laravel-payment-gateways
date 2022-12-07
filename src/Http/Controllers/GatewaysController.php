@@ -339,8 +339,14 @@ class GatewaysController extends Controller
                         ->whereNotNull('provider_id')
                         ->where(function($query) {
                             $query->whereNull('recipient_id')
-                                ->orWhere('recipient_id', '==', 'empty')
-                                ->orWhere('recipient_id', '==', '');
+                            ->orWhere('recipient_id', '==', 'empty')
+                            ->orWhere('recipient_id', '==', '');
+                        })
+                        ->where(function($query) {
+                            $query->whereNotNull('document')
+                                ->Where('document', '!=', 'empty')
+                                ->Where('document', '!=', '')
+                                ->Where('document', '!=', 'null');
                         })
                         ->get()
                         ->toArray();

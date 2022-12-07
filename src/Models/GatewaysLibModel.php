@@ -298,14 +298,15 @@ class GatewaysLibModel extends Eloquent
 
         foreach ($ledgerBankAccounts as $ledgerBankAccount)
         {
-            $ledgerBankAccount = \LedgerBankAccount::where(['id' => $ledgerBankAccount['id']])->first();
+            $ledgerBankAccount = \LedgerBankAccount::where(['id' => $ledgerBankAccount['id']])
+                ->first();
             
             if($ledgerBankAccount) {
                 echo print_r("\n - ID: [ " . $ledgerBankAccount->id . " ]");
                 echo print_r("\n - Name: [" . $ledgerBankAccount->holder . "]");
 
                 try {
-                    $ledgerBankAccount = \LedgerBankAccount::createOrUpdateByGateway(
+                    $response = \LedgerBankAccount::createOrUpdateByGateway(
                         $ledgerBankAccount->provider_id,
                         $ledgerBankAccount->holder,
                         $ledgerBankAccount->document,
@@ -320,8 +321,12 @@ class GatewaysLibModel extends Eloquent
                         $ledgerBankAccount->provider_document_id
                     );
 
-                    if($ledgerBankAccount && isset($ledgerBankAccount['success'])) {
-                        $isSave = filter_var($ledgerBankAccount['success'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) 
+                    if($response && isset($response['success'])) {
+                        $ledgerBankAccount->recipient_id = $response['recipient_id'];
+                        $ledgerBankAccount->gateway = $response['gateway'];
+                        $ledgerBankAccount->save();
+
+                        $isSave = filter_var($response['success'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) 
                             ? 'Salvo/Atualizado' 
                             : 'Não Salvo/Atualizado'; 
                         echo print_r("\n # status: " . $isSave . "\n\n");

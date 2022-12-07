@@ -846,12 +846,13 @@ Class IpagLib implements IPayment
             if( isset($newAccount->id))
             {
                 $ledgerBankAccount->recipient_id = $newAccount->id;
-                if($ledgerBankAccount->gateway) {
+                if(isset($ledgerBankAccount->gateway)) {
                     $ledgerBankAccount->gateway = 'ipag';
                 }
                 $ledgerBankAccount->save();
                 return array(
                     'success'       =>  true,
+                    'gateway'       => $ledgerBankAccount->gateway,
                     'recipient_id'  =>  $ledgerBankAccount->recipient_id
                 );
             }
