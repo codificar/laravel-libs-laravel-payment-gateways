@@ -269,7 +269,7 @@ class IpagApi
         }
 
         $fields = (object)array(
-            'login'         =>  $provider->email,
+            'login'         =>  substr($provider->email, 0, 50),
             'password'      =>  preg_replace('/\D/', '', $provider->document),
             'name'          =>  $ledgerBankAccount->holder,
             'email'         =>  $provider->email,
@@ -277,8 +277,12 @@ class IpagApi
             'bank'          => $bankObject  
         );
 
-        $documentRemask = self::remaskDocument(preg_replace('/[^0-9]/', '', $ledgerBankAccount->document));
-        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
+        $documentRemask = self::remaskDocument($ledgerBankAccount->document);
+        if($documentRemask) {
+            $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
+        } else {
+            \Log::info('[remaskDocument] Document Invalid $ledgerBankAccount: ' . json_encode($ledgerBankAccount) );
+        }
         if($ledgerBankAccount->document && strlen($ledgerBankAccount->document) >= 11) {
             
             $birthday = $ledgerBankAccount->birthday_date;
@@ -289,7 +293,10 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
-            $documentOwnerRemask = self::remaskDocument(preg_replace('/[^0-9]/', '', $provider->document));
+            $documentOwnerRemask = self::remaskDocument($provider->document);
+            if(!$documentRemask) {
+                \Log::info('[remaskDocument] Document Invalid $provider: ' . json_encode($provider) );
+            }
 
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
@@ -310,7 +317,7 @@ class IpagApi
         if($documentRemask && !$accountRequest->success && 
         strpos($accountRequest->message, 'already exists') !== false) {
             if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
-                $fields['login'] = uniqid() . $provider->email;
+                $fields['login'] = substr(uniqid() . $provider->email, 0, 50);
                 $body = json_encode($fields);
             } else {
                 $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
@@ -323,7 +330,7 @@ class IpagApi
             
             // verifica se é o login que está duplicado e altera
             if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
-                $fields['login'] = uniqid() . $provider->email;
+                $fields['login'] = substr(uniqid() . $provider->email, 0, 50);
                 $body = json_encode($fields);
                 // tenta atualizar o seller
                 $accountRequest = self::apiRequest($url, $body, $header, $verb);
@@ -813,13 +820,22 @@ class IpagApi
         }
     }
 
-    private static function remaskDocument($document)
+    /**
+     * Remask document to CPF or CNPJ
+     * @param String $document String document to remask
+     * @return String formated or empty string
+     */
+    private static function remaskDocument(String $document)
     {
-        $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
-        $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
-        $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
-
-        return vsprintf($mask, str_split($document));
+        if($document && strlen($document) >= 11 ) {
+            $document = preg_replace('/[^0-9]/', '', $document);
+            $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
+            $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
+            $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
+            $remaskedDocument = vsprintf($mask, str_split($document));
+            return $remaskedDocument;
+        }
+        return null;
     }
 
     public static function retrieveHooks($isPix = false)

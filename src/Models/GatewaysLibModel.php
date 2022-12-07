@@ -294,6 +294,27 @@ class GatewaysLibModel extends Eloquent
         }
     }
 
+    public static function getLedgerBankAccountToUpdate(String $actualGateway)
+    {
+        return \LedgerBankAccount::select('ledger_bank_account.*')
+            ->where('gateway', '!=', $actualGateway)
+            ->join('provider', 'provider_id', '=', 'provider.id')
+            ->whereNotNull('provider_id')
+            ->where(function($query) {
+                $query->whereNull('recipient_id')
+                ->orWhere('recipient_id', '=', 'empty')
+                ->orWhere('recipient_id', '=', '');
+            })
+            ->where(function($query) {
+                $query->whereNotNull('ledger_bank_account.document')
+                    ->Where('ledger_bank_account.document', '!=', 'empty')
+                    ->Where('ledger_bank_account.document', '!=', '')
+                    ->Where('ledger_bank_account.document', '!=', 'null');
+            })
+            ->get()
+            ->toArray();
+    }
+
     public static function UpdateBankAccounts(Array $ledgerBankAccounts){
 
         foreach ($ledgerBankAccounts as $ledgerBankAccount)
@@ -321,7 +342,7 @@ class GatewaysLibModel extends Eloquent
                         $ledgerBankAccount->provider_document_id
                     );
 
-                    if($response && isset($response['success'])) {
+                    if($response && isset($response['success']) && $response['success']) {
                         $ledgerBankAccount->recipient_id = $response['recipient_id'];
                         $ledgerBankAccount->gateway = $response['gateway'];
                         $ledgerBankAccount->save();

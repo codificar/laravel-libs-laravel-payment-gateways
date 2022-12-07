@@ -333,23 +333,10 @@ class GatewaysController extends Controller
             $isSplit = filter_var(\Settings::findByKey('auto_transfer_provider_payment', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             $actualGateway = \Settings::findByKey('default_payment', 'cielo');
 
-            if($isSplit &&($actualGateway == 'ipag' || $actualGateway == 'pagarme')) {
+            if($isSplit && ($actualGateway == 'ipag' || $actualGateway == 'pagarme')) {
                 try {
-                    $ledgerBankAccounts = \LedgerBankAccount::where('gateway', '!=', $actualGateway)
-                        ->whereNotNull('provider_id')
-                        ->where(function($query) {
-                            $query->whereNull('recipient_id')
-                            ->orWhere('recipient_id', '==', 'empty')
-                            ->orWhere('recipient_id', '==', '');
-                        })
-                        ->where(function($query) {
-                            $query->whereNotNull('document')
-                                ->Where('document', '!=', 'empty')
-                                ->Where('document', '!=', '')
-                                ->Where('document', '!=', 'null');
-                        })
-                        ->get()
-                        ->toArray();
+                    $ledgerBankAccounts = GatewaysLibModel::getLedgerBankAccountToUpdate($actualGateway);
+                    
                     foreach(array_chunk($ledgerBankAccounts, 50) as $banks) { 
                         UpdateLedgerBankJob::dispatch($banks);
                     }
