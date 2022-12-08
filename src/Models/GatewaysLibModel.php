@@ -294,6 +294,11 @@ class GatewaysLibModel extends Eloquent
         }
     }
 
+    /**
+     * Get all ledger bank account with a valid provider
+     * @param string $actualGateway Gateway ativo
+     * @return Array of LedgerBankAccount collections 
+     */
     public static function getLedgerBankAccountToUpdate(String $actualGateway)
     {
         return \LedgerBankAccount::select('ledger_bank_account.*')

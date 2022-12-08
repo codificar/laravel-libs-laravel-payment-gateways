@@ -268,12 +268,26 @@ class IpagApi
             );
         }
 
+        $login = substr(uniqid(), 0, 50);
+        if($provider->email) {
+            $login = substr($provider->email, 0, 50);
+        }
+
+        $password = substr(uniqid(), 0, 6);
+        if($provider->document) {
+            $passwordRemask = self::remaskDocument($provider->document);
+            if($passwordRemask) {
+                $password = substr($passwordRemask, 0, 6);
+            }
+        }
+
+
         $fields = (object)array(
-            'login'         =>  substr($provider->email, 0, 50),
-            'password'      =>  preg_replace('/\D/', '', $provider->document),
-            'name'          =>  $ledgerBankAccount->holder,
-            'email'         =>  $provider->email,
-            'phone'         =>  $phone,
+            'login'         => $login,
+            'password'      => $password,
+            'name'          => $ledgerBankAccount->holder,
+            'email'         => $provider->email,
+            'phone'         => $phone,
             'bank'          => $bankObject  
         );
 
@@ -317,7 +331,7 @@ class IpagApi
         if($documentRemask && !$accountRequest->success && 
         strpos($accountRequest->message, 'already exists') !== false) {
             if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
-                $fields['login'] = substr(uniqid() . $provider->email, 0, 50);
+                $fields['login'] = substr(uniqid() . $login, 0, 50);
                 $body = json_encode($fields);
             } else {
                 $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
@@ -330,7 +344,7 @@ class IpagApi
             
             // verifica se é o login que está duplicado e altera
             if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
-                $fields['login'] = substr(uniqid() . $provider->email, 0, 50);
+                $fields['login'] = substr(uniqid() . $login, 0, 50);
                 $body = json_encode($fields);
                 // tenta atualizar o seller
                 $accountRequest = self::apiRequest($url, $body, $header, $verb);
