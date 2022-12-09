@@ -6,34 +6,26 @@ class MessageException
 
     /**
      * Handle Server message error Exceptions
-     * @param Exception $err all object Exception to treat error message
+     * @param String $message error message
      * @param String $exceptionName name of exception to treat in message
 	 * @param Boolean $isSendRocket send or not message to rocket error channel | default: false
 	 * @param Boolean $isSendEmail send or not message to Admin Email | default: true
      * @return String Error messge to response
      */
-    public static function handleMessageException(\Exception $err, String $exceptionName) {
-		$message = $err->getMessage();
-		$trace = $err->getTraceAsString();
-        
-		\Log::error( $message . $trace);
+    public static function handleMessageException(String $message, String $exceptionName) {
 		$errorMessage = "ERROR $exceptionName: " . $message . ' ' . trans('paymentGateway::paymentError.refused') ;
-	
         return $errorMessage;
     }
 
 	 /**
      * Handle Server message error Exceptions
-     * @param Exception $err all object Exception to treat error message
+     * @param String $message error message
      * @param Boolean $isSendRocket send or not message to rocket error channel | default: false
 	 * @param Boolean $isSendEmail send or not message to Admin Email | default: true
      * @return String Error messge to response
      */
-    public static function handleMessageServerException(\Exception $err) {
-		$message = $err->getMessage();
-		$trace = $err->getTraceAsString();
+    public static function handleMessageServerException(String $message) {
 		$exceptionName = 'ServerException';
-        \Log::error( $message . $trace);
 
         switch ($message) {
             case self::contains($message, '500 Internal Server Error'):
@@ -51,16 +43,13 @@ class MessageException
 
 	 /**
      * Handle Server message error Exceptions
-     * @param Exception $err all object Exception to treat error message
+     * @param String $message error message
      * @param Boolean $isSendRocket send or not message to rocket error channel | default: false
 	 * @param Boolean $isSendEmail send or not message to Admin Email | default: true
      * @return String Error messge to response
      */
-    public static function handleMessageAdiqException(\Exception $err) {
-		$message = $err->getMessage();
-		$trace = $err->getTraceAsString();
+    public static function handleMessageAdiqException(String $message) {
 		$gateway = 'adiq';
-        \Log::error( $message . $trace);
 
         switch ($message) {
             case self::contains($message, 'ERRO INTERNO'):
@@ -78,14 +67,11 @@ class MessageException
 
 	 /**
      * Handle Server message error Exceptions
-     * @param \Exception $err all object Exception to treat error message
+     * @param String $message all object Exception to treat error message
      * @return String Error messge to response
      */
-    public static function handleMessageIPagException(\Exception $err) {
-		$message = $err->getMessage();
-		$trace = $err->getTraceAsString();
+    public static function handleMessageIPagException(String $message) {
 		$gateway = 'ipag';
-        \Log::error( $message . $trace);
 
         switch ($message) {
             case self::contains($message, 'Not Authorized'):
@@ -103,16 +89,13 @@ class MessageException
 
 	 /**
      * Handle Server message error Exceptions
-     * @param \Exception $err all object Exception to treat error message
+     * @param String $err error message
      * @param Boolean $isSendRocket send or not message to rocket error channel | default: false
 	 * @param Boolean $isSendEmail send or not message to Admin Email | default: true
      * @return String Error messge to response
      */
-    public static function handleMessagePagarmeException(\Exception $err) {
-		$message = $err->getMessage();
-		$trace = $err->getTraceAsString();
+    public static function handleMessagePagarmeException(String $message) {
 		$gateway = 'pagarme';
-        \Log::error( $message . $trace);
 
         switch ($message) {
             case self::contains($message, 'MESSAGE: Recipient não encontrado'):
@@ -156,7 +139,7 @@ class MessageException
 	 * @param String $search string to search
 	 * @return boolean true if message contains occourrences
 	 */
-    private static function contains(String $message, String $search)
+    public static function contains(String $message, String $search)
     {
         return strpos($message, $search) !== false
             ? true

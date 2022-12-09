@@ -167,10 +167,6 @@ class HandleResponseIpag
                     }
                 }
 
-                if(is_string($message) && strpos($message, '504 Gateway Time-out') !== false) {
-                    $message = trans('payment.gateway_timeout');
-                }
-
                 \Log::error('HandleResponseIpag > Error 2' . json_encode($response));
 
                 return array(
