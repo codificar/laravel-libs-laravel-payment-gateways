@@ -2,6 +2,8 @@
 namespace Codificar\PaymentGateways\Libs\handle\ipag;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Libs\handle\message\MessageException;
+
 class HandleResponseIpag
 {
 
@@ -91,18 +93,13 @@ class HandleResponseIpag
                     }
                 }
 
-                $replaceMessage = $message;
-                if(is_array($message) || is_string($message)) {
-                    $replaceMessage = str_replace(' ', '_', $message);
-                }
-
                 \Log::error('HandleResponseIpag > Error 1:' . json_encode($response));
                 
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  $replaceMessage,
+                    "message" 				=>  MessageException::handleMessageIPagException($message),
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -170,11 +167,6 @@ class HandleResponseIpag
                     }
                 }
 
-                $replaceMessage = $message;
-                if(is_string($message)) {
-                    $replaceMessage = str_replace(' ', '_', $message);
-                }
-
                 if(is_string($message) && strpos($message, '504 Gateway Time-out') !== false) {
                     $message = trans('payment.gateway_timeout');
                 }
@@ -185,7 +177,7 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  $replaceMessage,
+                    "message" 				=>  MessageException::handleMessageIPagException($message),
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -214,7 +206,7 @@ class HandleResponseIpag
 				'data' 	=> [],
 				'error' 	=> array(
 					"code" 		=> ApiErrors::API_ERROR,
-					"messages" 	=> array(trans('payment.ipag_error'))
+					"messages" 	=> array(trans('paymentGateway::paymentError.refused'))
 				)
 			);
 
