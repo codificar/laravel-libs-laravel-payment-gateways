@@ -132,7 +132,7 @@ class PagarmeLib2 implements IPayment
                 "success" 				=> false ,
                 "type" 					=> 'api_charge_error' ,
                 "code" 					=> $ex->getReturnCode() ,
-                "message" 				=> trans($ex->getMessage()) ,
+                "message" 				=> trans("paymentError.".$ex->getReturnCode()) ,
                 "transaction_id"		=> ''
             );
         }
@@ -200,7 +200,6 @@ class PagarmeLib2 implements IPayment
             if ($card == null) {
                 throw new PagarMe_Exception("Cartão não encontrado", 1);
             }
-
             $pagarMeTransaction = new PagarMe_Transaction(array(
                 "amount" 	=> 	floor($amount * 100),
                 "async"		=>  false,
@@ -208,7 +207,8 @@ class PagarmeLib2 implements IPayment
                 "capture" 	=> 	boolval($capture),
                 "customer" 	=> 	$this->getCustomer($payment),
                 "billing"	=> 	$this->getBilling($payment->id),
-                "items"		=>  $this->getItems(1, $description, floor($amount * 100))
+                "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
+                "card"      =>  $card
             ));
 
 
@@ -415,31 +415,21 @@ class PagarmeLib2 implements IPayment
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
+        $documentNumber = preg_replace( '/[^0-9]/', '', $user->document);
 
         $customer = array(
             "name" 				=> $user->getFullName(),
-            "document_number"	=> $user->document,
             "email" 			=> $user->email,
-            "address" => array(
-                "street" => $user->getStreet(),
-                "street_number" => $user->getStreetNumber(),
-                "neighborhood" => $user->getNeighborhood(),
-                "zipcode" => $zipcode
-            ),
             "documents" => [
                             [
                                 'type'			=> $docType,
-                                'number' 		=> $user->document
+                                'number' 		=> $documentNumber
                             ],
                         ],
             "external_id"		=> (string) $user->id,
             "type"				=> $type,
             "country"			=> "br",
-            "phone" 	=> array(
-                "ddi"	=>	$phoneLib->getDDI(),
-                "ddd"	=>	$phoneLib->getDDD(),
-                "number"	=>	$phoneLib->getPhoneNumber()
-            )
+            "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber())
         );
 
         return $customer ;
@@ -458,23 +448,11 @@ class PagarmeLib2 implements IPayment
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
-
         $customer = array(
             "name" 				=> $user->getFullName(),
-            "document_number"	=> $user->document,
             "email" 			=> $user->email,
-            "address" => array(
-                "street" => $user->getStreet(),
-                "street_number" => $user->getStreetNumber(),
-                "neighborhood" => $user->getNeighborhood(),
-                "zipcode" => $zipcode
-            ),
             "external_id"		=> (string) $user->id,
-            "phone" 	=> array(
-                "ddi"	=>	$phoneLib->getDDI(),
-                "ddd"	=>	$phoneLib->getDDD(),
-                "number"	=>	$phoneLib->getPhoneNumber()
-            )
+            "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber())
         );
 
         return $customer ;
