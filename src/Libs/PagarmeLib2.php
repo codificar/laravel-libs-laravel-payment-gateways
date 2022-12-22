@@ -7,11 +7,8 @@ use Bank;
 use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
-use PagarMe;
-use PagarMe_Card;
-use PagarMe_Exception;
-use PagarMe_Recipient;
-use PagarMe_Transaction;
+use PagarMe\Client as PagarMe;
+use PagarMe\Exceptions\PagarMeException as PagarMe_Exception;
 //models do sistema
 use Payment;
 use Provider;
@@ -45,7 +42,7 @@ class PagarmeLib2 implements IPayment
 
     private function setApiKey()
     {
-        PagarMe::setApiKey(Settings::findByKey('pagarme_api_key'));
+        $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
     }
 
     public function createCard(Payment $payment, User $user = null)
@@ -56,18 +53,21 @@ class PagarmeLib2 implements IPayment
             $cardExpirationYear 	= $payment->getCardExpirationYear();
             $cardCvv 				= $payment->getCardCvc();
             $cardHolder 			= $payment->getCardHolder();
+            $expirationDate         = str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT);
 
             $cardExpirationYear = $cardExpirationYear % 100;
 
-            $card = new PagarMe_Card(array(
-                "card_number" 				=> $cardNumber,
-                "card_holder_name" 			=> $cardHolder,
-                "card_expiration_month" 	=> str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-                "card_expiration_year" 		=> str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-                "card_cvv" 					=> $cardCvv,
-            ));
-
-            $card->create();
+            $card = $pagarme->cards()->create([
+                'holder_name' => $customer->name,
+                'number' => $cardNumber ,
+                'expiration_date' => $expirationDate,
+                'cvv' => $cardCvv,
+                // "card_number" 				=> $cardNumber,
+                // "card_holder_name" 			=> $cardHolder,
+                // "card_expiration_month" 	=> str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+                // "card_expiration_year" 		=> str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+                // "card_cvv" 					=> $cardCvv,
+            ]);
 
             return array(
                 "success" 					=> true,
@@ -194,13 +194,15 @@ class PagarmeLib2 implements IPayment
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
         try {
+            $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
             // valor inteiro do pagamento transferido para o admin
-            $card = PagarMe_Card::findById($payment->card_token);
-
-            if ($card == null) {
-                throw new PagarMe_Exception("Cartão não encontrado", 1);
-            }
-            $pagarMeTransaction = new PagarMe_Transaction(array(
+            $card = $pagarme->cards()->get([
+                'id' => $payment->card_token
+            ]);
+            // if ($card == null) {
+            //     throw new PagarMe_Exception("Cartão não encontrado", 1);
+            // }
+            $pagarMeTransaction = $pagarme->transactions()->create(array(
                 "amount" 	=> 	floor($amount * 100),
                 "async"		=>  false,
                 "card_id" 	=> 	$payment->card_token,
@@ -210,14 +212,12 @@ class PagarmeLib2 implements IPayment
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
             ));
+            // dd($pagarMeTransaction);
 
-
-            $pagarJson = json_decode($pagarMeTransaction);
+            $pagarJson = json_decode(json_encode($pagarMeTransaction));
             $json = json_encode($pagarJson);
 
             \Log::debug('JsonPagarme: '. print_r($pagarJson, 1));
-
-            $pagarMeTransaction->charge();
 
             \Log::debug("[charge]response:". print_r($pagarMeTransaction, 1));
 
