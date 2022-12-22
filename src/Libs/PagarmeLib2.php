@@ -42,7 +42,7 @@ class PagarmeLib2 implements IPayment
 
     private function setApiKey()
     {
-        $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
+       return $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
     }
 
     public function createCard(Payment $payment, User $user = null)
@@ -58,7 +58,7 @@ class PagarmeLib2 implements IPayment
             $cardExpirationYear = $cardExpirationYear % 100;
 
             $card = $pagarme->cards()->create([
-                'holder_name' => $customer->name,
+                'holder_name' => $cardHolder,
                 'number' => $cardNumber ,
                 'expiration_date' => $expirationDate,
                 'cvv' => $cardCvv,
@@ -102,7 +102,9 @@ class PagarmeLib2 implements IPayment
     public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions = "")
     {
         try {
-            $pagarMeTransaction = new PagarMe_Transaction(array(
+            $pagarme = self::setApiKey();
+
+            $pagarMeTransaction = $pagarme->transactions()->create(array(
                 "amount" => floor($amount * 100),
                 "payment_method" => "boleto",
                 "postback_url" => $postbackUrl,
@@ -112,8 +114,6 @@ class PagarmeLib2 implements IPayment
                 "boleto_expiration_date" => $billetExpirationDate,
                 "boleto_instructions" => $billetInstructions
             ));
-    
-            $pagarMeTransaction->charge();
             
             return array(
                 'success' => true,
@@ -179,7 +179,17 @@ class PagarmeLib2 implements IPayment
      */
     public function testBilletPaid($transaction_id)
     {
-        $transaction = PagarMe_Transaction::findById($transaction_id);
+        $pagarme = self::setApiKey();
+        $transaction =$pagarme->search()->get([                
+            "type" => "transaction",
+            "query" => [
+                "query" => [
+                    "terms" => [
+                        "items.id" => [$transaction_id] // Busca transações do ID
+                    ]
+                ]
+            ]
+        ]);
 
         if ($transaction) {
             $transaction->setStatus('paid');
@@ -194,14 +204,14 @@ class PagarmeLib2 implements IPayment
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
         try {
-            $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
+            $pagarme = self::setApiKey();
             // valor inteiro do pagamento transferido para o admin
             $card = $pagarme->cards()->get([
                 'id' => $payment->card_token
             ]);
-            // if ($card == null) {
-            //     throw new PagarMe_Exception("Cartão não encontrado", 1);
-            // }
+            if ($card == null) {
+                throw new PagarMe_Exception("not_found","card","Cartão não encontrado");
+            } 
             $pagarMeTransaction = $pagarme->transactions()->create(array(
                 "amount" 	=> 	floor($amount * 100),
                 "async"		=>  false,
@@ -212,7 +222,6 @@ class PagarmeLib2 implements IPayment
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
             ));
-            // dd($pagarMeTransaction);
 
             $pagarJson = json_decode(json_encode($pagarMeTransaction));
             $json = json_encode($pagarJson);
@@ -460,12 +469,15 @@ class PagarmeLib2 implements IPayment
     public function capture(Transaction $transaction, $amount, Payment $payment = null)
     {
         try {
+            $pagarme = self::setApiKey();
             $amount *= 100;
 
-            $pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+            $pagarMeTransaction =$pagarme->transactions()->capture([
+                'id' => $transaction->gateway_transaction_id,
+            ]);
 
             if ($pagarMeTransaction == null) {
-                throw new PagarMe_Exception("Transaction not found.", 1);
+                throw new PagarMe_Exception("Transaction not found.","Transaction","Transação não encontrada");
             }
 
             if ($amount > $pagarMeTransaction->amount) {
