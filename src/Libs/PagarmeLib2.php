@@ -48,6 +48,7 @@ class PagarmeLib2 implements IPayment
     public function createCard(Payment $payment, User $user = null)
     {
         try {
+            $pagarme = self::setApiKey();
             $cardNumber 			= $payment->getCardNumber();
             $cardExpirationMonth 	= $payment->getCardExpirationMonth();
             $cardExpirationYear 	= $payment->getCardExpirationYear();
@@ -180,20 +181,12 @@ class PagarmeLib2 implements IPayment
     public function testBilletPaid($transaction_id)
     {
         $pagarme = self::setApiKey();
-        $transaction =$pagarme->search()->get([                
-            "type" => "transaction",
-            "query" => [
-                "query" => [
-                    "terms" => [
-                        "items.id" => [$transaction_id] // Busca transações do ID
-                    ]
-                ]
-            ]
+        $transaction =$pagarme->transactions()->get([
+            'id' => $transaction_id,
+            'status' => 'paid'
         ]);
 
         if ($transaction) {
-            $transaction->setStatus('paid');
-            $transaction->save();
             return true;
         }
 
@@ -269,6 +262,7 @@ class PagarmeLib2 implements IPayment
 		
 		try
 		{
+            $pagarme = self::setApiKey();
 
 			$admin_value 	= $totalAmount - $providerAmount;
 			$admin_value 	= round($admin_value * 100);
@@ -281,8 +275,11 @@ class PagarmeLib2 implements IPayment
             } elseif ($admin_value + $providerAmount == (floor($totalAmount*100))) {
                 $totalAmount =  floor($totalAmount*100);
             }
-
-            if (PagarMe_Recipient::findById(Settings::findByKey('pagarme_recipient_id')) == null) {
+            $id = Settings::findByKey('pagarme_recipient_id');
+            $recipient = $pagarme->recipients()->get([
+                'id' => $id
+            ]);
+            if ($recipient) {
                 throw new PagarMe_Exception("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
             }
 
@@ -292,20 +289,23 @@ class PagarmeLib2 implements IPayment
                 throw new PagarMe_Exception("Conta do prestador nao encontrada.", 1);
             }
 
-            $recipient = PagarMe_Recipient::findById($bank_account->recipient_id);
-
+            $recipient = $pagarme->recipients()->get([
+                'id' => $bank_account->recipient_id
+            ]);
+            
             if ($recipient == null) {
                 throw new PagarMe_Exception("Recebedor não foi encontrado", 1);
             }
-
-            $card = PagarMe_Card::findById($payment->card_token);
+            $card = $pagarme->cards()->get([
+                'id' => $payment->card_token
+            ]);
                     
             if ($card == null) {
                 throw new PagarMe_Exception("Cartão não encontrado", 1);
             }
 
             //split de pagamento com o prestador
-            $pagarmeTransaction = new PagarMe_Transaction(array(
+            $pagarmeTransaction = $pagarme->transactions()->create(array(
                 "amount" 		=> 	$totalAmount,
                 "async"			=>  false,
                 "card_id" 		=> 	$payment->card_token,
@@ -332,8 +332,6 @@ class PagarmeLib2 implements IPayment
             ));
 
             \Log::debug("[charge]parameters:". print_r($pagarmeTransaction, 1));
-
-            $pagarmeTransaction->charge();
 
             \Log::debug("[charge]response:". print_r($pagarmeTransaction, 1));
 
@@ -486,7 +484,7 @@ class PagarmeLib2 implements IPayment
 
             \Log::debug("[capture]parameters:". print_r($pagarMeTransaction, 1));
 
-            $pagarMeTransaction->capture(floor($amount));
+            // $pagarMeTransaction->capture(floor($amount));
 
             \Log::debug("[capture]response:". print_r($pagarMeTransaction, 1));
 
@@ -514,12 +512,20 @@ class PagarmeLib2 implements IPayment
     {
         if ($transaction && $transaction->status != Transaction::REFUNDED) {
             try {
-                $refund = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+                $pagarme = self::setApiKey();
+
+                $refund  = $pagarme->transactions()->get([
+                    'id' => $transaction->gateway_transaction_id
+                ]);
 
                 \Log::debug("[refund]parameters:". print_r($refund, 1));
                 
-
-                $refund->refund();
+                if(!$refund){
+                    throw new PagarMe_Exception("Transaction not found.", 1);
+                }
+                $refund = $pagarme->transactions()->refund([
+                    'id' => $transaction->gateway_transaction_id,
+                ]);
 
                 \Log::debug("[refund]response:". print_r($refund, 1));
 
@@ -566,12 +572,16 @@ class PagarmeLib2 implements IPayment
     public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
     {
         try {
+            $pagarme = self::setApiKey();
+
             \Log::debug('capture with split');
             $requestId = $transaction->request_id;
-            if ($provider && $provider->getBankAccount() && $provider->getBankAccount()->recipient_id && self::getRecipientId()) {
                 $adminAmount = $totalAmount - $providerAmount;
 
-                $pagarMeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+                $pagarMeTransaction = $pagarme->transactions()->get([
+                    'id' => $transaction->gateway_transaction_id
+                ]);
+              
 
                 if ($pagarMeTransaction == null) {
                     throw new PagarMe_Exception("Transaction not found.", 1);
@@ -599,7 +609,10 @@ class PagarmeLib2 implements IPayment
                 );
 
                 \Log::debug("[capture_split]parameters:". print_r($param, 1));
-                $pagarMeTransaction->capture($param);
+                $pagarMeTransaction = $pagarme->transactions()->capture([
+                    'id' => $transaction->gateway_transaction_id,
+                    'amount' =>  $param["amount"]
+                ]);
 
                 return array(
                     'success' => true,
@@ -608,15 +621,7 @@ class PagarmeLib2 implements IPayment
                     'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
                     'transaction_id' => $pagarMeTransaction->id
                 );
-            } else {
-                \Log::debug('provider without bank account and recipient_id, just do a normal capture');
-
-                $chargeCapture =  $this->capture($transaction, $totalAmount, $payment);
-
-                \Log::debug("[capture_split] chargeCapture response:". print_r($chargeCapture, 1));
-
-                return $chargeCapture;
-            }
+            
         } catch (PagarMe_Exception $ex) {
             \Log::error($ex->getMessage().$ex->getTraceAsString());
 
@@ -632,7 +637,10 @@ class PagarmeLib2 implements IPayment
 
     public function retrieve(Transaction $transaction, Payment $payment = null)
     {
-        $pagarmeTransaction = PagarMe_Transaction::findById($transaction->gateway_transaction_id);
+        $pagarme = self::setApiKey();
+        $pagarmeTransaction = $pagarme->transactions()->get([
+            'id' => $transaction->gateway_transaction_id
+        ]);
 
         return array(
             'success' => true,
@@ -680,6 +688,7 @@ class PagarmeLib2 implements IPayment
     
     public function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
+        $pagarme = self::setApiKey();
         $return = [];
         $recipient = null;
         
@@ -694,7 +703,9 @@ class PagarmeLib2 implements IPayment
          */
         if (($ledgerBankAccount->recipient_id) && strpos($ledgerBankAccount->recipient_id, "re_") === 0) {
             try {
-                $recipient = PagarMe_Recipient::findById($ledgerBankAccount->recipient_id);
+                $recipient = $pagarme->recipients()->get([
+                    'id' => $ledgerBankAccount->recipient_id
+                ]);
             } catch (PagarMe_Exception $ex) {
                 \Log::error($ex->__toString().$ex->getTraceAsString());
             }
@@ -734,18 +745,29 @@ class PagarmeLib2 implements IPayment
             //\Log::info("[PagarMe_Recipient] Entrada: ". print_r($recipientData, 1));
 
             if (!$recipient) {
-                $recipient = new PagarMe_Recipient($recipientData);
-                $recipient->create();
+                $recipient = $pagarme->recipients()->create([
+                    'bank_account_id' => $bankAccount["bank_code"],
+                    'transfer_day' => $recipientData["transfer_day"],
+                    'transfer_enabled' => $recipientData["transfer_enabled"], 
+                    'transfer_interval' => $recipientData["transfer_interval"],
+                    'bank_account'		=> $bankAccount
+
+                ]);
             } elseif ($recipient && $recipient->id) {
                 
                 /**
                  * Para atualizar conta bancária é utilizado as funções SET presentes em PagarMe_Recipient.
                  */
                 
-                $recipient->setTransferIntervel($settingTransferInterval? $settingTransferInterval : "daily");
-                $recipient->setTransferDay($transferDay);
-                $recipient->setBankAccount($bankAccount);
-                $recipient->save();
+                $recipient = $pagarme->recipients()->update([
+                    'id'              => $recipient->id,
+                    'transfer_day' => $recipientData["transfer_day"],
+                    'transfer_enabled' => $recipientData["transfer_enabled"], 
+                    'transfer_interval' => $recipientData["transfer_interval"],
+                    'bank_account'		=> $bankAccount
+
+                ]);
+
             }
 
             //\Log::info("[PagarMe_Recipient] Saida: ". print_r($recipientData, 1));
@@ -779,7 +801,6 @@ class PagarmeLib2 implements IPayment
     public function deleteCard(Payment $payment, User $user = null)
     {
         try {
-            self::setApiKey();
             
             /*
             $card = PagarMe_Card::findById($payment->card_token);
