@@ -280,13 +280,13 @@ class PagarmeLib2 implements IPayment
                 'id' => $id
             ]);
             if ($recipient) {
-                throw new PagarMe_Exception("Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.", 1);
+                throw new PagarMe_Exception("not_found","recepient","Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.");
             }
 
             $bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
             
             if ($bank_account == null) {
-                throw new PagarMe_Exception("Conta do prestador nao encontrada.", 1);
+                throw new PagarMe_Exception("not_found","bankaccount","Conta do prestador nao encontrada.");
             }
 
             $recipient = $pagarme->recipients()->get([
@@ -294,14 +294,14 @@ class PagarmeLib2 implements IPayment
             ]);
             
             if ($recipient == null) {
-                throw new PagarMe_Exception("Recebedor não foi encontrado", 1);
+                throw new PagarMe_Exception("not_found","recepient","Recebedor não foi encontrado");
             }
             $card = $pagarme->cards()->get([
                 'id' => $payment->card_token
             ]);
                     
             if ($card == null) {
-                throw new PagarMe_Exception("Cartão não encontrado", 1);
+                throw new PagarMe_Exception("not_found","card","Cartão não encontrado");
             }
 
             //split de pagamento com o prestador
@@ -521,7 +521,7 @@ class PagarmeLib2 implements IPayment
                 \Log::debug("[refund]parameters:". print_r($refund, 1));
                 
                 if(!$refund){
-                    throw new PagarMe_Exception("Transaction not found.", 1);
+                    throw new PagarMe_Exception("not_found","refund","Transaction not found.");
                 }
                 $refund = $pagarme->transactions()->refund([
                     'id' => $transaction->gateway_transaction_id,
@@ -584,7 +584,7 @@ class PagarmeLib2 implements IPayment
               
 
                 if ($pagarMeTransaction == null) {
-                    throw new PagarMe_Exception("Transaction not found.", 1);
+                    throw new PagarMe_Exception("not_found","transaction","Transaction not found.");
                 }
 
                 //criar regra de split e capturar valores
