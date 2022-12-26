@@ -85,8 +85,8 @@ class PagarmeLib2 implements IPayment
             return array(
                 "success" 					=> false,
                 "type" 						=> $ex->getMessage(),
-                "code" 						=> $ex->getReturnCode(),
-                "message" 					=> $ex->getReturnCode() ? trans("paymentError." . $ex->getReturnCode()) : $ex->getMessage(),
+                "code" 						=> $ex->getCode(),
+                "message" 					=> $ex->getCode() ? trans("paymentError." . $ex->getCode()) : $ex->getMessage(),
             );
         }
     }
@@ -132,8 +132,8 @@ class PagarmeLib2 implements IPayment
             return array(
                 "success" 				=> false ,
                 "type" 					=> 'api_charge_error' ,
-                "code" 					=> $ex->getReturnCode() ,
-                "message" 				=> trans("paymentError.".$ex->getReturnCode()) ,
+                "code" 					=> $ex->getCode() ,
+                "message" 				=> trans("paymentError.".$ex->getCode()) ,
                 "transaction_id"		=> ''
             );
         }
@@ -249,8 +249,8 @@ class PagarmeLib2 implements IPayment
 			return array(
 				"success" 					=> false ,
 				"type" 						=> 'api_charge_error' ,
-				"code" 						=> $ex->getReturnCode() ,
-				"message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> trans("paymentError.".$ex->getMessage()) ,
 				"transaction_id"			=> '',
 				"status"					=> 'error'
 			);		
@@ -358,8 +358,8 @@ class PagarmeLib2 implements IPayment
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_charge_error' ,
-                "code" 						=> $ex->getReturnCode() ,
-                "message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+                "code" 						=> $ex->getCode() ,
+                "message" 					=> trans("paymentError.".$ex->getCode()) ,
                 "transaction_id"			=> ''
             );
         }
@@ -501,8 +501,8 @@ class PagarmeLib2 implements IPayment
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_capture_error' ,
-                "code" 						=> $ex->getReturnCode() ,
-                "message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+                "code" 						=> $ex->getCode() ,
+                "message" 					=> trans("paymentError.".$ex->getCode()) ,
                 "transaction_id"			=> $transaction->gateway_transaction_id
             );
         }
@@ -628,8 +628,8 @@ class PagarmeLib2 implements IPayment
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_capture_error' ,
-                "code" 						=> $ex->getReturnCode() ,
-                "message" 					=> trans("paymentError.".$ex->getReturnCode()) ,
+                "code" 						=> $ex->getCode() ,
+                "message" 					=> trans("paymentError.".$ex->getCode()) ,
                 "transaction_id"			=> $transaction->gateway_transaction_id
             );
         }
@@ -790,7 +790,7 @@ class PagarmeLib2 implements IPayment
                 "success" 					=> false ,
                 "recipient_id"				=> null,
                 "type" 						=> 'api_bankaccount_error' ,
-                "code" 						=> $ex->getReturnCode() ,
+                "code" 						=> $ex->getCode() ,
                 "message" 					=> trans("empty.".$ex->getMessage())
             );
 
