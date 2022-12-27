@@ -325,31 +325,6 @@ class PagarmeLib2 implements IPayment
                     )
                 )
             ));
-            dd(array(
-                "amount" 		=> 	$totalAmount,
-                "async"			=>  false,
-                "card_id" 		=> 	$payment->card_token,
-                "capture" 		=> 	boolval($capture),
-                "customer" 		=> 	$this->getCustomer($payment),
-                "billing"		=> 	$this->getBilling($payment->id),
-                "items"			=>  $this->getItems(1, $description, $totalAmount),
-                "split_rules" 	=> 	array(
-                    //prestador
-                    array(
-                        "recipient_id" 			=> 	$recipient->id,
-                        "amount"	 			=>  $providerAmount,
-                        "charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
-                        "liable" => true  //assume risco de transação (possíveis estornos)
-                    ),
-                    //admin
-                    array(
-                        "recipient_id" => Settings::findByKey('pagarme_recipient_id'),
-                        "amount" =>  $admin_value,
-                        "charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
-                        "liable" => true  //assume risco da transação (possíveis estornos)
-                    )
-                ))
-                );
 
             \Log::debug("[charge]parameters:". print_r($pagarmeTransaction, 1));
 
