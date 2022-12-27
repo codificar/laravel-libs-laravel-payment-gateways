@@ -59,15 +59,10 @@ class PagarmeLib2 implements IPayment
             $cardExpirationYear = $cardExpirationYear % 100;
 
             $card = $pagarme->cards()->create([
-                'holder_name' => $cardHolder,
-                'number' => $cardNumber ,
-                'expiration_date' => $expirationDate,
-                'cvv' => $cardCvv,
-                // "card_number" 				=> $cardNumber,
-                // "card_holder_name" 			=> $cardHolder,
-                // "card_expiration_month" 	=> str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-                // "card_expiration_year" 		=> str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-                // "card_cvv" 					=> $cardCvv,
+                'card_expiration_date' => $expirationDate,
+                "card_number" 				=> $cardNumber,
+                "card_holder_name" 			=> $cardHolder,
+                "card_cvv" 					=> $cardCvv,
             ]);
 
             return array(
@@ -215,7 +210,7 @@ class PagarmeLib2 implements IPayment
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
             ));
-
+          
             $pagarJson = json_decode(json_encode($pagarMeTransaction));
             $json = json_encode($pagarJson);
 
@@ -330,6 +325,31 @@ class PagarmeLib2 implements IPayment
                     )
                 )
             ));
+            dd(array(
+                "amount" 		=> 	$totalAmount,
+                "async"			=>  false,
+                "card_id" 		=> 	$payment->card_token,
+                "capture" 		=> 	boolval($capture),
+                "customer" 		=> 	$this->getCustomer($payment),
+                "billing"		=> 	$this->getBilling($payment->id),
+                "items"			=>  $this->getItems(1, $description, $totalAmount),
+                "split_rules" 	=> 	array(
+                    //prestador
+                    array(
+                        "recipient_id" 			=> 	$recipient->id,
+                        "amount"	 			=>  $providerAmount,
+                        "charge_processing_fee" => 	self::getReversedProcessingFeeCharge() ? true : false,
+                        "liable" => true  //assume risco de transação (possíveis estornos)
+                    ),
+                    //admin
+                    array(
+                        "recipient_id" => Settings::findByKey('pagarme_recipient_id'),
+                        "amount" =>  $admin_value,
+                        "charge_processing_fee" => self::getReversedProcessingFeeCharge() ? false : true, //responsável pela taxa de processamento
+                        "liable" => true  //assume risco da transação (possíveis estornos)
+                    )
+                ))
+                );
 
             \Log::debug("[charge]parameters:". print_r($pagarmeTransaction, 1));
 
