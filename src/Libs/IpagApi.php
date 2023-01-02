@@ -563,21 +563,30 @@ class IpagApi
 
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, $provider = null, $client = null, $billetExpiry = null, $isPix = false)
     {
+        $paymentDocument = null;
+
         if($payment) {
             if($payment->user_id) {
                 $client = User::find($payment->user_id);
             } else if($payment->provider_id) {
                 $client = Provider::find($payment->provider_id);
             }
+
+            if($payment->document){
+                $paymentDocument = $payment->document;
+            }else{
+                $paymentDocument = $client->document;
+            }
+            
         }
 
         $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
         
         $document = null;
-        if($client && isset($client->document) && !empty($client->document)) {
-            $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-            $document = vsprintf($mask, str_split($client->document));
+        if($client && isset($paymentDocument) && !empty($paymentDocument)) {
+            $mask = ((strlen($paymentDocument)) > 11) ? $cnpjMask : $cpfMask;
+            $document = vsprintf($mask, str_split($paymentDocument));
         }
 
         if($payment)
