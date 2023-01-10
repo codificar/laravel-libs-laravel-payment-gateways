@@ -51,7 +51,7 @@ class HandleResponseIpag
             $isData = isset($response->data) && !empty($response->data);
             $isWebhookResponse = $isData && isset($response->data->data) && !empty($response->data->data);
             $isAttributes = $isData && isset($response->data->attributes);
-            $isSellerResource = $isData && $response->data->resource == self::RESOURCE_SELLER;
+            $isSellerResource = $isData && isset($response->data->resource) && $response->data->resource == self::RESOURCE_SELLER;
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
             $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
