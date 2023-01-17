@@ -711,7 +711,36 @@ class IpagApi
         return json_encode($fields);
     }
 
-    private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
+    /**
+    * Get split information
+    *
+    * EX: 
+    * Transação no valor de R$100,00
+    * Taxa: 4,99%.
+    * Necessário realizar split de R$50,00 para o vedendor #1.
+    *
+    * 1. Você deseja repassar toda a taxa ao vendedor#1? 
+    * - Se sim, neste caso é necessário calcular o valor da taxa do seu lado, e realizar um split já com o desconto. Ex.: R$50,00 - R$4,99 = R$45,01.
+    * - OBS: É importante que a flag "charge_processing_fee" esteja com valor "false", ou seja omitido o campo. 
+    * 
+    * 2. Você deseja repassar R$50,00 e a taxa proporcional ao valor deverá ser descontada? 
+    * - Se sim, neste caso basta enviar o valor de R$50,00, e ativar a flag "charge_processing_fee" enviado como "true". 
+    * - Com isso o valor final será de R$50,00 - (R$50,00 * 4,99%) = R$47,50.
+    *
+    * 3. Você deseja repassar exatamente R$50,00 sem nenhum desconto. 
+    * - Neste caso basta enviar o valor de R$50,00 e não ativar a flag "charge_processing_fee".
+    *
+    *
+    * Está sendo utilizado nesse caso a opcão 3.
+    *
+    * @param int $providerId
+    * @param float $providerAmount
+    * @param int $sellerId
+    *
+    * @return array array with information about split to specific seller id
+    *
+    */
+    private static function getSplitInfo($providerId, $providerAmount, $sellerId)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
 
@@ -724,10 +753,10 @@ class IpagApi
             return false;
 
         $fields = (object)array(
-            $sellerIndex            =>  $sellerId->recipient_id,
+            $sellerId               =>  $sellerId->recipient_id,
             'amount'                =>  floatval($providerAmount),
             'liable'                =>  true,
-            'charge_processing_fee' =>  true
+            'charge_processing_fee' =>  false
         );
 
         return $fields;
