@@ -382,7 +382,7 @@ class PagarmeApi
                 "phones"    =>  (object)array(
                     "home_phone"        =>  (object)array(
                         "country_code"  =>  $phoneLib->getDDI(),
-                        "number"        =>  $phoneLib->getFullPhoneNumber(),
+                        "number"        =>  $phoneLib->getPhoneNumber(),
                         "area_code"     =>  $phoneLib->getDDD()
                     )
                 )
