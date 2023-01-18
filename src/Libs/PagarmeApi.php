@@ -361,10 +361,6 @@ class PagarmeApi
 
         try {
             $phoneLib = new PhoneNumber($client->phone);
-            $phone = preg_replace( '/[^0-9]/', '',$phoneLib->getFullPhoneNumber());
-            if(strlen($phone) > 9 ){
-                $phone = str_replace( '5531', '',$phone);
-            }
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
@@ -386,7 +382,7 @@ class PagarmeApi
                 "phones"    =>  (object)array(
                     "home_phone"        =>  (object)array(
                         "country_code"  =>  $phoneLib->getDDI(),
-                        "number"        =>  $phone,
+                        "number"        =>  $phoneLib->getFullPhoneNumber(),
                         "area_code"     =>  $phoneLib->getDDD()
                     )
                 )
