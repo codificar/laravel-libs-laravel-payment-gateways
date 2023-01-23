@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\IpagApi;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Libs\handle\ipag\HandleResponseIpag;
 use Exception;
 //models do sistema
 use Payment;
@@ -145,6 +146,7 @@ Class IpagLib implements IPayment
             $response = HandleResponseIpag::handle($response);
 
             if(!$response['success']) {
+                \Log::info('IPagLib > charge > Error Transaction:' . json_encode($response));
                 return $response;
             }
 
@@ -153,7 +155,8 @@ Class IpagLib implements IPayment
             //verifica se o sistema antifraude está ativo e se houve retorno aprovado via ipag
             $isAntiFraudApproved = $sysAntifraud && 
                 isset($response->attributes->antifraud) && 
-                $response->attributes->antifraud->status == 'approved';
+                ($response->attributes->antifraud->status == 'approved' || 
+                $response->attributes->antifraud->status == 'pending');
             
             $isStatus = isset($response->attributes->status) && !empty($response->attributes->status);
             $statusMessage = "";
@@ -171,11 +174,15 @@ Class IpagLib implements IPayment
                     'status'            =>  $statusMessage == 'CAPTURED' ? 'paid' : 'authorized',
                     'transaction_id'    =>  (string)$response->id
                 );
-            } else {
-                \Log::info('IPagLib > charge > Error Transaction:' . json_encode($response));
+            } 
+            // não passou no antifraude
+            else {
+                \Log::info('IPagLib > charge > Error Transaction > Antifraud error:' . json_encode($response));
                 $code = ApiErrors::CARD_ERROR;
-                $message = array(trans('creditCard.customerCreationFail'));
-                if(isset($response->message)) {
+                $message = trans('payment.ipag_error');
+                $isMessageResponse = isset($response->message) && !empty($response->message); 
+                $isAntifraudeMessage = isset($response->attributes->antifraud->message) && !empty($response->attributes->antifraud->message); 
+                if($isMessageResponse) {
                     try {
                         $jsonErrors = json_decode($response->message);
                         $message = $jsonErrors->error->message; 
@@ -186,7 +193,14 @@ Class IpagLib implements IPayment
                             $message = $response->message;
                         }
                     }
-                } else if(isset($statusMessage)) {
+                } 
+                else if($isAntifraudeMessage) {
+                        $message = trans('payment.ipag_error_message', 
+                            ['error' => $response->attributes->antifraud->message]
+                        );
+                        $code = 406;
+                } 
+                else if(isset($statusMessage)) {
                     $message = $statusMessage;
                 }
 
@@ -202,24 +216,13 @@ Class IpagLib implements IPayment
             }
 		} catch (\Exception $th) {
             \Log::error($th->getMessage() . $th->getTraceAsString());
-
-            $transaction_id = null;
-            $isResponse = isset($response) && !empty($response);
-            $isPayment = $isResponse && isset($response->Payment) && !empty($response->Payment); 
-            
-            if($isPayment) {
-                $transaction_id = $response->Payment->PaymentId 
-                    ? $response->Payment->PaymentId 
-                    : null;
-            }
-
 			return array(
 				"success"           =>  false ,
 				'data'              =>  null,
-				'transaction_id'    =>  $transaction_id,
+				'transaction_id'    =>  null,
 				'error' => array(
 					"code"      =>  ApiErrors::CARD_ERROR,
-					"messages"  =>  array(trans('creditCard.customerCreationFail'))
+					"messages"  =>  trans('payment.ipag_error')
 				)
             );
 		}
@@ -843,9 +846,13 @@ Class IpagLib implements IPayment
             if( isset($newAccount->id))
             {
                 $ledgerBankAccount->recipient_id = $newAccount->id;
+                if(isset($ledgerBankAccount->gateway)) {
+                    $ledgerBankAccount->gateway = 'ipag';
+                }
                 $ledgerBankAccount->save();
                 return array(
                     'success'       =>  true,
+                    'gateway'       => $ledgerBankAccount->gateway,
                     'recipient_id'  =>  $ledgerBankAccount->recipient_id
                 );
             }
@@ -1220,7 +1227,7 @@ Class IpagLib implements IPayment
             } 
         }
 
-        return trans('creditCard.customerCreationFail');
+        return $message;
         
     }
 }

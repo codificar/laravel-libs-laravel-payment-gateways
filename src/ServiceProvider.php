@@ -32,7 +32,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');
 
         // Load trans files (Carrega tos arquivos de traducao) 
-        $this->loadTranslationsFrom(__DIR__ . '/resources/lang', 'settingsTrans');
+        $this->loadTranslationsFrom(__DIR__ . '/resources/lang', 'paymentGateway');
 
         // Publish the VueJS files inside public folder of main project (Copia os arquivos do vue minificados dessa biblioteca para pasta public do projeto que instalar essa lib)
         $this->publishes([

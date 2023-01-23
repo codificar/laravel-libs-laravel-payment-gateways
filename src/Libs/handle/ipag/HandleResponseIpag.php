@@ -2,7 +2,7 @@
 namespace Codificar\PaymentGateways\Libs\handle\ipag;
 
 use ApiErrors;
-use Log;
+use Codificar\PaymentGateways\Libs\handle\message\MessageException;
 
 class HandleResponseIpag
 {
@@ -35,6 +35,8 @@ class HandleResponseIpag
     const PAYMENT_SCHEDULED    =   'scheduled';
 
     const WAITING_PAYMENT = 'waiting_payment';
+    
+    const RESOURCE_SELLER = 'sellers';
 
     /**
      * ERROR MESSAGES
@@ -42,19 +44,28 @@ class HandleResponseIpag
     const CUSTOMER_BLACK_LIST = 'Customer has been blacklisted';
     const DECLINED = 'DECLINED';
 
-    public static function handle($response) {
-
+    public static function handle($response) 
+    {
         try {
             $isSuccess = isset($response->success) && filter_var($response->success, FILTER_VALIDATE_BOOLEAN);
             $isData = isset($response->data) && !empty($response->data);
+            $isWebhookResponse = $isData && isset($response->data->data) && !empty($response->data->data);
             $isAttributes = $isData && isset($response->data->attributes);
+            $isSellerResource = $isData && isset($response->data->resource) && $response->data->resource == self::RESOURCE_SELLER;
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
             $isAcquirer = $isAttributes && isset($response->data->attributes->acquirer) && !empty($response->data->attributes->acquirer);
-            $statusWaitingPayment = $isStatus && $response->data->attributes->status->code != self::CODE_WAITING_PAYMENT;
-            $statusCreate = $isStatus && $response->data->attributes->status->code != self::CODE_CREATED;
+            $statusWaitingPayment = $isStatus && $response->data->attributes->status->code == self::CODE_WAITING_PAYMENT;
+            $statusCreate = $isStatus && $response->data->attributes->status->code == self::CODE_CREATED;
+            $statusCaptured = $isStatus && $response->data->attributes->status->code == self::CODE_CAPTURED;
+            $statusPreAuth = $isStatus && $response->data->attributes->status->code == self::CODE_PRE_AUTHORIZED;
             
             // Em caso de sucesso retorn o data para maniular
-            if( $isSuccess && $isData ) {
+            if( $isSuccess &&
+                (   $isSellerResource || $isWebhookResponse || 
+                    $statusCaptured || $statusWaitingPayment || 
+                    $statusCreate || $statusPreAuth
+                ) 
+            ) {
                 return array(
                     'success' 		=> true,
                     'data' 		    => $response->data,
@@ -62,7 +73,7 @@ class HandleResponseIpag
                 );
 
             } else if( $isSuccess && $isAttributes &&
-                ($statusCreate || $statusWaitingPayment) 
+                (!$statusCreate || !$statusCaptured && !$statusWaitingPayment || !$statusPreAuth) 
             ) {
                 $message = '';
                 $code = -1;
@@ -88,7 +99,7 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  str_replace(' ', '_', $message),
+                    "message" 				=>  MessageException::handleMessageIPagException($message),
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -104,10 +115,26 @@ class HandleResponseIpag
                         $message = json_decode($response->message);
                         // converteu para json e vai capturar a mensagem de erro
                         if(is_object($message)) {
-                            if(isset($message->message)) {
-                                $message = $message->message;
-                            } else if(isset($message->error)) {
-                                $error = $message->error;
+                            $response = get_object_vars($message);
+                            // verifica se tem message
+                            if(isset($response['message'])) {
+                                $message = $response['message'];
+                                //verifica se o message tem objetos de erro
+                                if(is_object($message)) {
+                                    $messagesArray = get_object_vars($message);
+                                    foreach($messagesArray as $messageArray) {
+                                        if(is_string($messageArray)) {
+                                            $message = trim($messageArray);
+                                        }
+                                        if(is_array($messageArray)) {
+                                            $message = $messageArray[0];    
+                                        }
+                                    }
+                                }
+                            } 
+                            // verifica se tem obj error
+                            else if(isset($response['error'])) {
+                                $error = $response['error'];
                                 if(isset($error->message)) {
                                     $message = $error->message;
                                 }
@@ -115,10 +142,10 @@ class HandleResponseIpag
                                 if(isset($error->code)) {
                                     $code = $error->code;
                                 }
-                            } 
+                            }
 
-                            if(isset($message->code)) {
-                                $code = $message->error->code;    
+                            if(isset($response['code'])) {
+                                $code = $response['code'];    
                             }
                         // Não converteu para objeto e vai retornar a resposta completa
                         } else {
@@ -140,18 +167,13 @@ class HandleResponseIpag
                     }
                 }
 
-                if(strpos(strtolower($message), '504 gateway time-out') !== false) {
-                    $code = 504;
-                    $message = 'ipag_timeout';
-                }
-
                 \Log::error('HandleResponseIpag > Error 2' . json_encode($response));
 
                 return array(
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  str_replace(' ', '_', $message),
+                    "message" 				=>  MessageException::handleMessageIPagException($message),
                     "original_message"      =>  $message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -173,14 +195,14 @@ class HandleResponseIpag
             }
 
         } catch (\Exception $th) {
-            \Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success" 	=> false ,
 				'data' 	=> [],
 				'error' 	=> array(
 					"code" 		=> ApiErrors::API_ERROR,
-					"messages" 	=> array(trans('payment.ipag_error'))
+					"messages" 	=> array(trans('paymentGateway::paymentError.refused'))
 				)
 			);
 
