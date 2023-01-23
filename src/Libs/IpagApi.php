@@ -765,7 +765,7 @@ class IpagApi
     * @return array array with information about split to specific seller id
     *
     */
-    private static function getSplitInfo($providerId, $providerAmount, $sellerId)
+    private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
 
@@ -778,7 +778,7 @@ class IpagApi
             return false;
 
         $fields = (object)array(
-            $sellerId               =>  $sellerId->recipient_id,
+            $sellerIndex            =>  $sellerId->recipient_id,
             'amount'                =>  floatval($providerAmount),
             'liable'                =>  true,
             'charge_processing_fee' =>  false
