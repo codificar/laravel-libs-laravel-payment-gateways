@@ -24,11 +24,17 @@ class PhoneNumber
      */
     private function treatNumber()
     {
-        if($this->phoneNumber && strlen($this->phoneNumber) >= 12) {
+        if($this->phoneNumber) {
             $cleanStrPhone = preg_replace("/[^0-9]/", "", trim($this->phoneNumber));
-            $ddi = mb_substr($cleanStrPhone, 0, 2);
-            $ddd = mb_substr($cleanStrPhone, 2, 2);
-            $number = mb_substr($cleanStrPhone, 4, strlen($cleanStrPhone));
+            if(strlen($this->phoneNumber) >= 12){
+                $ddi = mb_substr($cleanStrPhone, 0, 2);
+                $ddd = mb_substr($cleanStrPhone, 2, 2);
+                $number = mb_substr($cleanStrPhone, 4, strlen($cleanStrPhone));
+            }else{
+                $number = mb_substr($cleanStrPhone, -8, strlen($cleanStrPhone));
+                $ddi = "55";
+                $ddd = mb_substr($cleanStrPhone, 0, 2);
+            }
             $this->ddi = $ddi;
             $this->ddd = $ddd;
             

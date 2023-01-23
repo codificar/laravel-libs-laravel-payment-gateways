@@ -132,7 +132,7 @@ class PagarmeLib2 implements IPayment
                 "success" 				=> false ,
                 "type" 					=> 'api_charge_error' ,
                 "code" 					=> $ex->getReturnCode() ,
-                "message" 				=> trans("paymentError.".$ex->getReturnCode()) ,
+                "message" 				=> trans($ex->getMessage()) ,
                 "transaction_id"		=> ''
             );
         }

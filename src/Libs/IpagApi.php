@@ -87,8 +87,19 @@ class IpagApi
 
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
-        
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        $isForceCapture = $chargeSplitRequest 
+            && $chargeSplitRequest->success 
+            && $chargeSplitRequest->data->attributes->status->code == 5 
+            && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
+            && $capture;
+
+        if($isForceCapture){
+            $transaction_ID = $chargeSplitRequest->data->id;
+            self::captureById($transaction_ID, $amount);
+        }
+        
         return $chargeSplitRequest;
     }
 
@@ -106,6 +117,20 @@ class IpagApi
     public static function capture(Transaction $transaction, $amount)
     {
         $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+
+        if($amount)
+            $url = sprintf('%s&valor=%s', $url, $amount);
+
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        return $captureRequest;
+    }
+
+    public static function captureById($transaction_ID, $amount)
+    {
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction_ID);
 
         if($amount)
             $url = sprintf('%s&valor=%s', $url, $amount);
