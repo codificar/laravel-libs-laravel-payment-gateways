@@ -91,6 +91,7 @@ class IpagApi
 
         $isForceCapture = $chargeSplitRequest 
             && $chargeSplitRequest->success 
+            && isset($chargeSplitRequest->data->attributes->status->code)
             && $chargeSplitRequest->data->attributes->status->code == 5
             && isset($chargeSplitRequest->data->attributes->antifraud->status) 
             && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
