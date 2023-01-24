@@ -91,7 +91,9 @@ class IpagApi
 
         $isForceCapture = $chargeSplitRequest 
             && $chargeSplitRequest->success 
-            && $chargeSplitRequest->data->attributes->status->code == 5 
+            && isset($chargeSplitRequest->data->attributes->status->code)
+            && $chargeSplitRequest->data->attributes->status->code == 5
+            && isset($chargeSplitRequest->data->attributes->antifraud->status) 
             && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
             && $capture;
 
@@ -279,7 +281,6 @@ class IpagApi
                 \Log::error($e->getMessage() . $e->getTraceAsString());
             }
         }
-
         $bankObject = (object) array();
         if($bank && $ledgerBankAccount &&
             $bank->code && $ledgerBankAccount->agency &&
@@ -601,8 +602,9 @@ class IpagApi
         
         $document = null;
         if($client && isset($client->document) && !empty($client->document)) {
-            $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-            $document = vsprintf($mask, str_split($client->document));
+            $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
+            $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
+            $document = vsprintf($mask, str_split($document));
         }
 
         if($payment)
