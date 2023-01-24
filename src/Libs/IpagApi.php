@@ -305,6 +305,8 @@ class IpagApi
                 $password = substr($passwordRemask, 0, 6);
             }
         }
+
+
         $fields = (object)array(
             'login'         => $login,
             'password'      => $password,
