@@ -49,7 +49,7 @@ class HandleResponseIpag
         try {
             $isSuccess = isset($response->success) && filter_var($response->success, FILTER_VALIDATE_BOOLEAN);
             $isData = isset($response->data) && !empty($response->data);
-            $isWebhookResponse = $isData && isset($response->data->data) && !empty($response->data->data);
+            $isWebhookResponse = $isData && isset($response->data->resource) && !empty($response->data->resource) && $response->data->resource == "webhooks";
             $isAttributes = $isData && isset($response->data->attributes);
             $isSellerResource = $isData && isset($response->data->resource) && $response->data->resource == self::RESOURCE_SELLER;
             $isStatus = $isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
