@@ -73,18 +73,24 @@ class MessageException
     public static function handleMessageIPagException(String $message) {
 		$gateway = 'ipag';
 
-        switch ($message) {
-            case self::contains($message, 'Not Authorized'):
-                $errorMessage = trans('paymentGateway::paymentError.not_authorized');
+        switch (strtolower($message)) {
+            case self::contains($message, 'not authorized'):
+                return trans('paymentGateway::paymentError.not_authorized');
                 break;
-            case self::contains($message, 'Customer has been blacklisted'):
-                $errorMessage = trans('paymentGateway::paymentError.customer_blacklisted');
+            case self::contains($message, 'customer has been blacklisted'):
+                return trans('paymentGateway::paymentError.customer_blacklisted');
+                break;
+            case self::contains($message, 'cardtoken is no longer valid'):
+            case self::contains($message, 'is not a valid'):
+                return trans('paymentGateway::paymentError.customer_card_invalid');
+                break;
+            case self::contains($message, '504'):
+                return trans('paymentGateway::paymentError.504');
                 break;
             default:
-            	$errorMessage = "ERROR $gateway: " . $message . ' ' . trans('paymentGateway::paymentError.refused') ;
+            	return "ERROR $gateway: " . $message . ' ' . trans('paymentGateway::paymentError.refused');
                 break;
         }
-        return $errorMessage;
     }
 
 	 /**
