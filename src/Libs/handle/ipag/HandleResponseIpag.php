@@ -209,42 +209,4 @@ class HandleResponseIpag
         }
     }
 
-
-	/**
-	 * verify if message contains occourrences
-	 * @param String $message message to verify
-	 * @param String $search string to search
-	 * @return boolean true if message contains occourrences
-	 */
-    public static function contains(String $message, String $search)
-    {
-        return strpos($message, $search) !== false
-            ? true
-            : false;
-    }
-
-     /**
-     * Handle Server message error Exceptions
-     * @param string $message all object Exception to treat error message
-     * @return string Error messge to response
-     */
-    public static function handleMessage(string $message) {
-
-        switch (strtolower($message)) {
-            case self::contains($message, 'not authorized'):
-                return trans('paymentGateway::paymentError.not_authorized');
-                break;
-            case self::contains($message, 'customer has been blacklisted'):
-                return trans('paymentGateway::paymentError.customer_has_blacklist');
-                break;
-            case self::contains($message, 'cardtoken is no longer valid'):
-            case self::contains($message, 'is not a valid credit card."'):
-                return trans('paymentGateway::paymentError.customer_card_invalid');
-                break;
-            default:
-            	return $message ;
-                break;
-        }
-    }
-
 }
