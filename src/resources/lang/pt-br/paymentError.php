@@ -20,4 +20,6 @@ return array(
 	'transaction_declined' 					=> 'Transação recusada, por favor tente novamente com outro cartão ou método de pagamento diferente!',
 	'transaction_declined_address_number' 	=> 'Transação recusada: Número do endereço incorreto ou vazio, por favor tente novamente com outro endereço!',
 	'transaction_declined_neighborhood' 	=> 'Bairro incorreto ou vazio, por favor tente novamente com outro endereço!',
+	
+	'customer_card_invalid' 	=> 'Oops! dados de cartão inválidos, por favor verifique e tente novamente.',
 );

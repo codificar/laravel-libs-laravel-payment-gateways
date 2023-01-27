@@ -20,4 +20,6 @@ return array(
 	'transaction_declined' 					=> 'Transaction declined, please try again with another card or different payment method!',
 	'transaction_declined_address_number' 	=> 'Transaction declined: Incorrect or empty address number, please try again with another address!',
 	'transaction_declined_neighborhood' 	=> 'Incorrect or empty neighborhood, please try again with another address!',
+
+	'customer_card_invalid' 	=> 'Oops! Invalid card details, please check and try again.',
 );
