@@ -73,13 +73,13 @@ class PhoneNumber
      * @param boolea $isDDI when positive include ddi in return int
      * @return string phone number | 988663322 | 77988663322 | 5577988663322
      */
-    public function getPhoneNumber($isDDD = false, $isDDI = false)
+       public function getPhoneNumber($isDDD = false, $isDDI = false)
     {
-        if($this->number) {
+        if($this->phoneNumber) {
             return intval(
                 ($isDDI ? $this->ddi : '') . 
                 ($isDDD ? $this->ddd : '') . 
-                    $this->number
+                    $this->phoneNumber
             );
         }
         return null;

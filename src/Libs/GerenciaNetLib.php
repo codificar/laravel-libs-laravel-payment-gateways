@@ -367,7 +367,10 @@ class GerenciaNetLib implements IPayment
 
 	private static function notificationURL()
 	{
-		return env('APP_URL') ? (env('APP_URL') . self::NOTIFICATION_URL) : null;
+        if(env('APP_URL') && str_contains(env('APP_URL'), 'https' )){
+            return (env('APP_URL') . self::NOTIFICATION_URL);
+        }
+        return null;
 	}
 
 	public function getNotification($token)
