@@ -71,11 +71,13 @@ class MessageException
      * @return String Error messge to response
      */
     public static function handleMessageIPagException(String $message) {
-		$gateway = 'ipag';
-
-        switch (strtolower($message)) {
+        $message = strtolower($message);
+        switch ($message) {
             case self::contains($message, 'not authorized'):
                 return trans('paymentGateway::paymentError.not_authorized');
+                break;
+            case self::contains($message, 'nao autorizado pelo emissor'):
+                return trans('paymentGateway::paymentError.card_not_authorized');
                 break;
             case self::contains($message, 'customer has been blacklisted'):
                 return trans('paymentGateway::paymentError.customer_blacklisted');
@@ -88,7 +90,7 @@ class MessageException
                 return trans('paymentGateway::paymentError.504');
                 break;
             default:
-            	return "ERROR $gateway: " . $message . ' ' . trans('paymentGateway::paymentError.refused');
+            	return $message . ' ' . trans('paymentGateway::paymentError.refused');
                 break;
         }
     }
