@@ -21,5 +21,6 @@ return array(
 	'transaction_declined_address_number' 	=> 'Transacción rechazada: número de dirección incorrecto o vacío, ¡inténtalo de nuevo con otra dirección!',
 	'transaction_declined_neighborhood' 	=> 'Barrio incorrecto o vacío, inténtalo de nuevo con otra dirección.',
 
+	'card_not_authorized' 	=> '¡Ups!No autorizado por el emisor de la tarjeta.',
 	'customer_card_invalid' 	=> '¡Ups! Los detalles de la tarjeta no son válidos, verifíquelos e inténtelo de nuevo.',
 );
