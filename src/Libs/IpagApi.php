@@ -98,8 +98,7 @@ class IpagApi
             && $capture;
 
         if($isForceCapture){
-            $transaction_ID = $chargeSplitRequest->data->id;
-            self::captureById($transaction_ID, $amount);
+            self::captureById($chargeSplitRequest->data->id, $amount);
         }
         
         return $chargeSplitRequest;

@@ -320,6 +320,11 @@ class GatewaysLibModel extends Eloquent
             ->toArray();
     }
 
+    /**
+     * Update all bank account by job
+     * @param array $ledgerBankAccounts
+     * @return void
+     */
     public static function UpdateBankAccounts(Array $ledgerBankAccounts){
 
         foreach ($ledgerBankAccounts as $ledgerBankAccount)

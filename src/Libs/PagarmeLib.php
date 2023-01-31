@@ -572,7 +572,7 @@ class PagarmeLib implements IPayment
             if ($newAccount->success && isset($newAccount->data->id)) {
                 $ledgerBankAccount->recipient_id = $newAccount->data->id;
                 if($ledgerBankAccount->gateway) {
-                    $ledgerBankAccount->gateway = 'cielo';
+                    $ledgerBankAccount->gateway = 'pagarme';
                 }
                 $ledgerBankAccount->save();
                 $result = array(
