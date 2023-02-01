@@ -2,7 +2,7 @@
 namespace Codificar\PaymentGateways\Libs\handle\ipag;
 
 use ApiErrors;
-use Codificar\PaymentGateways\Libs\handle\message\MessageException;
+use Codificar\PaymentGateways\Libs\handle\message\MessageExceptionIpag;
 
 class HandleResponseIpag
 {
@@ -149,7 +149,7 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  MessageException::handleMessageIPagException($status->message),
+                    "message" 				=>  MessageExceptionIpag::handleMessageException($status->message),
                     "original_message"      =>  $status->message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -166,7 +166,7 @@ class HandleResponseIpag
                     "success" 				=>  false,
                     "type" 					=>  'api_ipag_error',
                     "code" 					=>  $code,
-                    "message" 				=>  MessageException::handleMessageIPagException($acquirer->message),
+                    "message" 				=>  MessageExceptionIpag::handleMessageException($acquirer->message),
                     "original_message"      =>  $acquirer->message,
                     "response"              =>  json_encode($response),
                     "transaction_id"		=>  '',
@@ -179,7 +179,7 @@ class HandleResponseIpag
             "success" 				=>  false,
             "type" 					=>  'api_ipag_error',
             "code" 					=>  $code,
-            "message" 				=>  MessageException::handleMessageIPagException($message),
+            "message" 				=>  MessageExceptionIpag::handleMessageException($message),
             "original_message"      =>  $message,
             "response"              =>  json_encode($response),
             "transaction_id"		=>  '',
@@ -222,7 +222,7 @@ class HandleResponseIpag
                         "success" 				=>  false,
                         "type" 					=>  'api_ipag_error',
                         "code" 					=>  $code,
-                        "message" 				=>  MessageException::handleMessageIPagException($message),
+                        "message" 				=>  MessageExceptionIpag::handleMessageException($message),
                         "original_message"      =>  $message,
                         "response"              =>  json_encode($response),
                         "transaction_id"		=>  '',
@@ -260,7 +260,7 @@ class HandleResponseIpag
             "success" 				=>  false,
             "type" 					=>  'api_ipag_error',
             "code" 					=>  $code,
-            "message" 				=>  MessageException::handleMessageIPagException($message),
+            "message" 				=>  MessageExceptionIpag::handleMessageException($message),
             "original_message"      =>  $message,
             "response"              =>  json_encode($response),
             "transaction_id"		=>  '',
