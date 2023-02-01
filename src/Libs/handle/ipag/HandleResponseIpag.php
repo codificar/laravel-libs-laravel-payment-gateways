@@ -145,16 +145,7 @@ class HandleResponseIpag
             }
 
             if(isset($status->message)) {
-                 return array(
-                    "success" 				=>  false,
-                    "type" 					=>  'api_ipag_error',
-                    "code" 					=>  $code,
-                    "message" 				=>  MessageExceptionIpag::handleMessageException($status->message),
-                    "original_message"      =>  $status->message,
-                    "response"              =>  json_encode($response),
-                    "transaction_id"		=>  '',
-                    'billet_expiration_date'=>  ''
-                 );
+                $message = $status->message;
             }
         } 
         
@@ -162,16 +153,11 @@ class HandleResponseIpag
         if(self::$isAcquirer) {
             $acquirer = $response->data->attributes->acquirer;
             if(isset($acquirer->message)) {
-                return array(
-                    "success" 				=>  false,
-                    "type" 					=>  'api_ipag_error',
-                    "code" 					=>  $code,
-                    "message" 				=>  MessageExceptionIpag::handleMessageException($acquirer->message),
-                    "original_message"      =>  $acquirer->message,
-                    "response"              =>  json_encode($response),
-                    "transaction_id"		=>  '',
-                    'billet_expiration_date'=>  ''
-                 );
+                $message = $acquirer->message;
+            }
+
+            if(isset($acquirer->code)) {
+                $code = $acquirer->code;
             }
         }
 

@@ -23,4 +23,5 @@ return array(
 
 	'card_not_authorized' 	=> 'Oops! Não autorizado pelo emissor do cartão.',
 	'customer_card_invalid' 	=> 'Oops! dados de cartão inválidos, por favor verifique e tente novamente.',
+	'canceled'	=> 'Oops cancelado, por favor verifique seu dados e tente novamente.'
 );

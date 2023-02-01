@@ -27,6 +27,9 @@ class MessageExceptionIpag
             case Functions::contains($message, 'is not a valid'):
                 return trans('paymentGateway::paymentError.customer_card_invalid');
                 break;
+            case Functions::contains($message, 'canceled'):
+                return trans('paymentGateway::paymentError.canceled');
+                break;
             case Functions::contains($message, '504'):
                 return trans('paymentGateway::paymentError.504');
                 break;
