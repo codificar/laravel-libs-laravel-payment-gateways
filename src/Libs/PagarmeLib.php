@@ -360,39 +360,42 @@ class PagarmeLib implements IPayment
     public function capture(Transaction $transaction, $amount, Payment $payment = null)
     {
         try {
-            $response = PagarmeApi::capture($transaction, $amount);
+            $retrieve = PagarmeApi::retrieve($transaction);
+            if($retrieve && $retrieve->data->status == "paid"){
+                return array(
+                    'success' 		 => true,
+                    'captured' 		 => true,
+                    'paid' 			 => true,
+                    'status' 		 => 'paid',
+                    'transaction_id' => (string)$transaction->id,
+                );
+            }
             
+            $response = PagarmeApi::capture($transaction, $amount);
             $responseVerify = isset($response->success) &&
-            $response->success &&
-            isset($response->data);
-            if ($responseVerify) {
-                if (is_string($response->data) &&  $response->data == "This charge can not be captured."){
-                    return array(
-                        'success' 		 => true,
-                        'captured' 		 => true,
-                        'paid' 			 => true,
-                        'status' 		 => 'paid',
-                        'transaction_id' => (string)$transaction->id,
-                    );
-                }else if($response->data->last_transaction->status && $response->data->last_transaction->status == self::GATEWAY_CAPTURED){
-                    $statusMessage = $response->data->last_transaction->status;
-                    return array(
-                        'success' 		 => true,
-                        'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                        'paid' 			 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                        'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
-                        'transaction_id' => (string)$response->data->id
-                    );
-                }else {
-                    return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                            "code" 		=> ApiErrors::CARD_ERROR,
-                            "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                        )
-                    );
-                }
+            $response->success 
+            && isset($response->data) 
+            && $response->data->last_transaction->status 
+            && $response->data->last_transaction->status == self::GATEWAY_CAPTURED;
+
+            if($responseVerify){
+                $statusMessage = $response->data->last_transaction->status;
+                return array(
+                    'success' 		 => true,
+                    'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                    'paid' 			 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                    'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
+                    'transaction_id' => (string)$response->data->id
+                );
+            }else {
+                return array(
+                "success" 	=> false ,
+                'data' 		=> null,
+                'error' 	=> array(
+                        "code" 		=> ApiErrors::CARD_ERROR,
+                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                    )
+                );
             }
         }catch (\Throwable $th) {
             Log::error($th->__toString());
