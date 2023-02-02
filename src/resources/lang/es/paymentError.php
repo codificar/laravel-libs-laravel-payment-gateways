@@ -23,5 +23,6 @@ return array(
 
 	'card_not_authorized' 	=> '¡Ups!No autorizado por el emisor de la tarjeta.',
 	'customer_card_invalid' 	=> '¡Ups! Los detalles de la tarjeta no son válidos, verifíquelos e inténtelo de nuevo.',
-	'canceled'	=> '¡Ups! cancelado, consulte sus datos y vuelva a intentarlo.'
+	'canceled'	=> '¡Ups! cancelado, consulte sus datos y vuelva a intentarlo.',
+	'error_min_max_amount'	=> 'Oops rechazó la transacción, mínimo o máximo inválido variando.'
 );

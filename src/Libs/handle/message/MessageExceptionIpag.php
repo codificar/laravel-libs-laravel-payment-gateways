@@ -23,6 +23,9 @@ class MessageExceptionIpag
             case Functions::contains($message, 'customer has been blacklisted'):
                 return trans('paymentGateway::paymentError.customer_blacklisted');
                 break;
+            case Functions::contains($message, 'harge does not comply with the min and max amount value'):
+                return trans('paymentGateway::paymentError.error_min_max_amount');
+                break;
             case Functions::contains($message, 'cardtoken is no longer valid'):
             case Functions::contains($message, 'is not a valid'):
                 return trans('paymentGateway::paymentError.customer_card_invalid');
