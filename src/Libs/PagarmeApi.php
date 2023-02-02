@@ -93,7 +93,7 @@ class PagarmeApi
     {
         $url = sprintf('%s/charges/%s/capture', self::URL, $transaction->gateway_transaction_id);
 
-        $body       =   $amount ? (object)array('amount' => self::amountRound($amount)) : null;
+        $body       =   $amount ? array('amount' => self::amountRound($amount)) : null;
         $header     =   self::getHeader(true);
         $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -354,7 +354,7 @@ class PagarmeApi
         {
 			$client     =   $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
             $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
-            $document = preg_replace( '/[^0-9]/', '', $client->document );
+            $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
         }
 
         $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
@@ -383,7 +383,7 @@ class PagarmeApi
                 "phones"    =>  (object)array(
                     "home_phone"        =>  (object)array(
                         "country_code"  =>  $phoneLib->getDDI(),
-                        "number"        =>  $phoneLib->getFullPhoneNumber(),
+                        "number"        =>  $phoneLib->getPhoneNumber(),
                         "area_code"     =>  $phoneLib->getDDD()
                     )
                 )
@@ -570,7 +570,12 @@ class PagarmeApi
                     'success'   =>  true,
                     'data'      =>  $result
                 );
-            } else {
+            }else if($httpcode == 412 && $result->message && $result->message = "This charge can not be captured."){
+                return (object)array (
+                    'success'   =>  true,
+                    'data'      =>  $result
+                );
+            }else {
                 return (object)array(
                     "success"   => false,
                     "message"   => $msg_chk
