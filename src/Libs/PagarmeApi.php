@@ -92,7 +92,7 @@ class PagarmeApi
     {
         $url = sprintf('%s/charges/%s/capture', self::URL, $transaction->gateway_transaction_id);
 
-        $body       =   $amount ? (object)array('amount' => self::amountRound($amount)) : null;
+        $body       =   $amount ? array('amount' => self::amountRound($amount)) : null;
         $header     =   self::getHeader(true);
         $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -569,7 +569,12 @@ class PagarmeApi
                     'success'   =>  true,
                     'data'      =>  $result
                 );
-            } else {
+            }else if($httpcode == 412 && $result->message && $result->message = "This charge can not be captured."){
+                return (object)array (
+                    'success'   =>  true,
+                    'data'      =>  $result
+                );
+            }else {
                 return (object)array(
                     "success"   => false,
                     "message"   => $msg_chk
