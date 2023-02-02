@@ -366,7 +366,7 @@ class PagarmeLib implements IPayment
             $response->success &&
             isset($response->data);
             if ($responseVerify) {
-                if ($response->data == "This charge can not be captured."){
+                if (is_string($response->data) &&  $response->data == "This charge can not be captured."){
                     return array(
                         'success' 		 => true,
                         'captured' 		 => true,
