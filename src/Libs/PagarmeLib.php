@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\PagarmeApi;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Utils\Functions;
 use Exception;
 //models do sistema
 use Payment;
@@ -366,7 +367,7 @@ class PagarmeLib implements IPayment
             $response->success &&
             isset($response->data);
             if ($responseVerify) {
-                if ($response->data == "This charge can not be captured."){
+                if (Functions::contains($response->data, "can not be captured")){
                     return array(
                         'success' 		 => true,
                         'captured' 		 => true,
