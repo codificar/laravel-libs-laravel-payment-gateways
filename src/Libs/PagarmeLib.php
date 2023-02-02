@@ -232,7 +232,11 @@ class PagarmeLib implements IPayment
     }
 
     /**
-     * Trata o postback retornado pelo gateway
+     * Handles the postback returned by the gateway
+     * 
+     * @param Request       $request
+     * @param Integer       $transaction_id 
+     * @return array
      */
     public function billetVerify($request, $transaction_id = null)
     {
@@ -361,7 +365,7 @@ class PagarmeLib implements IPayment
     {
         try {
             $retrieve = PagarmeApi::retrieve($transaction);
-            if($retrieve && $retrieve->data->status == "paid"){
+            if($retrieve && $retrieve->data->status == self::GATEWAY_PAID){
                 return array(
                     'success' 		 => true,
                     'captured' 		 => true,
@@ -565,7 +569,6 @@ class PagarmeLib implements IPayment
         return $result;
     }
 
-
     /**
      *  Create accounts for users
      *
@@ -663,7 +666,14 @@ class PagarmeLib implements IPayment
         }
     }
 
-    //finish
+    /**
+     * Make a charge with debit card
+     * 
+     * @param Payment $payment
+     * @param Decimal    $amount
+     * @param string  $description
+     * @return array
+     */
     public function debit(Payment $payment, $amount, $description)
     {
         try {
@@ -710,7 +720,17 @@ class PagarmeLib implements IPayment
         }
     }
 
-    //finish
+    /**
+     * Make a debit charge with split
+     *
+     * @param Payment        $payment 
+     * @param Provider       $provider   
+     * @param Decimal        $totalAmount
+     * @param Decimal        $providerAmount 
+     * @param string         $description 
+     *  
+     * @return array 
+     */
     public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
     {
         Log::error('debit_split_not_implemented');
@@ -728,9 +748,7 @@ class PagarmeLib implements IPayment
      * Returns status string based on status code
      *
      * @param Integer        $statusCode    Payment status code captured on gateway.
-     *
      * @return String                       String related to the payment status code.
-     *
      */
     private function getStatusString($statusCode)
     {
@@ -767,6 +785,13 @@ class PagarmeLib implements IPayment
         }
     }
 
+    /**
+     * Make a charge with pix
+     * 
+     * @param Decimal $amount
+     * @param User    $user
+     * @return array
+     */
     public function pixCharge($amount, $user)
     {
         try {
@@ -824,6 +849,14 @@ class PagarmeLib implements IPayment
         }
     }
 
+    /**
+     * Verifi the pix status
+     *
+     * @param integer       $transaction_id     
+     * @param request       $request     
+     *
+     * @return array
+     */
     public function retrievePix($transaction_id, $request = null)
     {
         \Log::error('retrieve_pix_not_implemented');
