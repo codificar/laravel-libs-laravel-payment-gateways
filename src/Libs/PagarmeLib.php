@@ -361,41 +361,35 @@ class PagarmeLib implements IPayment
     {
         try {
             $response = PagarmeApi::capture($transaction, $amount);
-            
-            $responseVerify = isset($response->success) &&
-            $response->success &&
-            isset($response->data);
-            if ($responseVerify) {
-                if ($response->data = "This charge can not be captured."){
-                    return array(
-                        'success' 		 => true,
-                        'captured' 		 => true,
-                        'paid' 			 => true,
-                        'status' 		 => 'paid',
-                        'transaction_id' => (string)$transaction->id,
-                    );
-                }else if($response->data->last_transaction->status && $response->data->last_transaction->status == self::GATEWAY_CAPTURED){
-                    $statusMessage = $response->data->last_transaction->status;
-                    return array(
-                        'success' 		 => true,
-                        'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                        'paid' 			 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                        'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
-                        'transaction_id' => (string)$response->data->id
-                    );
-                }else {
-                    return array(
+
+            if (
+                isset($response->success) &&
+                $response->success &&
+                isset($response->data) &&
+                $response->data->last_transaction->status == self::GATEWAY_CAPTURED
+            ) {
+                $statusMessage = $response->data->last_transaction->status;
+
+                return array(
+                    'success' 		 => true,
+                    'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                    'paid' 			 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                    'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
+                    'transaction_id' => (string)$response->data->id
+                );
+            } else {
+                return array(
                     "success" 	=> false ,
                     'data' 		=> null,
                     'error' 	=> array(
-                            "code" 		=> ApiErrors::CARD_ERROR,
-                            "messages" 	=> array(trans('creditCard.customerCreationFail'))
-                        )
-                    );
-                }
+                        "code" 		=> ApiErrors::CARD_ERROR,
+                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                    )
+                );
             }
-        }catch (\Throwable $th) {
+        } catch (\Throwable $th) {
             Log::error($th->__toString());
+
             return array(
                 "success" 	=> false ,
                 'data' 		=> null,
@@ -577,9 +571,6 @@ class PagarmeLib implements IPayment
 
             if ($newAccount->success && isset($newAccount->data->id)) {
                 $ledgerBankAccount->recipient_id = $newAccount->data->id;
-                if($ledgerBankAccount->gateway) {
-                    $ledgerBankAccount->gateway = 'cielo';
-                }
                 $ledgerBankAccount->save();
                 $result = array(
                     'success'       =>  true,
