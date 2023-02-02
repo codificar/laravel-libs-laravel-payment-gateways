@@ -569,12 +569,7 @@ class PagarmeApi
                     'success'   =>  true,
                     'data'      =>  $result
                 );
-            }else if($httpcode == 412 && $result->message && $result->message = "This charge can not be captured."){
-                return (object)array (
-                    'success'   =>  true,
-                    'data'      =>  $result
-                );
-            }else {
+            } else {
                 return (object)array(
                     "success"   => false,
                     "message"   => $msg_chk
