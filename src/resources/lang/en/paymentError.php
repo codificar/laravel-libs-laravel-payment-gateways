@@ -23,6 +23,5 @@ return array(
 
 	'card_not_authorized' 	=> 'Oops!Not authorized by the card issuer.',
 	'customer_card_invalid' 	=> 'Oops! Invalid card details, please check and try again.',
-	'canceled'	=> 'Oops canceled, please check your data and try again.',
-	'error_min_max_amount'	=> 'Oops refused transaction, minimum or maximum invalid varying.'
+	'canceled'	=> 'Oops canceled, please check your data and try again.'
 );

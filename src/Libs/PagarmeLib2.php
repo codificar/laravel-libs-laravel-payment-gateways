@@ -5,10 +5,12 @@ namespace Codificar\PaymentGateways\Libs;
 use ApiErrors;
 use Bank;
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Libs\handle\message\MessageException;
+use Codificar\PaymentGateways\Libs\handle\message\MessageExceptionPagarme;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
 use PagarMe\Client as PagarMe;
-use PagarMe\Exceptions\PagarMeException as PagarMe_Exception;
+use PagarMe\Exceptions\PagarMeException;
 //models do sistema
 use Payment;
 use Provider;
@@ -42,7 +44,7 @@ class PagarmeLib2 implements IPayment
 
     private function setApiKey()
     {
-       return $pagarme = new PagarMe(Settings::findByKey('pagarme_api_key'));
+       return new PagarMe(Settings::findByKey('pagarme_api_key'));
     }
 
     public function createCard(Payment $payment, User $user = null)
@@ -74,16 +76,29 @@ class PagarmeLib2 implements IPayment
                 "last_four" 				=> $card->last_digits,
                 "gateway"					=> "pagarme"
             );
-        } catch (PagarMe_Exception  $ex) {
+        } catch (PagarMeException  $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" 					=> false,
                 "type" 						=> $ex->getMessage(),
                 "code" 						=> $ex->getCode(),
-                "message" 					=> $ex->getCode() ? trans("paymentError." . $ex->getCode()) : $ex->getMessage(),
+                "message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()),
             );
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
 
     /**
@@ -121,17 +136,30 @@ class PagarmeLib2 implements IPayment
                 'digitable_line' => $pagarMeTransaction->boleto_barcode,
                 'billet_expiration_date' => $pagarMeTransaction->boleto_expiration_date
             );
-        } catch (PagarMe_Exception $ex) {
+        } catch (PagarMeException $ex) {
             \Log::error($ex->getMessage());
 
             return array(
                 "success" 				=> false ,
                 "type" 					=> 'api_charge_error' ,
                 "code" 					=> $ex->getCode() ,
-                "message" 				=> trans("paymentError.".$ex->getCode()) ,
+                "message" 				=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()) ,
                 "transaction_id"		=> ''
             );
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
 
     /**
@@ -198,9 +226,9 @@ class PagarmeLib2 implements IPayment
                 'id' => $payment->card_token
             ]);
             if ($card == null) {
-                throw new PagarMe_Exception("not_found","card","Cartão não encontrado");
+                throw new PagarMeException("not_found","card","Cartão não encontrado");
             } 
-            $pagarMeTransaction = $pagarme->transactions()->create(array(
+            $data = array(
                 "amount" 	=> 	floor($amount * 100),
                 "async"		=>  false,
                 "card_id" 	=> 	$payment->card_token,
@@ -209,13 +237,13 @@ class PagarmeLib2 implements IPayment
                 "billing"	=> 	$this->getBilling($payment->id),
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
-            ));
+            );
+            $pagarMeTransaction = $pagarme->transactions()->create($data);
           
             $pagarJson = json_decode(json_encode($pagarMeTransaction));
             $json = json_encode($pagarJson);
 
             \Log::debug('JsonPagarme: '. print_r($pagarJson, 1));
-
             \Log::debug("[charge]response:". print_r($pagarMeTransaction, 1));
 
 			if ($pagarMeTransaction->status == self::PAGARME_REFUSED) {
@@ -237,7 +265,7 @@ class PagarmeLib2 implements IPayment
 				'transaction_id' 	=> strval($pagarMeTransaction->id)
 			);
 		}
-		catch(PagarMe_Exception $ex)
+		catch(PagarMeException $ex)
 		{
 			\Log::error($ex->getMessage().$ex->getTraceAsString());
 
@@ -245,7 +273,20 @@ class PagarmeLib2 implements IPayment
 				"success" 					=> false ,
 				"type" 						=> 'api_charge_error' ,
 				"code" 						=> $ex->getCode() ,
-				"message" 					=> trans("paymentError.".$ex->getMessage()) ,
+				"message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
 				"transaction_id"			=> '',
 				"status"					=> 'error'
 			);		
@@ -275,13 +316,13 @@ class PagarmeLib2 implements IPayment
                 'id' => $id
             ]);
             if ($recipient) {
-                throw new PagarMe_Exception("not_found","recepient","Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.");
+                throw new PagarMeException("not_found","recepient","Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.");
             }
 
             $bank_account = LedgerBankAccount::where("provider_id", "=", $provider->id)->first();
             
             if ($bank_account == null) {
-                throw new PagarMe_Exception("not_found","bankaccount","Conta do prestador nao encontrada.");
+                throw new PagarMeException("not_found","bankaccount","Conta do prestador nao encontrada.");
             }
 
             $recipient = $pagarme->recipients()->get([
@@ -289,14 +330,14 @@ class PagarmeLib2 implements IPayment
             ]);
             
             if ($recipient == null) {
-                throw new PagarMe_Exception("not_found","recepient","Recebedor não foi encontrado");
+                throw new PagarMeException("not_found","recepient","Recebedor não foi encontrado");
             }
             $card = $pagarme->cards()->get([
                 'id' => $payment->card_token
             ]);
                     
             if ($card == null) {
-                throw new PagarMe_Exception("not_found","card","Cartão não encontrado");
+                throw new PagarMeException("not_found","card","Cartão não encontrado");
             }
 
             //split de pagamento com o prestador
@@ -347,53 +388,31 @@ class PagarmeLib2 implements IPayment
                 'status' => $pagarmeTransaction->status,
                 'transaction_id' => $pagarmeTransaction->id
             );
-        } catch (PagarMe_Exception $ex) {
+        } catch (PagarMeException $ex) {
             \Log::error($ex->getMessage().$ex->getTraceAsString());
 
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_charge_error' ,
                 "code" 						=> $ex->getCode() ,
-                "message" 					=> trans("paymentError.".$ex->getCode()) ,
+                "message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()) ,
                 "transaction_id"			=> ''
             );
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
-    
-    // private function getCustomer(Payment $payment){
-    // 	$user = $payment->User ;
-
-    // 	$docLenght = strlen(trim($this->cleanWord($user->document)));
-    
-    // 	if ($docLenght <= 11) {
-    // 		$type = "individual";
-    // 		$docType = "cpf";
-    // 	} else {
-    // 		$type = "corporation";
-    // 		$docType = "cnpj";
-    // 	}
-
-    // 	$customer = array(
-    // 		"name" 				=> $user->getFullName(),
-    // 		"documents" 		=> array(
-    // 			array(
-    // 				'type'			=> $docType,
-    // 				'number' 		=> $user->document
-    // 			),
-                
-    // 		),
-    // 		"email" 			=> $user->email,
-    // 		"external_id"		=> (string) $user->id,
-    // 		"type"				=> $type,
-    // 		"country"			=> "br",
-    // 		"phone_numbers" 	=> array(
-                
-    // 				"+55".(string) $user->getLongDistance().(string) $user->getPhoneNumber()
-    // 		)
-    // 	);
-
-    // 		return $customer ;
-    // }
 
     private function getCustomer(Payment $payment)
     {
@@ -422,6 +441,7 @@ class PagarmeLib2 implements IPayment
         $customer = array(
             "name" 				=> $user->getFullName(),
             "email" 			=> $user->email,
+            "document_number"   => $documentNumber,
             "documents" => [
                             [
                                 'type'			=> $docType,
@@ -431,7 +451,21 @@ class PagarmeLib2 implements IPayment
             "external_id"		=> (string) $user->id,
             "type"				=> $type,
             "country"			=> "br",
-            "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber())
+            "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber()),
+            "phone" => array(
+                "ddi" => $phoneLib->getDDI(),
+                "ddd" => $phoneLib->getDDD(),
+                "number" => $phoneLib->getPhoneNumber()
+            ),
+            "address" => array(
+                "street" => $user->getStreet(),
+                "street_number" => $user->getStreetNumber(),
+                "neighborhood" => $user->getNeighborhood(),
+                "city" => $user->address_city,
+                "state" => $user->state,
+                "zipcode" => $zipcode,
+                "country" => "br"
+            ),
         );
 
         return $customer ;
@@ -470,7 +504,7 @@ class PagarmeLib2 implements IPayment
             ]);
 
             if ($pagarMeTransaction == null) {
-                throw new PagarMe_Exception("Transaction not found.","Transaction","Transação não encontrada");
+                throw new PagarMeException("Transaction not found.","Transaction","Transação não encontrada");
             }
 
             if ($amount > $pagarMeTransaction->amount) {
@@ -490,17 +524,30 @@ class PagarmeLib2 implements IPayment
                 'paid' => ($pagarMeTransaction->status == self::PAGARME_PAID),
                 'transaction_id' => strval($pagarMeTransaction->id)
             );
-        } catch (PagarMe_Exception $ex) {
+        } catch (PagarMeException $ex) {
             \Log::error($ex->getMessage().$ex->getTraceAsString());
 
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_capture_error' ,
                 "code" 						=> $ex->getCode() ,
-                "message" 					=> trans("paymentError.".$ex->getCode()) ,
+                "message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()) ,
                 "transaction_id"			=> $transaction->gateway_transaction_id
             );
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
 
     public function refund(Transaction $transaction, Payment $payment)
@@ -516,7 +563,7 @@ class PagarmeLib2 implements IPayment
                 \Log::debug("[refund]parameters:". print_r($refund, 1));
                 
                 if(!$refund){
-                    throw new PagarMe_Exception("not_found","refund","Transaction not found.");
+                    throw new PagarMeException("not_found","refund","Transaction not found.");
                 }
                 $refund = $pagarme->transactions()->refund([
                     'id' => $transaction->gateway_transaction_id,
@@ -579,7 +626,7 @@ class PagarmeLib2 implements IPayment
               
 
                 if ($pagarMeTransaction == null) {
-                    throw new PagarMe_Exception("not_found","transaction","Transaction not found.");
+                    throw new PagarMeException("not_found","transaction","Transaction not found.");
                 }
 
                 //criar regra de split e capturar valores
@@ -617,17 +664,30 @@ class PagarmeLib2 implements IPayment
                     'transaction_id' => $pagarMeTransaction->id
                 );
             
-        } catch (PagarMe_Exception $ex) {
+        } catch (PagarMeException $ex) {
             \Log::error($ex->getMessage().$ex->getTraceAsString());
 
             return array(
                 "success" 					=> false ,
                 "type" 						=> 'api_capture_error' ,
                 "code" 						=> $ex->getCode() ,
-                "message" 					=> trans("paymentError.".$ex->getCode()) ,
+                "message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()) ,
                 "transaction_id"			=> $transaction->gateway_transaction_id
             );
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
 
     public function retrieve(Transaction $transaction, Payment $payment = null)
@@ -701,7 +761,7 @@ class PagarmeLib2 implements IPayment
                 $recipient = $pagarme->recipients()->get([
                     'id' => $ledgerBankAccount->recipient_id
                 ]);
-            } catch (PagarMe_Exception $ex) {
+            } catch (PagarMeException $ex) {
                 \Log::error($ex->__toString().$ex->getTraceAsString());
             }
         } else {
@@ -778,19 +838,30 @@ class PagarmeLib2 implements IPayment
                 "success" 					=> true ,
                 "recipient_id" 				=> $return['recipient_id']
             );
-        } catch (PagarMe_Exception  $ex) {
+        } catch (PagarMeException  $ex) {
             \Log::error($ex->__toString().$ex->getTraceAsString());
 
-            $return = array(
+            return array(
                 "success" 					=> false ,
                 "recipient_id"				=> null,
                 "type" 						=> 'api_bankaccount_error' ,
                 "code" 						=> $ex->getCode() ,
-                "message" 					=> trans("empty.".$ex->getMessage())
+                "message" 					=> MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage())
             );
-
-            return $return;
         }
+		catch(Exception $ex)
+		{
+			\Log::error($ex->getMessage().$ex->getTraceAsString());
+
+			return array(
+				"success" 					=> false ,
+				"type" 						=> 'api_charge_error' ,
+				"code" 						=> $ex->getCode() ,
+				"message" 					=> MessageException::handleMessageServerException($ex->getMessage()),
+				"transaction_id"			=> '',
+				"status"					=> 'error'
+			);		
+		}
     }
 
     public function deleteCard(Payment $payment, User $user = null)

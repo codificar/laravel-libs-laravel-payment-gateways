@@ -16,37 +16,36 @@ class MessageExceptionPagarme
         $message = strtolower($message);
         switch ($message) {
             case Functions::contains($message, 'message: recipient não encontrado'):
-                $errorMessage = trans('paymentGateway::paymentError.recipient_not_found_or_outdated');
+                return trans('paymentGateway::paymentError.recipient_not_found_or_outdated');
                 break;
             case Functions::contains($message, 'card não encontrado'):
-                $errorMessage = trans('paymentGateway::paymentError.card_not_registered');
+                return trans('paymentGateway::paymentError.card_not_registered');
                 break;
             case Functions::contains($message, 'invalid cpf'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined_cpf');
+                return trans('paymentGateway::paymentError.transaction_declined_cpf');
                 break;
             case Functions::contains($message, 'refused'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined');
+                return trans('paymentGateway::paymentError.transaction_declined');
                 break;
             case Functions::contains($message, '"number" is not allowed to be empty'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined_address_number');
+                return trans('paymentGateway::paymentError.transaction_declined_address_number');
                 break;
             case Functions::contains($message, '"neighborhood" is not allowed to be empty'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined_neighborhood');
+                return trans('paymentGateway::paymentError.transaction_declined_neighborhood');
                 break;
             case Functions::contains($message, 'invalid_parameter'):
-                $message = explode("MESSAGE:", $message);
-                $errorMessage = trim($message[1]);
+                $message = explode("message:", $message);
+                return trim($message[1]);
                 break;
             case Functions::contains($message, '"unit_price" must be an integer'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined');
+                return trans('paymentGateway::paymentError.transaction_declined');
                 break;
             case Functions::contains($message, '"phone_numbers" at position 0 fails'):
-                $errorMessage = trans('paymentGateway::paymentError.transaction_declined');
+                return trans('paymentGateway::paymentError.transaction_declined');
                 break;
             default:
-            	$errorMessage = $message . ' ' . trans('paymentGateway::paymentError.refused') ;
+            	return trans('paymentGateway::paymentError.refused') . ": $message" ;
                 break;
         }
-        return $errorMessage;
     }
 }
