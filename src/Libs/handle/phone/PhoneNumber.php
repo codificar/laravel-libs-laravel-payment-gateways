@@ -81,11 +81,11 @@ class PhoneNumber
      */
        public function getPhoneNumber($isDDD = false, $isDDI = false)
     {
-        if($this->phoneNumber) {
+        if($this->number) {
             return intval(
                 ($isDDI ? $this->ddi : '') . 
                 ($isDDD ? $this->ddd : '') . 
-                    $this->phoneNumber
+                    $this->number
             );
         }
         return null;

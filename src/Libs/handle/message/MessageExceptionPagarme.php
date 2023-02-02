@@ -37,6 +37,10 @@ class MessageExceptionPagarme
                 $message = explode("message:", $message);
                 return trim($message[1]);
                 break;
+            case Functions::contains($message, 'fails because'):
+                $message = explode("fails because", $message);
+                return trim(last($message));
+                break;
             case Functions::contains($message, '"unit_price" must be an integer'):
                 return trans('paymentGateway::paymentError.transaction_declined');
                 break;
