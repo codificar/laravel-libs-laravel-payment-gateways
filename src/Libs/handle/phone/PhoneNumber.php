@@ -7,7 +7,7 @@ class PhoneNumber
     private string $phoneNumber;
     private int $ddi = 0;
     private int $ddd = 0;
-    private int $number = 0;
+    private string $number = "";
 
     /**
      * Constructor for phone number format and fill all fields to phone number
