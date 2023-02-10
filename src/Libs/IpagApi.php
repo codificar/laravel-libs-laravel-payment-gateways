@@ -129,9 +129,17 @@ class IpagApi
         return $captureRequest;
     }
 
-    public static function captureById($transaction_ID, $amount)
+    /**
+     * Capture gateway charge by transaction_id 
+     * @param int $transactionId
+     * @param float $amount
+     * 
+     * @return mixed $captureRequest
+     * 
+     */
+    public static function captureById($transactionId, $amount)
     {
-        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction_ID);
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transactionId);
 
         if($amount)
             $url = sprintf('%s&valor=%s', $url, $amount);
