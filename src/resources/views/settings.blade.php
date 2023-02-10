@@ -6,10 +6,10 @@
 <div class="row page-titles">
 	<div class="col-md-6 col-8 align-self-center">
 
-		<h3 class="text-themecolor m-b-0 m-t-0">{{ trans('paymentGateway::setting.conf')}}</h3>
+		<h3 class="text-themecolor m-b-0 m-t-0">{{ trans('paymentgateway::setting.conf')}}</h3>
 		<ol class="breadcrumb">
-			<li class="breadcrumb-item"><a href="javascript:void(0)">{{ trans('paymentGateway::setting.home') }}</a></li>
-			<li class="breadcrumb-item active">{{ trans('paymentGateway::setting.gateways') }}</li>
+			<li class="breadcrumb-item"><a href="javascript:void(0)">{{ trans('paymentgateway::setting.home') }}</a></li>
+			<li class="breadcrumb-item active">{{ trans('paymentgateway::setting.gateways') }}</li>
 		</ol>
 	</div>
 </div>	

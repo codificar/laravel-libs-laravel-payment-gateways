@@ -111,8 +111,8 @@ export default {
             this.isLoading = false;
             this.listWebhooks = response.data.data.webhooks;
             this.messageWebhook = this.trans("setting.failed_retreive_webhook");
-            if(response.data.data.message) {
-              this.messageWebhook = this.trans(`setting.${response.data.data.message}`);
+            if(response.data.message) {
+              this.messageWebhook = response.data.message;
             }
           })
           .catch((error) => {

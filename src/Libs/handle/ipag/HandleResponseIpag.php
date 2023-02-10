@@ -118,7 +118,7 @@ class HandleResponseIpag
 				'data' 	=> [],
 				'error' 	=> array(
 					"code" 		=> \ApiErrors::API_ERROR,
-					"messages" 	=> array(trans('paymentGateway::paymentError.refused'))
+					"messages" 	=> array(trans('paymentgateway::paymentError.refused'))
 				)
 			);
 

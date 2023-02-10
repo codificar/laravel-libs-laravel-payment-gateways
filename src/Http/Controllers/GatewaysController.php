@@ -495,13 +495,13 @@ class GatewaysController extends Controller
                     $message = 'Webhooks recuperados com sucesso';
                 } catch (Exception $th) {
                     \Log::error($th->getMessage());
-                    $message = 'Erro ao recuperar webhooks: ' . $th->getMessage();
+                    $message = trans('paymentgateway::paymentError.error_retrieve_webhook', ['error' => $th->getMessage()]);
                 }
             } else {
-                $message = 'Para recuperar webhooks, é necessário ter o gateway ipag ativo';
+                $message = trans('paymentgateway::paymentError.error_ipag_pix_gateway_disabled');
             }
         } else {
-            $message = 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo';
+            $message = trans('paymentgateway::paymentError.error_pix_gateway_disabled');
         }
 
         // Return data

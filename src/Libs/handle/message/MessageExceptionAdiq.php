@@ -17,13 +17,13 @@ class MessageExceptionAdiq
         $message = strtolower($message);
         switch ($message) {
             case Functions::contains($message, 'erro interno'):
-                return trans('paymentGateway::paymentError.adiq_internal_error');
+                return trans('paymentgateway::paymentError.adiq_internal_error');
                 break;
             case Functions::contains($message, '91-transaction nao autorizada'):
-                return trans('paymentGateway::paymentError.adiq_error_brand');
+                return trans('paymentgateway::paymentError.adiq_error_brand');
                 break;
             default:
-                return trans('paymentGateway::paymentError.refused') . ": $message" ;
+                return trans('paymentgateway::paymentError.refused') . ": $message" ;
                 break;
         }
     }

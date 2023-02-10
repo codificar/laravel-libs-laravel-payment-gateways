@@ -15,7 +15,7 @@ class MessageException
      * @return String Error messge to response
      */
     public static function handleMessageException(String $message, String $exceptionName) {
-		return "ERROR $exceptionName: " . $message . ' ' . trans('paymentGateway::paymentError.refused') ;
+		return "ERROR $exceptionName: " . $message . ' ' . trans('paymentgateway::paymentError.refused') ;
     }
 
 	 /**
@@ -28,13 +28,13 @@ class MessageException
     public static function handleMessageServerException(String $message) {
         switch ($message) {
             case Functions::contains($message, '500 Internal Server Error'):
-                return trans('paymentGateway::paymentError.500');
+                return trans('paymentgateway::paymentError.500');
                 break;
             case Functions::contains($message, '504 Gateway Timeout'):
-                return trans('paymentGateway::paymentError.504');
+                return trans('paymentgateway::paymentError.504');
                 break;
             default:
-                return trans('paymentGateway::paymentError.refused') . ": $message" ;
+                return trans('paymentgateway::paymentError.refused') . ": $message" ;
                 break;
         }
     }

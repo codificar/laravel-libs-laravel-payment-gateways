@@ -23,5 +23,8 @@ return array(
 	
 	'card_not_authorized' 	=> 'Oops! Não autorizado pelo emissor do cartão.',
 	'customer_card_invalid' 	=> 'Oops! dados de cartão inválidos, por favor verifique e tente novamente.',
-	'canceled'	=> 'Oops cancelado, por favor verifique seu dados e tente novamente.'
+	'canceled'	=> 'Oops cancelado, por favor verifique seu dados e tente novamente.',
+	'error_retrieve_webhook' => 'Erro ao recuperar webhooks: :error',
+	'error_pix_gateway_disabled' => 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo',
+	'error_ipag_pix_gateway_disabled' => 'Para recuperar webhooks, é necessário ter o gateway ipag ativo'
 );
