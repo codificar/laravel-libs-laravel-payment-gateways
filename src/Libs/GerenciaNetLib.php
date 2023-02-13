@@ -240,14 +240,6 @@ class GerenciaNetLib implements IPayment
 
 	private function formatCustomer($user, $fisical_person = true)
 	{
-        $phone = $user->getPhone();
-        try {
-            $phoneLib = new PhoneNumber($phone);
-            $phone = $phoneLib->getPhoneNumber();
-        } catch (Exception $e) {
-            \Log::error($e->getMessage() . $e->getTraceAsString());
-        }
-
 		if ($fisical_person) {
 			return [
 				'name' => $user->getFullName(),
