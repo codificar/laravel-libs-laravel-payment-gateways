@@ -42,7 +42,7 @@ class GerenciaNetLib implements IPayment
 	//Define split automático com provider
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
-	public function __construct()
+    public function __construct()
 	{
 		$this->setApiKey();
 	}
@@ -99,7 +99,6 @@ class GerenciaNetLib implements IPayment
 		// 	'until_date' => '2019-08-30' // data máxima para aplicação do desconto
 		// ];
 		$valid = $this->validateData($user->document, $expire);
-		
 		if ($valid['success']) {
 			try {
 				$data = [
@@ -113,7 +112,6 @@ class GerenciaNetLib implements IPayment
 						'custom_id' => '' . $invoice_id
 					];
 				}
-
 				$pay_charge = $this->getApi()->oneStep([], $data);
 
 				return $pay_charge;
@@ -244,8 +242,8 @@ class GerenciaNetLib implements IPayment
 	{
         $phone = $user->getPhone();
         try {
-            $phoneLib = new PhoneNumber($user->getPhone());
-            $phone = $phoneLib->getPhoneNumber(true);
+            $phoneLib = new PhoneNumber($phone);
+            $phone = $phoneLib->getPhoneNumber();
         } catch (Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
@@ -254,10 +252,8 @@ class GerenciaNetLib implements IPayment
 			return [
 				'name' => $user->getFullName(),
 				'cpf' => $user->document,
-				'phone_number' => $phone,
-				//'phone_number' => substr($user->getPhone(), 3),
-				// 'email' => $user->getEmail(),
-				// 'birth' => $user->birthdate //Não obrigatório
+				'phone_number' => substr($user->getPhone(), 3),
+
 			];
 		} else {
 			return [
@@ -265,8 +261,7 @@ class GerenciaNetLib implements IPayment
 					'corporate_name' => $user->first_name,
 					'cnpj' => $user->document,
 				],
-				'phone_number' => $phone,
-				//'phone_number' => substr($user->getPhone(), 3),
+				'phone_number' => substr($user->getPhone(), 3),
 			];
 		}
 	}
