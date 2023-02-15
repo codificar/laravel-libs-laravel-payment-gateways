@@ -244,7 +244,7 @@ class GerenciaNetLib implements IPayment
 			return [
 				'name' => $user->getFullName(),
 				'cpf' => $user->document,
-				'phone_number' => substr($user->getPhone(), 3),
+                'phone_number' => str_contains($user->getPhone(), '+') ? substr($user->getPhone(), 3) : $user->getPhone(),
 
 			];
 		} else {
@@ -253,7 +253,7 @@ class GerenciaNetLib implements IPayment
 					'corporate_name' => $user->first_name,
 					'cnpj' => $user->document,
 				],
-				'phone_number' => substr($user->getPhone(), 3),
+                'phone_number' => str_contains($user->getPhone(), '+') ? substr($user->getPhone(), 3) : $user->getPhone(),
 			];
 		}
 	}
