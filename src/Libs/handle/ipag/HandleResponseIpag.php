@@ -47,6 +47,7 @@ class HandleResponseIpag
 
     public static $isSuccess              = false;
     public static $isData                 = false;
+    public static $isWebhookList          = false;
     public static $isWebhookResponse      = false;
     public static $isAttributes           = false;
     public static $isSellerResponse       = false;
@@ -68,7 +69,8 @@ class HandleResponseIpag
     {
         self::$isSuccess = isset($response->success) && filter_var($response->success, FILTER_VALIDATE_BOOLEAN);
         self::$isData = isset($response->data) && !empty($response->data);
-        self::$isWebhookResponse = self::$isData && isset($response->data->resource) && !empty($response->data->resource) && $response->data->resource == self::RESOURCE_SELLER;
+        self::$isWebhookList = self::$isData && isset($response->data->links) && !empty($response->data->links);
+        self::$isWebhookResponse = self::$isData && isset($response->data->resource) && !empty($response->data->resource) && $response->data->resource == self::RESOURCE_WEBHOOK;
         self::$isAttributes = self::$isData && isset($response->data->attributes);
         self::$isSellerResponse = self::$isData && isset($response->data->resource) && $response->data->resource == self::RESOURCE_SELLER;
         self::$isStatus = self::$isAttributes && isset($response->data->attributes->status) && !empty($response->data->attributes->status);
@@ -92,7 +94,8 @@ class HandleResponseIpag
             self::initVars($response);
             // Em caso de sucesso retorn o data para maniular
             if( self::$isSuccess &&
-                (   self::$isSellerResponse || self::$isWebhookResponse || 
+                (   self::$isSellerResponse || self::$isWebhookResponse ||
+                    self::$isWebhookList  ||
                     self::$isAprroved || self::$statusWaitingPayment
                 ) 
             ) {
