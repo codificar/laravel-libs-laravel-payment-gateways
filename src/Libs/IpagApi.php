@@ -610,12 +610,19 @@ class IpagApi
         $document = null;
         if($client && isset($client->document) && !empty($client->document)) {
             try {
-                    $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
-                    $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
-                    $document = vsprintf($mask, str_split($document));
-                } catch(\Exception $e) {
-                    \Log::error($e->getMessage() . $e->getTraceAsString());
+                $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
+                if((strlen($document)) > 11) {
+                    $mask = $cnpjMask;
                 }
+                if((strlen($document)) == 11) {
+                    $mask = $cpfMask;
+                }
+                if($mask) {
+                    $document = vsprintf($mask, str_split($document));
+                }
+            } catch(\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
 
         if($payment)
