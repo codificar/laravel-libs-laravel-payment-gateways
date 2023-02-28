@@ -11,6 +11,7 @@ use Codificar\PaymentGateways\Models\GatewaysLibModel;
 
 // Importar Resource
 use Codificar\PaymentGateways\Commands\GatewayUpdateDependenciesJob;
+use Codificar\PaymentGateways\Commands\UpdateLedgerBankJob;
 use Codificar\PaymentGateways\Http\Resources\WebhookResource;
 use Config;
 use Exception;
@@ -245,7 +246,7 @@ class GatewaysController extends Controller
         $pix_gateways['list_gateways'] = $this->payment_pix_gateways;
         $pix_gateways['default_payment_pix'] = Settings::findByKey('default_payment_pix');
         $pix_gateways['pix_key'] = Settings::findByKey('pix_key');
-        $pix_gateways['billet_gateway_provider'] = Settings::findByKey('billet_gateway_provider');
+        $pix_gateways['billet_gateway_provider'] = Settings::getBilletProvider();
         //recupera as chaves de todos os gateways de pix
         foreach ($this->keys_pix_gateways as $key => $values) {
             foreach ($values as $value) {
@@ -326,6 +327,21 @@ class GatewaysController extends Controller
                 //Verifica se a key existe
                 if(in_array($key, $this->keys_settings)) {
                     $this->updateOrCreateSettingKey($key, $value);
+                }
+            }
+             // atualiza os dados bancários pelo gateway se split estiver ativo
+            $isSplit = filter_var(\Settings::findByKey('auto_transfer_provider_payment', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $actualGateway = \Settings::findByKey('default_payment', 'cielo');
+
+            if($isSplit && ($actualGateway == 'ipag' || $actualGateway == 'pagarme')) {
+                try {
+                    $ledgerBankAccounts = GatewaysLibModel::getLedgerBankAccountToUpdate($actualGateway);
+                    
+                    foreach(array_chunk($ledgerBankAccounts, 50) as $banks) { 
+                        UpdateLedgerBankJob::dispatch($banks);
+                    }
+                } catch(Exception $e) {
+                    \Log::error($e->getMessage() . $e->getTraceAsString());
                 }
             }
         }
@@ -479,13 +495,13 @@ class GatewaysController extends Controller
                     $message = 'Webhooks recuperados com sucesso';
                 } catch (Exception $th) {
                     \Log::error($th->getMessage());
-                    $message = 'Erro ao recuperar webhooks: ' . $th->getMessage();
+                    $message = trans('paymentgateway::paymentError.error_retrieve_webhook', ['error' => $th->getMessage()]);
                 }
             } else {
-                $message = 'Para recuperar webhooks, é necessário ter o gateway ipag ativo';
+                $message = trans('paymentgateway::paymentError.error_ipag_pix_gateway_disabled');
             }
         } else {
-            $message = 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo';
+            $message = trans('paymentgateway::paymentError.error_pix_gateway_disabled');
         }
 
         // Return data

@@ -111,8 +111,8 @@ export default {
             this.isLoading = false;
             this.listWebhooks = response.data.data.webhooks;
             this.messageWebhook = this.trans("setting.failed_retreive_webhook");
-            if(response.data.data.message) {
-              this.messageWebhook = this.trans(`setting.${response.data.data.message}`);
+            if(response.data.message) {
+              this.messageWebhook = response.data.message;
             }
           })
           .catch((error) => {
@@ -585,6 +585,9 @@ export default {
       <div class="card-outline-info">
         <div class="card-header">
           <h4 class="m-b-0 text-white">{{ trans("setting.pay_gateway") }}</h4>
+          <span class="enviroment text-white" v-if="EnviromentActive">
+            {{ trans("setting.enviromentActive") }}: <b>{{ trans(`setting.${EnviromentActive}`) || '' }}</b>
+          </span>
         </div>
         <div class="card-block">
           <div class="row">
@@ -3061,5 +3064,8 @@ export default {
 
 .enviroment {
   font-size: 11px;
+}
+.text-white {
+  color: '#FFFFFF' !important;
 }
 </style>
