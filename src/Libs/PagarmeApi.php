@@ -13,7 +13,6 @@ use LedgerBankAccount;
 use Settings;
 use Bank;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
-use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class PagarmeApi
 {

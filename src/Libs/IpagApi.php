@@ -87,9 +87,20 @@ class IpagApi
 
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
-        
-        //dd($url, $header, $body);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        $isForceCapture = $chargeSplitRequest 
+            && $chargeSplitRequest->success 
+            && isset($chargeSplitRequest->data->attributes->status->code)
+            && $chargeSplitRequest->data->attributes->status->code == 5
+            && isset($chargeSplitRequest->data->attributes->antifraud->status) 
+            && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
+            && $capture;
+
+        if($isForceCapture){
+            self::captureById($chargeSplitRequest->data->id, $amount);
+        }
+        
         return $chargeSplitRequest;
     }
 
@@ -107,6 +118,28 @@ class IpagApi
     public static function capture(Transaction $transaction, $amount)
     {
         $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+
+        if($amount)
+            $url = sprintf('%s&valor=%s', $url, $amount);
+
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        return $captureRequest;
+    }
+
+    /**
+     * Capture gateway charge by transaction_id 
+     * @param int $transactionId
+     * @param float $amount
+     * 
+     * @return mixed $captureRequest
+     * 
+     */
+    public static function captureById($transactionId, $amount)
+    {
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transactionId);
 
         if($amount)
             $url = sprintf('%s&valor=%s', $url, $amount);
@@ -245,15 +278,15 @@ class IpagApi
         $provider       =   Provider::find($ledgerBankAccount->provider_id);
         $bank           =   Bank::find($ledgerBankAccount->bank_id);
 
-        try {
-            $phoneLib = new PhoneNumber($provider->phone);
-            $phone = $phoneLib->getPhoneNumberFormatedBR(false);
-        } catch (\Exception $e) {
-            \Log::error($e->getMessage() . $e->getTraceAsString());
-        }
-
-        if(!$phone) {
-            $phone = '(31) 99999-9999'; //if the phone has save error
+        $phone = '(31) 99999-9999';
+        if($provider && $provider->phone) {
+            $phone = preg_replace("/[^0-9]/", "", $provider->phone);
+            try {
+                $phoneLib = new PhoneNumber($phone);
+                $phone = $phoneLib->getPhoneNumberFormatedBR(false);
+            } catch (\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
         $bankObject = (object) array();
         if($bank && $ledgerBankAccount &&
@@ -268,19 +301,37 @@ class IpagApi
             );
         }
 
+        $login = substr(uniqid(), 0, 50);
+        if($provider->email) {
+            $login = substr($provider->email, 0, 50);
+        }
+
+        $password = substr(uniqid(), 0, 6);
+        if($provider->document) {
+            $passwordRemask = self::remaskDocument($provider->document);
+            if($passwordRemask) {
+                $password = substr($passwordRemask, 0, 6);
+            }
+        }
+
+
         $fields = (object)array(
-            'login'         =>  $provider->email,
-            'password'      =>  preg_replace('/\D/', '', $provider->document),
-            'name'          =>  $ledgerBankAccount->holder,
-            'email'         =>  $provider->email,
-            'phone'         =>  $phone,
+            'login'         => $login,
+            'password'      => $password,
+            'name'          => $ledgerBankAccount->holder,
+            'email'         => $provider->email,
+            'phone'         => $phone,
             'bank'          => $bankObject  
         );
 
-        $documentRemask = self::remaskDocument(preg_replace('/\D/', '', $ledgerBankAccount->document));
-        $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
-
-        if(strlen($ledgerBankAccount->document) >= 11) {
+        $documentRemask = self::remaskDocument($ledgerBankAccount->document);
+        if($documentRemask) {
+            $fields = array_merge((array)$fields, ['cpf_cnpj'=> $documentRemask]); //document remask BR
+        } else {
+            \Log::info('[remaskDocument] Document Invalid $ledgerBankAccount: ' . json_encode($ledgerBankAccount) );
+        }
+        if($ledgerBankAccount->document && strlen($ledgerBankAccount->document) >= 11) {
+            
             $birthday = $ledgerBankAccount->birthday_date;
             $date = DateTime::createFromFormat('Y-m-d', $birthday);
             
@@ -289,7 +340,10 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
-            $documentOwnerRemask = self::remaskDocument(preg_replace('/\D/', '', $provider->document));
+            $documentOwnerRemask = self::remaskDocument($provider->document);
+            if(!$documentRemask) {
+                \Log::info('[remaskDocument] Document Invalid $provider: ' . json_encode($provider) );
+            }
 
             $fields['owner'] = (object)array(
                 'name'      =>  $provider->first_name . $provider->last_name,
@@ -307,11 +361,27 @@ class IpagApi
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
         
         // caso dê erro pq já existe o seller ele tenta atualizar por document
-        if($documentRemask && !$accountRequest->success && strpos($accountRequest->message, 'already exists') !== false) {
-            $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
-            $verb = self::PUT_REQUEST;
-            // tenta atualizar o seller
+        if($documentRemask && !$accountRequest->success && 
+        strpos($accountRequest->message, 'already exists') !== false) {
+            if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
+                $fields['login'] = substr(uniqid() . $login, 0, 50);
+                $body = json_encode($fields);
+            } else {
+                $url = sprintf('%s/resources/sellers?cpf_cnpj=%s', self::apiUrl(), $documentRemask);
+                $verb = self::PUT_REQUEST;
+                unset($fields['login']);
+                $body = json_encode($fields);    
+            }
+            // tenta criar/atualizar o seller
             $accountRequest = self::apiRequest($url, $body, $header, $verb);
+            
+            // verifica se é o login que está duplicado e altera
+            if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
+                $fields['login'] = substr(uniqid() . $login, 0, 50);
+                $body = json_encode($fields);
+                // tenta atualizar o seller
+                $accountRequest = self::apiRequest($url, $body, $header, $verb);
+            }
         }
         
         if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
@@ -539,8 +609,20 @@ class IpagApi
         
         $document = null;
         if($client && isset($client->document) && !empty($client->document)) {
-            $mask = ((strlen($client->document)) > 11) ? $cnpjMask : $cpfMask;
-            $document = vsprintf($mask, str_split($client->document));
+            try {
+                $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
+                if((strlen($document)) > 11) {
+                    $mask = $cnpjMask;
+                }
+                if((strlen($document)) == 11) {
+                    $mask = $cpfMask;
+                }
+                if($mask) {
+                    $document = vsprintf($mask, str_split($document));
+                }
+            } catch(\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
 
         if($payment)
@@ -568,7 +650,7 @@ class IpagApi
         else
         {
             $type   = 'boleto';
-            $method = Settings::findByKey('billet_gateway_provider');;
+            $method = Settings::getBilletProvider();
         }
 
         if($client && strlen($client->state) > 2) {
@@ -581,7 +663,7 @@ class IpagApi
             : $orderId;
 
         $phone = '(31) 99999-9999';
-        if($client) {
+        if($client && $client->phone) {
             $phone = preg_replace('/\D/', '', $client->phone);
             try {
                 $phoneLib = new PhoneNumber($client->phone);
@@ -674,6 +756,35 @@ class IpagApi
         return json_encode($fields);
     }
 
+    /**
+    * Get split information
+    *
+    * EX: 
+    * Transação no valor de R$100,00
+    * Taxa: 4,99%.
+    * Necessário realizar split de R$50,00 para o vedendor #1.
+    *
+    * 1. Você deseja repassar toda a taxa ao vendedor#1? 
+    * - Se sim, neste caso é necessário calcular o valor da taxa do seu lado, e realizar um split já com o desconto. Ex.: R$50,00 - R$4,99 = R$45,01.
+    * - OBS: É importante que a flag "charge_processing_fee" esteja com valor "false", ou seja omitido o campo. 
+    * 
+    * 2. Você deseja repassar R$50,00 e a taxa proporcional ao valor deverá ser descontada? 
+    * - Se sim, neste caso basta enviar o valor de R$50,00, e ativar a flag "charge_processing_fee" enviado como "true". 
+    * - Com isso o valor final será de R$50,00 - (R$50,00 * 4,99%) = R$47,50.
+    *
+    * 3. Você deseja repassar exatamente R$50,00 sem nenhum desconto. 
+    * - Neste caso basta enviar o valor de R$50,00 e não ativar a flag "charge_processing_fee".
+    *
+    *
+    * Está sendo utilizado nesse caso a opcão 3.
+    *
+    * @param int $providerId
+    * @param float $providerAmount
+    * @param int $sellerId
+    *
+    * @return array array with information about split to specific seller id
+    *
+    */
     private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
@@ -690,7 +801,7 @@ class IpagApi
             $sellerIndex            =>  $sellerId->recipient_id,
             'amount'                =>  floatval($providerAmount),
             'liable'                =>  true,
-            'charge_processing_fee' =>  true
+            'charge_processing_fee' =>  false
         );
 
         return $fields;
@@ -797,13 +908,22 @@ class IpagApi
         }
     }
 
-    private static function remaskDocument($document)
+    /**
+     * Remask document to CPF or CNPJ
+     * @param String $document String document to remask
+     * @return String formated or empty string
+     */
+    private static function remaskDocument(String $document)
     {
-        $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
-        $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
-        $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
-
-        return vsprintf($mask, str_split($document));
+        if($document && strlen($document) >= 11 ) {
+            $document = preg_replace('/[^0-9]/', '', $document);
+            $cnpjMask = "%s%s.%s%s%s.%s%s%s/%s%s%s%s-%s%s";
+            $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
+            $mask = ((strlen($document)) > 11) ? $cnpjMask : $cpfMask;
+            $remaskedDocument = vsprintf($mask, str_split($document));
+            return $remaskedDocument;
+        }
+        return null;
     }
 
     public static function retrieveHooks($isPix = false)

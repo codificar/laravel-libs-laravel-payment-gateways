@@ -293,5 +293,85 @@ class GatewaysLibModel extends Eloquent
             }
         }
     }
+
+    /**
+     * Get all ledger bank account with a valid provider
+     * @param string $actualGateway Gateway ativo
+     * @return Array of LedgerBankAccount collections 
+     */
+    public static function getLedgerBankAccountToUpdate(String $actualGateway)
+    {
+        return \LedgerBankAccount::select('ledger_bank_account.*')
+            ->where('gateway', '!=', $actualGateway)
+            ->join('provider', 'provider_id', '=', 'provider.id')
+            ->whereNotNull('provider_id')
+            ->where(function($query) {
+                $query->whereNull('recipient_id')
+                ->orWhere('recipient_id', '=', 'empty')
+                ->orWhere('recipient_id', '=', '');
+            })
+            ->where(function($query) {
+                $query->whereNotNull('ledger_bank_account.document')
+                    ->Where('ledger_bank_account.document', '!=', 'empty')
+                    ->Where('ledger_bank_account.document', '!=', '')
+                    ->Where('ledger_bank_account.document', '!=', 'null');
+            })
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * Update all bank account by job
+     * @param array $ledgerBankAccounts
+     * @return void
+     */
+    public static function UpdateBankAccounts(Array $ledgerBankAccounts){
+
+        foreach ($ledgerBankAccounts as $ledgerBankAccount)
+        {
+            $ledgerBankAccount = \LedgerBankAccount::where(['id' => $ledgerBankAccount['id']])
+                ->first();
+            
+            if($ledgerBankAccount) {
+                echo print_r("\n - ID: [ " . $ledgerBankAccount->id . " ]");
+                echo print_r("\n - Name: [" . $ledgerBankAccount->holder . "]");
+
+                try {
+                    $response = \LedgerBankAccount::createOrUpdateByGateway(
+                        $ledgerBankAccount->provider_id,
+                        $ledgerBankAccount->holder,
+                        $ledgerBankAccount->document,
+                        $ledgerBankAccount->bank_id,
+                        $ledgerBankAccount->agency,
+                        $ledgerBankAccount->agency_digit,
+                        $ledgerBankAccount->account,
+                        $ledgerBankAccount->account_digit,
+                        $ledgerBankAccount->account_type,
+                        $ledgerBankAccount->person_type,
+                        $ledgerBankAccount->birthday_date,
+                        $ledgerBankAccount->provider_document_id
+                    );
+
+                    if($response && isset($response['success']) && $response['success']) {
+                        $ledgerBankAccount->recipient_id = $response['recipient_id'];
+                        $ledgerBankAccount->gateway = $response['gateway'];
+                        $ledgerBankAccount->save();
+
+                        $isSave = filter_var($response['success'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) 
+                            ? 'Salvo/Atualizado' 
+                            : 'Não Salvo/Atualizado'; 
+                        echo print_r("\n # status: " . $isSave . "\n\n");
+                    } else {
+                        echo print_r("\n # Não atualizado \n\n" );
+                    }
+
+                } catch (Exception $e) {
+                    \Log::error($e->getMessage() . $e->getTraceAsString());
+                    continue;
+                }
+
+            }
+        }
+    }
     
 }
