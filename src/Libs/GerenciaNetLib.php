@@ -98,7 +98,8 @@ class GerenciaNetLib implements IPayment
 		// 	'value' => 500, // porcentagem de desconto
 		// 	'until_date' => '2019-08-30' // data máxima para aplicação do desconto
 		// ];
-		$valid = $this->validateData($user->document, $expire);
+        $user->document = preg_replace('/[^0-9]/', '', $user->document);
+        $valid = $this->validateData($user->document, $expire);
 		if ($valid['success']) {
 			try {
 				$data = [
@@ -243,17 +244,17 @@ class GerenciaNetLib implements IPayment
 		if ($fisical_person) {
 			return [
 				'name' => $user->getFullName(),
-				'cpf' => $user->document,
-                'phone_number' => str_contains($user->getPhone(), '+') ? substr($user->getPhone(), 3) : $user->getPhone(),
+				'cpf' => preg_replace('/[^0-9]/', '', $user->document),
+                'phone_number' =>preg_replace('/[^0-9]/', '', $user->getPhone()),
 
 			];
 		} else {
 			return [
 				'juridical_person' => [
 					'corporate_name' => $user->first_name,
-					'cnpj' => $user->document,
+					'cnpj' => preg_replace('/[^0-9]/', '', $user->document),
 				],
-                'phone_number' => str_contains($user->getPhone(), '+') ? substr($user->getPhone(), 3) : $user->getPhone(),
+                'phone_number' => preg_replace('/[^0-9]/', '', $user->getPhone()),
 			];
 		}
 	}
