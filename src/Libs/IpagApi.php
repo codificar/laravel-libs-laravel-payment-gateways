@@ -28,6 +28,10 @@ class IpagApi
     const GET_REQUEST   =   'GET';
     const PUT_REQUEST   =   'PUT';
 
+    const ANTIFRAUD_APPROVED = 'approved';
+    const ANTIFRAUD_PENDING = 'pending';
+    const STATUS_CODE_PRE_AUTHORIZED = 5;
+
     /**
      * Defines gateway base URL
      *
@@ -89,20 +93,32 @@ class IpagApi
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
-        $isForceCapture = $chargeSplitRequest 
-            && $chargeSplitRequest->success 
-            && isset($chargeSplitRequest->data->attributes->status->code)
-            && $chargeSplitRequest->data->attributes->status->code == 5
-            && isset($chargeSplitRequest->data->attributes->antifraud->status) 
-            && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
-            && $capture;
 
-        if($isForceCapture){
-            self::captureById($chargeSplitRequest->data->id, $amount);
+        if(self::isForceCapture($chargeSplitRequest, $capture)){
+            $chargeSplitRequest = self::captureById($chargeSplitRequest->data->id, $amount);
         }
         
         return $chargeSplitRequest;
     }
+
+    /**
+     * Verify force capture in request
+     * @param object $chargeSplitRequest
+     * @param bool $capture
+     * 
+     * @return bool
+     */
+    public static function isForceCapture(object $chargeSplitRequest, $capture): bool
+    {
+        return $chargeSplitRequest 
+            && $chargeSplitRequest->success 
+            && isset($chargeSplitRequest->data->attributes->status->code)
+            && $chargeSplitRequest->data->attributes->status->code == self::STATUS_CODE_PRE_AUTHORIZED
+            && isset($chargeSplitRequest->data->attributes->antifraud->status) 
+            && ($chargeSplitRequest->data->attributes->antifraud->status == self::ANTIFRAUD_PENDING ||
+                $chargeSplitRequest->data->attributes->antifraud->status == self::ANTIFRAUD_APPROVED) 
+            && $capture;
+    } 
 
     /**
      * Captures a authorized charge by ID
