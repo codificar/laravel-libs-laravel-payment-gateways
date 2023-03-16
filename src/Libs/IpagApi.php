@@ -691,7 +691,7 @@ class IpagApi
     
 
         $fields         =   (object)array(
-            'amount'            =>  $amount,
+            'amount'            =>  floatval(number_format($amount, 2)),
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
@@ -719,7 +719,7 @@ class IpagApi
                 (object)array(
                     'name'          =>  substr((string) Settings::findByKey('gateway_product_title'), 0, 80)." - ".$requestId,
                     'description'   =>  substr((string) Settings::findByKey('gateway_product_title'), 0, 254),
-                    'unit_price'    =>  $amount,
+                    'unit_price'    =>  floatval(number_format($amount, 2)),
                     'quantity'      =>  1,
                     'sku'           =>  "$requestId"
                 )
@@ -753,7 +753,7 @@ class IpagApi
                 'products'  =>  (object)array(
                     (object)array(
                         'name'          =>  Settings::findByKey('website_title'),
-                        'unit_price'    =>  $amount,
+                        'unit_price'    =>  floatval(number_format($amount, 2)),
                         'quantity'      =>  1
                     )
                 )
@@ -778,7 +778,7 @@ class IpagApi
     * EX: 
     * Transação no valor de R$100,00
     * Taxa: 4,99%.
-    * Necessário realizar split de R$50,00 para o vedendor #1.
+    * Necessário realizar split de R$50,00 para o vendedor #1.
     *
     * 1. Você deseja repassar toda a taxa ao vendedor#1? 
     * - Se sim, neste caso é necessário calcular o valor da taxa do seu lado, e realizar um split já com o desconto. Ex.: R$50,00 - R$4,99 = R$45,01.
@@ -792,7 +792,7 @@ class IpagApi
     * - Neste caso basta enviar o valor de R$50,00 e não ativar a flag "charge_processing_fee".
     *
     *
-    * Está sendo utilizado nesse caso a opcão 3.
+    * Está sendo utilizado nesse caso a opção 3.
     *
     * @param int $providerId
     * @param float $providerAmount
@@ -815,8 +815,8 @@ class IpagApi
 
         $fields = (object)array(
             $sellerIndex            =>  $sellerId->recipient_id,
-            'amount'                =>  floatval($providerAmount),
-            'liable'                =>  true,
+            'amount'                =>  floatval(number_format($providerAmount, 2)),
+            'liable'                =>  false,
             'charge_processing_fee' =>  false
         );
 

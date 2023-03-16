@@ -92,7 +92,7 @@ class HandleResponseIpag
     {
         try {
             self::initVars($response);
-            // Em caso de sucesso retorn o data para maniular
+            // Em caso de sucesso retornar o data para manipular
             if( self::$isSuccess &&
                 (   self::$isSellerResponse || self::$isWebhookResponse ||
                     self::$isWebhookList  ||
