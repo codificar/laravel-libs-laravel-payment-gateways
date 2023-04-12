@@ -7,6 +7,9 @@ use Carbon\Carbon;
 use Codificar\PaymentGateways\Libs\PagarmeApi;
 
 use ApiErrors;
+use Codificar\PaymentGateways\Libs\handle\pagarme\HandleResponsePagarmeV5;
+use Codificar\PaymentGateways\Libs\handle\message\MessageExceptionPagarme;
+use Codificar\PaymentGateways\Utils\Functions;
 use Exception;
 //models do sistema
 use Payment;
@@ -133,39 +136,24 @@ class PagarmeLib implements IPayment
     {
         try {
             $response = PagarmeApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $response = HandleResponsePagarmeV5::handle($response);
 
-            if (
-                isset($response->success) &&
-                $response->success &&
-                isset($response->data) &&
-                (
-                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
-                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
-                )
-            ) {
-                $statusMessage = $response->data->charges[0]->last_transaction->status;
-                $result = array(
-                    'success'           =>  true,
-                    'captured'          =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                    'paid'              =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,
-                    'status'            =>  $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'authorized',
-                    'transaction_id'    =>  (string)$response->data->charges[0]->id
-                );
-                return $result;
-            } else {
-                return array(
-                    "success"           => false ,
-                    'status'            => self::PAYMENT_ERROR,
-                    'data'              => null,
-                    'transaction_id'    => -1,
-                    'error' => array(
-                        "code"      => ApiErrors::CARD_ERROR,
-                        "messages"  => array(trans('creditCard.customerCreationFail'))
-                    )
-                );
+            if(!$response['success']){
+                return $response;
             }
+
+            $response = $response['data'];
+            $statusMessage = $response->data->charges[0]->last_transaction->status;
+            return array(
+                'success'           =>  true,
+                'captured'          =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                'paid'              =>  $statusMessage == self::GATEWAY_CAPTURED ? true : false,
+                'status'            =>  $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'authorized',
+                'transaction_id'    =>  (string)$response->data->charges[0]->id
+            );
+            
         } catch (Exception $th) {
-            Log::error($th->__toString());
+            Log::error($th->getMessage() . $th->getTraceAsString());
 
 			return array(
 				"success"           =>  false ,
@@ -219,20 +207,24 @@ class PagarmeLib implements IPayment
                 );
             }
         } catch (\Throwable $th) {
-            Log::error($th->getMessage());
+            Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success" 				=> false ,
                 "type" 					=> 'api_charge_error' ,
                 "code" 					=> '',
-                "message" 				=> $th->getMessage(),
+                "message" 				=> MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 "transaction_id"		=> ''
             );
         }
     }
 
     /**
-     * Trata o postback retornado pelo gateway
+     * Handles the postback returned by the gateway
+     * 
+     * @param Request       $request
+     * @param Integer       $transaction_id 
+     * @return array
      */
     public function billetVerify($request, $transaction_id = null)
     {
@@ -265,7 +257,7 @@ class PagarmeLib implements IPayment
                 'transaction_id'    =>  $retrieve['transaction_id']
             ];
         } catch (Exception $ex) {
-            Log::error($ex->getMessage());
+            Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return [
                 'success'       =>  false,
@@ -335,11 +327,12 @@ class PagarmeLib implements IPayment
                 );
             }
         } catch (\Throwable $th) {
-            Log::error($th->__toString());
+            Log::error($th->getMessage() . $th->getTraceAsString());
             
             return array(
                 "success" 	=> false ,
                 'data' 		=> null,
+                "message"   => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 'error' 	=> array(
                     "code" 		=> ApiErrors::CARD_ERROR,
                     "messages" 	=> array(trans('creditCard.customerCreationFail'))
@@ -360,16 +353,26 @@ class PagarmeLib implements IPayment
     public function capture(Transaction $transaction, $amount, Payment $payment = null)
     {
         try {
+            $retrieve = PagarmeApi::retrieve($transaction);
+            if($retrieve && $retrieve->data->status == self::GATEWAY_PAID){
+                return array(
+                    'success' 		 => true,
+                    'captured' 		 => true,
+                    'paid' 			 => true,
+                    'status' 		 => 'paid',
+                    'transaction_id' => (string)$transaction->id,
+                );
+            }
+            
             $response = PagarmeApi::capture($transaction, $amount);
+            $responseVerify = isset($response->success) &&
+            $response->success 
+            && isset($response->data) 
+            && $response->data->last_transaction->status 
+            && $response->data->last_transaction->status == self::GATEWAY_CAPTURED;
 
-            if (
-                isset($response->success) &&
-                $response->success &&
-                isset($response->data) &&
-                $response->data->last_transaction->status == self::GATEWAY_CAPTURED
-            ) {
+            if($responseVerify){
                 $statusMessage = $response->data->last_transaction->status;
-
                 return array(
                     'success' 		 => true,
                     'captured' 		 => $statusMessage == self::GATEWAY_CAPTURED ? true : false,
@@ -377,22 +380,22 @@ class PagarmeLib implements IPayment
                     'status' 		 => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : '',
                     'transaction_id' => (string)$response->data->id
                 );
-            } else {
+            }else {
                 return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
+                "success" 	=> false ,
+                'data' 		=> null,
+                'error' 	=> array(
                         "code" 		=> ApiErrors::CARD_ERROR,
                         "messages" 	=> array(trans('creditCard.customerCreationFail'))
                     )
                 );
             }
-        } catch (\Throwable $th) {
-            Log::error($th->__toString());
-
+        }catch (\Throwable $th) {
+            Log::error($th->getMessage() . $th->getTraceAsString());
             return array(
                 "success" 	=> false ,
                 'data' 		=> null,
+                "message"   => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 'error' 	=> array(
                     "code" 		=> ApiErrors::CARD_ERROR,
                     "messages" 	=> array(trans('creditCard.customerCreationFail'))
@@ -414,7 +417,7 @@ class PagarmeLib implements IPayment
         try {
             return $this->refund($transaction, $payment);
         } catch (\Throwable $ex) {
-            Log::error($ex->__toString());
+            Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
@@ -454,13 +457,13 @@ class PagarmeLib implements IPayment
                 return $result;
             }
         } catch (\Throwable $ex) {
-            Log::error($ex->__toString());
+            Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             return array(
                 "success" 			=> false ,
                 "type" 				=> 'api_refund_error' ,
                 "code" 				=> 'api_refund_error',
-                "message" 			=> $ex->getMessage(),
+                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($e->getMessage()),
                 "transaction_id" 	=> ''
             );
         }
@@ -499,17 +502,17 @@ class PagarmeLib implements IPayment
                     "success" 			=> false ,
                     "type" 				=> 'api_retrieve_error' ,
                     "code" 				=> 'api_retrieve_error',
-                    "message" 			=> $response->message
+                    "message" 			=> MessageExceptionPagarme::handleMessagePagarmeException($response->message)
                 );
             }
         } catch (\Throwable $th) {
-            Log::error($th->__toString());
+            Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success" 			=>  false ,
                 "type" 				=>  'api_refund_error' ,
                 "code" 				=>  'api_refund_error',
-                "message" 			=>  $th->getMessage(),
+                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 "transaction_id" 	=>  ''
             );
         }
@@ -556,7 +559,6 @@ class PagarmeLib implements IPayment
         return $result;
     }
 
-
     /**
      *  Create accounts for users
      *
@@ -572,7 +574,7 @@ class PagarmeLib implements IPayment
             if ($newAccount->success && isset($newAccount->data->id)) {
                 $ledgerBankAccount->recipient_id = $newAccount->data->id;
                 if($ledgerBankAccount->gateway) {
-                    $ledgerBankAccount->gateway = 'cielo';
+                    $ledgerBankAccount->gateway = 'pagarme';
                 }
                 $ledgerBankAccount->save();
                 $result = array(
@@ -588,14 +590,14 @@ class PagarmeLib implements IPayment
 
             return $result;
         } catch (\Throwable $ex) {
-            Log::error($ex->__toString());
+            Log::error($ex->getMessage() . $ex->getTraceAsString());
 
             $result = array(
                 "success"               =>  false ,
                 "recipient_id"          =>  null,
                 "type"                  =>  'api_bankaccount_error' ,
                 "code"                  =>  500 ,
-                "message"               =>  trans("empty.".$ex->getMessage())
+                "message"               => MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()),
             );
 
             return $result;
@@ -657,7 +659,14 @@ class PagarmeLib implements IPayment
         }
     }
 
-    //finish
+    /**
+     * Make a charge with debit card
+     * 
+     * @param Payment $payment
+     * @param Decimal    $amount
+     * @param string  $description
+     * @return array
+     */
     public function debit(Payment $payment, $amount, $description)
     {
         try {
@@ -690,12 +699,13 @@ class PagarmeLib implements IPayment
                 );
             }
         } catch (Exception $th) {
-            Log::error($th->__toString());
+            \Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success"           =>  false ,
                 'data'              =>  null,
                 'transaction_id'    =>  '',
+                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 'error' => array(
                     "code"      =>  ApiErrors::CARD_ERROR,
                     "messages"  =>  array(trans('creditCard.customerCreationFail'))
@@ -704,7 +714,17 @@ class PagarmeLib implements IPayment
         }
     }
 
-    //finish
+    /**
+     * Make a debit charge with split
+     *
+     * @param Payment        $payment 
+     * @param Provider       $provider   
+     * @param Decimal        $totalAmount
+     * @param Decimal        $providerAmount 
+     * @param string         $description 
+     *  
+     * @return array 
+     */
     public function debitWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description)
     {
         Log::error('debit_split_not_implemented');
@@ -722,9 +742,7 @@ class PagarmeLib implements IPayment
      * Returns status string based on status code
      *
      * @param Integer        $statusCode    Payment status code captured on gateway.
-     *
      * @return String                       String related to the payment status code.
-     *
      */
     private function getStatusString($statusCode)
     {
@@ -761,6 +779,13 @@ class PagarmeLib implements IPayment
         }
     }
 
+    /**
+     * Make a charge with pix
+     * 
+     * @param Decimal $amount
+     * @param User    $user
+     * @return array
+     */
     public function pixCharge($amount, $user)
     {
         try {
@@ -790,13 +815,13 @@ class PagarmeLib implements IPayment
                 );
             }
         } catch (\Throwable $th) {
-            Log::error($th->getMessage());
+            Log::error($th->getMessage() . $th->getTraceAsString());
 
             return array(
                 "success" 				=>  false,
                 "type" 					=>  'api_charge_error',
                 "code" 					=>  '',
-                "message" 				=>  $th->getMessage(),
+                "message"               => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
                 "transaction_id"		=>  '',
                 'billet_expiration_date'=>  ''
             );
@@ -818,6 +843,14 @@ class PagarmeLib implements IPayment
         }
     }
 
+    /**
+     * Verifi the pix status
+     *
+     * @param integer       $transaction_id     
+     * @param request       $request     
+     *
+     * @return array
+     */
     public function retrievePix($transaction_id, $request = null)
     {
         \Log::error('retrieve_pix_not_implemented');

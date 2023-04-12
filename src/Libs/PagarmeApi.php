@@ -33,7 +33,6 @@ class PagarmeApi
      * @param Object       $user        Object that represents a user on system.
      * @param Float        $amount      Total value of service.
      * @param Boolean      $capture     Informs if charge have immediate capture.
-     *
      * @return Object      {
      *                      'success',
      *                      'data',
@@ -59,7 +58,6 @@ class PagarmeApi
      * @param Float        $amount          Total value of service.
      * @param Float        $providerAmount  Corresponding value to provider service.
      * @param Boolean      $capture         Informs if charge have immediate capture.
-     *
      * @return Object      {
      *                      'success',
      *                      'data',
@@ -81,7 +79,6 @@ class PagarmeApi
      * Captures a authorized charge by ID
      *
      * @param Object       $transaction     Object that represents a transaction on system.
-     *
      * @return Object      {
      *                      'success',
      *                      'data',
@@ -92,7 +89,7 @@ class PagarmeApi
     {
         $url = sprintf('%s/charges/%s/capture', self::URL, $transaction->gateway_transaction_id);
 
-        $body       =   $amount ? (object)array('amount' => self::amountRound($amount)) : null;
+        $body       =   $amount ? array('amount' => self::amountRound($amount)) : null;
         $header     =   self::getHeader(true);
         $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -104,7 +101,6 @@ class PagarmeApi
      *
      * @param Object       $transaction     Object that represents a transaction on system.
      * @param Object       $provider        Object that represents a provider on system.
-     *
      * @return Object      {
      *                      'success',
      *                      'data',
@@ -125,7 +121,6 @@ class PagarmeApi
      * Retrives a gateway transaction by ID
      *
      * @param Object       $transaction     Object that represents a transaction on system.
-     *
      * @return Object      {
      *                      'success',
      *                      'data',
@@ -143,6 +138,16 @@ class PagarmeApi
         return $retrieveRequest;
     }
 
+    /**
+     * Retrives a gateway transaction by ID
+     *
+     * @param Transaction $transaction 
+     * @return Object      {
+     *                      'success',
+     *                      'data',
+     *                      ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function refund(Transaction $transaction)
     {
         $url = sprintf('%s/charges/%s', self::URL, $transaction->gateway_transaction_id);
@@ -153,6 +158,16 @@ class PagarmeApi
         return $refundRequest;
     }
 
+    /**
+     * Create or update your bank account
+     *
+     * @param LedgerBankAccount     $ledgerBankAccount
+     * @return Object               {
+     *                                  'success',
+     *                                  'data',
+     *                                  ?'message' //if it fails, with false success
+     *                              }
+     */
     public static function createOrUpdateAccount(LedgerBankAccount $ledgerBankAccount)
     {
         if(
@@ -217,6 +232,16 @@ class PagarmeApi
         return $accountRequest;
     }
 
+    /**
+     * Get the recipient data
+     *
+     * @param  Integer     $sellerId
+     * @return Object      {
+     *                       'success',
+     *                       'data',
+     *                       ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function getSeller($sellerId)
     {
         $url = sprintf('%s/recipients/%s', self::URL, $sellerId);
@@ -228,6 +253,16 @@ class PagarmeApi
         return $sellerRequest;
     }
 
+    /**
+	 * Função para gerar boletos de pagamentos
+     * 
+	 * @param LedgerBankAccount $ledgerBankAccount
+     * @return Object      {
+     *                      'success',
+     *                      'recipient_id',
+     *                      ?'is_active'
+     *                     }
+	 */
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $sellerId = $ledgerBankAccount->recipient_id;
@@ -253,39 +288,21 @@ class PagarmeApi
         );
         $ledgerBankAccount->recipient_id = $response->data->id;
         $ledgerBankAccount->save();
-
-        // else
-        // {
-        //     #TODO remover após job de recriar recipients ao trocar gateway
-        //     $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
-        //     if($newAccount->success)
-        //     {
-        //         $ledgerBankAccount->recipient_id = $newAccount->data->id;
-        //         $ledgerBankAccount->save();
-        //         $result = (object)array(
-        //             'success'       =>  true,
-        //             'recipient_id'  =>  $ledgerBankAccount->recipient_id,
-        //             'is_active'     =>  $newAccount->data->attributes->is_active
-        //         );
-        //     }
-        //     else
-        //     {
-        //         $result = (object)array(
-        //             'success'       =>  false,
-        //             'recipient_id'  =>  ""
-        //         );
-        //     }
-        // }
-
         return $result;
     }
 
     /**
-	 * Função para gerar boletos de pagamentos
-	 * @param int $amount valor do boleto
+	 * Function to generate payment slips
+     * 
+	 * @param Decimal $amount valor do boleto
 	 * @param User/Provider $client instância do usuário ou prestador
-	 * @param string $boletoExpirationDate data de expiração do boleto
-	 */
+	 * @param String $boletoExpirationDate data de expiração do boleto
+     * @return Object      {
+     *                      'success',
+     *                      'data',
+     *                      ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function billetCharge($amount, $client, $boletoExpirationDate)
     {
         $url = sprintf('%s/orders/', self::URL);
@@ -297,6 +314,17 @@ class PagarmeApi
         return $billetRequest;
     }
 
+    /**
+	 * Make a charge with pix
+     * 
+	 * @param Decimal   $amount valor do boleto
+	 * @param User/Provider $client instância do usuário ou prestador
+     * @return Object      {
+     *                      'success',
+     *                      'data',
+     *                      ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function pixCharge($amount, $user)
     {
         $url = sprintf('%s/orders/', self::URL);
@@ -308,6 +336,17 @@ class PagarmeApi
         return $pixRequest;
     }
 
+    /**
+	 * Make a charge with debit
+     * 
+     * @param Payment   $payment
+	 * @param Decimal   $amount valor do boleto
+     * @return Object      {
+     *                      'success',
+     *                      'data',
+     *                      ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function debit(Payment $payment, $amount)
     {
         $url = sprintf('%s/orders/', self::URL);
@@ -319,6 +358,11 @@ class PagarmeApi
         return $debitRequest;
     }
 
+    /**
+	 * Get OrderId
+     * 
+     * @return String   $orderId
+     */
     private static function getOrderId()
     {
         list($microSeconds, $seconds) = explode(" ", microtime());
@@ -327,6 +371,12 @@ class PagarmeApi
         return $orderId;
     }
 
+    /**
+	 * Get the expiration date
+     * 
+     * @param Payment   $orderId
+     * @return String   $expDate
+     */
     private static function getExpirationDate($payment)
     {
         $month = $payment->getCardExpirationMonth();
@@ -339,6 +389,12 @@ class PagarmeApi
         return $expDate;
     }
 
+    /**
+	 * Do the math of the amountround
+     * 
+     * @param  Decimal   $amount
+     * @return Decimal   $amount
+     */
     public static function amountRound($amount)
     {
         $amount = $amount * self::ROUND_VALUE;
@@ -347,6 +403,20 @@ class PagarmeApi
         return $amount;
     }
 
+    /**
+	 * Get the body information
+     * 
+     * @param  Payment   $payment
+     * @param  Decimal   $amount
+     * @param  Decimal   $providerAmount
+     * @param  Boolean   $capture
+     * @param  Provider  $provider
+     * @param  User      $client
+     * @param  String    $billetExpiry
+     * @param  Boolean   $isPix
+     * @param  Boolean   $isDebit
+     * @return Json
+     */
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false, $isDebit = false)
     {
         $paymentDocument = null;
@@ -475,6 +545,23 @@ class PagarmeApi
         return json_encode($fields);
     }
 
+    /**
+	 * Get the split information
+     * 
+     * @param  Integer   $providerId
+     * @param  Decimal   $totalAmount
+     * @param  Decimal   $totalAmount
+     * @return Object      {
+     *                      'amount',
+     *                      'recipient_id',
+     *                      'type',
+     *                      'options'{
+     *                          'charge_processing_fee'
+     *                          'charge_remainder_fee'
+     *                          'liable'
+     *                      }
+     *                     }
+     */
     private static function getSplitInfo($providerId, $providerAmount, $totalAmount)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
@@ -515,6 +602,11 @@ class PagarmeApi
         return $splitFields;
     }
 
+    /**
+	 * Prepare the header
+     * 
+     * @return Array
+     */
     private static function getHeader()
     {
         $token          =   self::makeToken();
@@ -529,6 +621,11 @@ class PagarmeApi
         return $header;
     }
 
+    /**
+	 * Prepare the header
+     * 
+     * @return String   $concateString
+     */
     private static function makeToken()
     {
         $pagarmeSecret  =   Settings::findObjectByKey('pagarme_secret_key');
@@ -548,6 +645,18 @@ class PagarmeApi
         return $concateString;
     }
 
+    /**
+	 * Make a structure to send a request
+     * 
+     * @param  String    $url
+     * @param  Array     $fields
+     * @param  Array     $header
+     * @param  String    $requestType
+     * @return Object      {
+     *                      'success',
+     *                      'message'
+     *                     }
+     */
     public static function apiRequest($url, $fields, $header, $requestType)
     {
         try
@@ -599,6 +708,11 @@ class PagarmeApi
         }
     }
 
+    /**
+	 * Prepare the header
+     * @param  String   $country
+     * @return String   $initials
+     */
     private static function countryInitials($country)
     {
         switch(strtolower($country))
@@ -625,6 +739,15 @@ class PagarmeApi
         return $initials;
     }
 
+    /**
+	 * Retrive billet or pix date
+     * 
+     * @return Object      {
+     *                      'success',
+     *                      'data',
+     *                      ?'message' //if it fails, with false success
+     *                     }
+     */
     public static function retrieveHooks()
     {
         $body       =   null;

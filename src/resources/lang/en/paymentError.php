@@ -20,4 +20,11 @@ return array(
 	'transaction_declined' 					=> 'Transaction declined, please try again with another card or different payment method!',
 	'transaction_declined_address_number' 	=> 'Transaction declined: Incorrect or empty address number, please try again with another address!',
 	'transaction_declined_neighborhood' 	=> 'Incorrect or empty neighborhood, please try again with another address!',
+
+	'card_not_authorized' 	=> 'Oops!Not authorized by the card issuer.',
+	'customer_card_invalid' 	=> 'Oops! Invalid card details, please check and try again.',
+	'canceled'	=> 'Oops canceled, please check your data and try again.',
+	'error_retrieve_webhook' => 'Error recovering webhooks: :error',
+	'error_pix_gateway_disabled' => 'It was not possible to recover webhooks, as the payment gateway is not active',
+	'error_ipag_pix_gateway_disabled' => 'To recover webhooks, you need to have the active iPag gateway'
 );

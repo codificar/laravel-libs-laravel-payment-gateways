@@ -338,13 +338,7 @@ Class IpagLib implements IPayment
         {
             //it's a system var, adm don't changes
             $responseHooks = IpagApi::retrieveHooks();
-            $responseHooks = HandleResponseIpag::handle($responseHooks);
-            
-            if(!$responseHooks['success']) {
-                return $responseHooks;
-            }
-
-            $webhooks = $this->getHostWebhooks($responseHooks['data']->data, $postbackUrl);
+            $webhooks = $this->getHostWebhooks($responseHooks->data->data, $postbackUrl);
             
             if(empty($webhooks) || !isset($webhooks)) {
                 $responseHooks = IpagApi::registerHook($postbackUrl);//criates a new hook

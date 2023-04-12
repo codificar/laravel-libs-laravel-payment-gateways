@@ -7,7 +7,7 @@ class PhoneNumber
     private string $phoneNumber;
     private int $ddi = 0;
     private int $ddd = 0;
-    private int $number = 0;
+    private string $number = "";
 
     /**
      * Constructor for phone number format and fill all fields to phone number
@@ -24,11 +24,17 @@ class PhoneNumber
      */
     private function treatNumber()
     {
-        if($this->phoneNumber && strlen($this->phoneNumber) >= 12) {
+        if($this->phoneNumber) {
             $cleanStrPhone = preg_replace("/[^0-9]/", "", trim($this->phoneNumber));
-            $ddi = mb_substr($cleanStrPhone, 0, 2);
-            $ddd = mb_substr($cleanStrPhone, 2, 2);
-            $number = mb_substr($cleanStrPhone, 4, strlen($cleanStrPhone));
+            if(strlen($this->phoneNumber) >= 12){
+                $ddi = mb_substr($cleanStrPhone, 0, 2);
+                $ddd = mb_substr($cleanStrPhone, 2, 2);
+                $number = mb_substr($cleanStrPhone, 4, strlen($cleanStrPhone));
+            }else{
+                $number = mb_substr($cleanStrPhone, -8, strlen($cleanStrPhone));
+                $ddi = "55";
+                $ddd = mb_substr($cleanStrPhone, 0, 2);
+            }
             $this->ddi = $ddi;
             $this->ddd = $ddd;
             
@@ -73,7 +79,7 @@ class PhoneNumber
      * @param boolea $isDDI when positive include ddi in return int
      * @return string phone number | 988663322 | 77988663322 | 5577988663322
      */
-    public function getPhoneNumber($isDDD = false, $isDDI = false)
+       public function getPhoneNumber($isDDD = false, $isDDI = false)
     {
         if($this->number) {
             return intval(

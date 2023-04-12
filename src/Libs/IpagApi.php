@@ -87,8 +87,20 @@ class IpagApi
 
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
-        
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        $isForceCapture = $chargeSplitRequest 
+            && $chargeSplitRequest->success 
+            && isset($chargeSplitRequest->data->attributes->status->code)
+            && $chargeSplitRequest->data->attributes->status->code == 5
+            && isset($chargeSplitRequest->data->attributes->antifraud->status) 
+            && $chargeSplitRequest->data->attributes->antifraud->status == "pending" 
+            && $capture;
+
+        if($isForceCapture){
+            self::captureById($chargeSplitRequest->data->id, $amount);
+        }
+        
         return $chargeSplitRequest;
     }
 
@@ -106,6 +118,28 @@ class IpagApi
     public static function capture(Transaction $transaction, $amount)
     {
         $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transaction->gateway_transaction_id);
+
+        if($amount)
+            $url = sprintf('%s&valor=%s', $url, $amount);
+
+        $body       =   null;
+        $header     =   self::getHeader(true);
+        $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        return $captureRequest;
+    }
+
+    /**
+     * Capture gateway charge by transaction_id 
+     * @param int $transactionId
+     * @param float $amount
+     * 
+     * @return mixed $captureRequest
+     * 
+     */
+    public static function captureById($transactionId, $amount)
+    {
+        $url = sprintf('%s/capture?id=%s', self::apiUrl(), $transactionId);
 
         if($amount)
             $url = sprintf('%s&valor=%s', $url, $amount);
@@ -254,7 +288,6 @@ class IpagApi
                 \Log::error($e->getMessage() . $e->getTraceAsString());
             }
         }
-
         $bankObject = (object) array();
         if($bank && $ledgerBankAccount &&
             $bank->code && $ledgerBankAccount->agency &&
@@ -584,9 +617,21 @@ class IpagApi
         $cpfMask = "%s%s%s.%s%s%s.%s%s%s-%s%s";
         
         $document = null;
-        if($client && isset($paymentDocument) && !empty($paymentDocument)) {
-            $mask = ((strlen($paymentDocument)) > 11) ? $cnpjMask : $cpfMask;
-            $document = vsprintf($mask, str_split($paymentDocument));
+        if($client && isset($client->document) && !empty($client->document)) {
+            try {
+                $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
+                if((strlen($document)) > 11) {
+                    $mask = $cnpjMask;
+                }
+                if((strlen($document)) == 11) {
+                    $mask = $cpfMask;
+                }
+                if($mask) {
+                    $document = vsprintf($mask, str_split($document));
+                }
+            } catch(\Exception $e) {
+                \Log::error($e->getMessage() . $e->getTraceAsString());
+            }
         }
 
         if($payment)
@@ -720,6 +765,35 @@ class IpagApi
         return json_encode($fields);
     }
 
+    /**
+    * Get split information
+    *
+    * EX: 
+    * Transação no valor de R$100,00
+    * Taxa: 4,99%.
+    * Necessário realizar split de R$50,00 para o vedendor #1.
+    *
+    * 1. Você deseja repassar toda a taxa ao vendedor#1? 
+    * - Se sim, neste caso é necessário calcular o valor da taxa do seu lado, e realizar um split já com o desconto. Ex.: R$50,00 - R$4,99 = R$45,01.
+    * - OBS: É importante que a flag "charge_processing_fee" esteja com valor "false", ou seja omitido o campo. 
+    * 
+    * 2. Você deseja repassar R$50,00 e a taxa proporcional ao valor deverá ser descontada? 
+    * - Se sim, neste caso basta enviar o valor de R$50,00, e ativar a flag "charge_processing_fee" enviado como "true". 
+    * - Com isso o valor final será de R$50,00 - (R$50,00 * 4,99%) = R$47,50.
+    *
+    * 3. Você deseja repassar exatamente R$50,00 sem nenhum desconto. 
+    * - Neste caso basta enviar o valor de R$50,00 e não ativar a flag "charge_processing_fee".
+    *
+    *
+    * Está sendo utilizado nesse caso a opcão 3.
+    *
+    * @param int $providerId
+    * @param float $providerAmount
+    * @param int $sellerId
+    *
+    * @return array array with information about split to specific seller id
+    *
+    */
     private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
@@ -736,7 +810,7 @@ class IpagApi
             $sellerIndex            =>  $sellerId->recipient_id,
             'amount'                =>  floatval($providerAmount),
             'liable'                =>  true,
-            'charge_processing_fee' =>  true
+            'charge_processing_fee' =>  false
         );
 
         return $fields;
