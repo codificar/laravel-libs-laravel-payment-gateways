@@ -419,14 +419,22 @@ class PagarmeApi
      */
     private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false, $isDebit = false)
     {
+        $paymentDocument = null;
         if($payment)
         {
 			$client     =   $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
             $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
-            $document = $client->document ? preg_replace( '/[^0-9]/', '', $client->document ) : '';
+
+            if($payment->document){
+                $paymentDocument = $payment->document;
+            }else{
+                $paymentDocument = $client->document;
+            }
+
+            $document = $paymentDocument ? preg_replace( '/[^0-9]/', '', $paymentDocument ) : '';
         }
 
-        $personType     =   ((strlen($client->document)) > 11) ? 'company' : 'individual';
+        $personType     =   ((strlen($paymentDocument)) > 11) ? 'company' : 'individual';
         $orderId        =   self::getOrderId();
 
         try {
