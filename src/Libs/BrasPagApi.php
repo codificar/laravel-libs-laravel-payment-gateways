@@ -262,6 +262,7 @@ class BraspagApi
 
     private function getBody($payment, $amount, $capture = false, $cardType, $user = null)
     {
+        $paymentDocument = null;
         $expirationDate = $this->getExpirationDate($payment);
 
         if(!$user)
@@ -276,7 +277,13 @@ class BraspagApi
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
 
-        $docType = ((strlen($user->document)) > 11) ? "CNPJ" : "CPF";
+        if($payment->document){
+            $paymentDocument = $payment->document;
+        }else{
+            $paymentDocument = $user->document;
+        }
+
+        $docType = ((strlen($paymentDocument)) > 11) ? "CNPJ" : "CPF";
 
         $orderId = $this->getOrderId();
 
@@ -289,7 +296,7 @@ class BraspagApi
             "Customer"  => (object)array(
                 'Name'          =>  $user->first_name.' '.$user->last_name.$this->prefixAccept,
                 "Email"         =>  $user->email,
-                "Identity"      =>  $user->document,
+                "Identity"      =>  $paymentDocument,
                 "Identitytype"  =>  $docType,
                 "Mobile"        =>  $phone,
                 "Phone"         =>  $phone,
