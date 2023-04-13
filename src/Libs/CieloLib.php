@@ -198,6 +198,9 @@ class CieloLib implements IPayment
      */
     public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
     {
+        $paymentDocument = null;
+        $client = null;
+
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
@@ -213,6 +216,31 @@ class CieloLib implements IPayment
 
         // Crie uma instância de Sale
         $saleData = new Sale(Uuid::uuid4()->toString());
+
+        if($payment->user_id) {
+            $client = User::find($payment->user_id);
+        } else if($payment->provider_id) {
+            $client = Provider::find($payment->provider_id);
+        }
+
+        if($payment->document){
+            $paymentDocument = $payment->document;
+        }else{
+            $paymentDocument = $client->getDocument();
+        }
+        
+        // Crie uma instância de Customer informando o nome do cliente,
+        // documento e seu endereço
+        $saleData->customer($client->getFullName())
+            ->setIdentity($paymentDocument)
+            ->address()
+            ->setZipCode($client->zipcode)
+                ->setCountry('BRA')
+                ->setState($this->convertStateString($client->state))
+                ->setCity($client->address_city)
+                ->setDistrict($client->address_neighbour)
+                ->setStreet($client->address)
+                ->setNumber($client->address_number);
 
         // Crie uma instância de Payment informando o valor do pagamento
         $cieloPayment = $saleData->payment($amount);
