@@ -134,6 +134,7 @@ class CieloLib implements IPayment
         $card->setCustomerName($cardHolder);
         $card->setCardNumber($cardNumber);
         $card->setHolder($cardHolder);
+        $card->setSecurityCode($cardCvv);
         $card->setExpirationDate(
             str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . "/" . $cardExpirationYear
         );
@@ -161,12 +162,13 @@ class CieloLib implements IPayment
         catch (CieloRequestException $e) {
             $error = $e->getCieloError();
             if(!$error) { $error = $e; }
-            \Log::error($error->getMessage()); //log cielo error
+            \Log::error($error->getMessage() . $e->getTraceAsString()); //log cielo error
             return $this->responseApiError('gateway_cielo.new_card_fail');
         } 
         //Capture general error
         catch(Exception $e){
             $error = $e->getMessage();
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.new_card_fail');
         }
     }
@@ -459,7 +461,7 @@ class CieloLib implements IPayment
 
             if($captureStatus != self::CODE_CONFIRMED)
 			{
-                return $this->responseApiError('paymentError.refused');
+                return $this->responseApiError('paymentError.capture_refused');
             }
 
             return array(
