@@ -293,11 +293,7 @@ class CieloLib implements IPayment
             \Log::error($error->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.charge_fail');
         } catch (Exception $e) {
-
-            $error = $e->getCieloError();
-            if(!$error)
-                $error = $e;
-            \Log::error($error->getMessage() . $e->getTraceAsString());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.charge_fail');
         }
     }
