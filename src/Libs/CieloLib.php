@@ -208,7 +208,7 @@ class CieloLib implements IPayment
             return $responseConf;
 
         $captureStatus = self::CODE_NOTFINISHED;
-        $amount = floor(floatval($amount) * 100);
+        $amount = round((floatval($amount) * 100), 2);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');
@@ -292,6 +292,13 @@ class CieloLib implements IPayment
                 $error = $e;
             \Log::error($error->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.charge_fail');
+        } catch (Exception $e) {
+
+            $error = $e->getCieloError();
+            if(!$error)
+                $error = $e;
+            \Log::error($error->getMessage() . $e->getTraceAsString());
+            return $this->responseApiError('gateway_cielo.charge_fail');
         }
     }
 
@@ -319,7 +326,7 @@ class CieloLib implements IPayment
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
         
-        $amount = floor($amount * 100);
+        $amount = round(($amount * 100) , 2);
 
         // Crie uma instância de Sale
         $sale = new Sale(Uuid::uuid4());
@@ -441,7 +448,7 @@ class CieloLib implements IPayment
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
 
-        $amount = floor(floatval($amount) * 100);
+        $amount = round((floatval($amount) * 100), 2);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');
@@ -754,7 +761,7 @@ class CieloLib implements IPayment
         if(isset($responseConf['success']) && !$responseConf['success'])
             return $responseConf;
 
-        $amount = floor(floatval($amount) * 100);
+        $amount = round((floatval($amount) * 100), 2);
 
         if($amount <= 0)
             return $this->responseApiError('gateway_cielo.amount_negative');
