@@ -801,7 +801,6 @@ class PagarmeLib2 implements IPayment
 
             if (!$recipient) {
                 $recipient = $pagarme->recipients()->create([
-                    'bank_account_id' => $bankAccount["bank_code"],
                     'transfer_day' => $recipientData["transfer_day"],
                     'transfer_enabled' => $recipientData["transfer_enabled"], 
                     'transfer_interval' => $recipientData["transfer_interval"],
@@ -839,7 +838,7 @@ class PagarmeLib2 implements IPayment
                 "recipient_id" 				=> $return['recipient_id']
             );
         } catch (PagarMeException  $ex) {
-            \Log::error($ex->__toString().$ex->getTraceAsString());
+            \Log::error($ex->getMessage().$ex->getTraceAsString());
 
             return array(
                 "success" 					=> false ,
