@@ -9,6 +9,7 @@ use Codificar\PaymentGateways\Libs\handle\message\MessageException;
 use Codificar\PaymentGateways\Libs\handle\message\MessageExceptionPagarme;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
+use GuzzleHttp\Exception\RequestException;
 use PagarMe\Client as PagarMe;
 use PagarMe\Exceptions\PagarMeException;
 //models do sistema
@@ -278,9 +279,10 @@ class PagarmeLib2 implements IPayment
 				"status"					=> 'error'
 			);		
 		}
-		catch(Exception $ex)
+		catch(RequestException $ex)
 		{
 			\Log::error($ex->getMessage().$ex->getTraceAsString());
+            \Log::error(print_r($ex->getResponse()->getBody()->getContents(), true));
 
 			return array(
 				"success" 					=> false ,
@@ -315,7 +317,7 @@ class PagarmeLib2 implements IPayment
             $recipient = $pagarme->recipients()->get([
                 'id' => $id
             ]);
-            if ($recipient) {
+            if (!$recipient) {
                 throw new PagarMeException("not_found","recepient","Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.");
             }
 
@@ -484,9 +486,12 @@ class PagarmeLib2 implements IPayment
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
+
+        $documentNumber = preg_replace( '/[^0-9]/', '', $user->document);
         $customer = array(
             "name" 				=> $user->getFullName(),
             "email" 			=> $user->email,
+            "document_number"   => $documentNumber,
             "external_id"		=> (string) $user->id,
             "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber())
         );
@@ -697,6 +702,9 @@ class PagarmeLib2 implements IPayment
             'id' => $transaction->gateway_transaction_id
         ]);
 
+        if(is_array($pagarmeTransaction)) {
+            $pagarmeTransaction = $pagarmeTransaction[0];
+        }
         return array(
             'success' => true,
             'transaction_id' => strval($pagarmeTransaction->id),

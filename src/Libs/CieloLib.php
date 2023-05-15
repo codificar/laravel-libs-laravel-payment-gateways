@@ -459,6 +459,10 @@ class CieloLib implements IPayment
             if(strlen($responseRetrieve['transaction_id']) != 36)
                 return $this->responseApiError('gateway_cielo.paymentid_lenght_fail');
 
+            if($amount != $responseRetrieve['amount']) {
+                $amount = $responseRetrieve['amount'];
+            }
+
             $sale           =   $this->cieloEcommerce->captureSale($responseRetrieve['transaction_id'], $amount, 0);
             $captureStatus  =   $sale->getStatus();
 
@@ -935,6 +939,8 @@ class CieloLib implements IPayment
         \Log::error('pix_not_implemented');
         return array(
             "success" 			=> false,
+            "error" 			=> 'gateway_cielo.pix_not_implemented',
+            "message" 			=> 'pix_not_implemented',
             "qr_code_base64"    => '',
             "copy_and_paste"    => '',
             "transaction_id" 	=> ''

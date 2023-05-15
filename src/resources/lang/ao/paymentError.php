@@ -10,7 +10,7 @@ return array(
 	'adiq_error_brand'		=> 'Oops, não conseguimos finalizar o seu pagamento, por favor tente com um cartão de outra bandeira.',
 
 	//Ipag message
-	'not_authorized'		=> 'Oops Ação/Transação Autorizada',
+	'not_authorized'		=> 'Oops Ação/Transação não autorizada',
 	'customer_blacklisted'	=> 'O gateway não aceitou seu cartão, por favor tente em 2 ou 3 dias ou com outro metodo de pagamento',
 
 	//Pagarme message
@@ -26,5 +26,6 @@ return array(
 	'canceled'	=> 'Oops cancelado, por favor verifique seu dados e tente novamente.',
 	'error_retrieve_webhook' => 'Erro ao recuperar webhooks: :error',
 	'error_pix_gateway_disabled' => 'Não foi possível recuperar webhooks, pois o gateway de pagamento não está ativo',
-	'error_ipag_pix_gateway_disabled' => 'Para recuperar webhooks, é necessário ter o gateway ipag ativo'
+	'error_ipag_pix_gateway_disabled' => 'Para recuperar webhooks, é necessário ter o gateway ipag ativo',
+	'admin_recipient_not_found' => 'Não foi possível concluir a requisição, por favor tente mais tarde ou com outro método de pagamento.',
 );

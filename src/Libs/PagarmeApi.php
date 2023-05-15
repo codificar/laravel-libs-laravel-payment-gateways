@@ -307,7 +307,7 @@ class PagarmeApi
     {
         $url = sprintf('%s/orders/', self::URL);
 
-        $header     =   self::getHeader(true);
+        $header     =   self::getHeader();
         $body       =   self::getBody(null, $amount, null, false, null, $client, $boletoExpirationDate);
         $billetRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
@@ -422,17 +422,22 @@ class PagarmeApi
         $paymentDocument = null;
         if($payment)
         {
-			$client     =   $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
-            $paymentType=   $isDebit ? 'debit_card' : 'credit_card';
+            if(!$client) {
+                $client = $payment->user_id != null ? User::find($payment->user_id) : Provider::find($payment->provider_id);
+
+            }
+            $paymentType = $isDebit ? 'debit_card' : 'credit_card';
 
             if($payment->document){
                 $paymentDocument = $payment->document;
-            }else{
-                $paymentDocument = $client->document;
             }
-
-            $document = $paymentDocument ? preg_replace( '/[^0-9]/', '', $paymentDocument ) : '';
         }
+        
+        if($client && !$paymentDocument) {
+            $paymentDocument = $client->document;
+        }
+
+        $document = $paymentDocument ? preg_replace( '/[^0-9]/', '', $paymentDocument ) : '';
 
         $personType     =   ((strlen($paymentDocument)) > 11) ? 'company' : 'individual';
         $orderId        =   self::getOrderId();
