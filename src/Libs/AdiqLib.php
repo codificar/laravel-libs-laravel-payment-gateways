@@ -76,6 +76,12 @@ Class AdiqLib implements IPayment
                 return array(
                     "success" 	=> false ,
                     'data' 		=> null,
+                    'error' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
+                    'message' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
                     'transaction_id'    => $paymentId,
                     'error' 	=> array(
                         "code" 		=> ApiErrors::CARD_ERROR,
@@ -84,11 +90,13 @@ Class AdiqLib implements IPayment
                 );
             }
 		} catch (Exception $th) {
-			\Log::error('Error message: number One '.$th);
+			\Log::error($th->getMessage() . $th->getTraceAsString());
 			return array(
 				"success" 	=> false ,
 				'data' 		=> null,
 				'transaction_id'	=> $paymentId,
+                'error' 	=> $th->getMessage(),
+                'message' 	=> $th->getMessage(),
 				'error' 	=> array(
 					"code" 		=> ApiErrors::CARD_ERROR,
 					"messages" 	=> array(trans('creditCard.customerCreationFail'))
@@ -182,9 +190,16 @@ Class AdiqLib implements IPayment
 				);
 				return $result;
 			} else {
-                return array(
+                 return array(
                     "success" 	=> false ,
                     'data' 		=> null,
+                    'error' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
+                    'message' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
+                    'transaction_id'    => '',
                     'error' 	=> array(
                         "code" 		=> ApiErrors::CARD_ERROR,
                         "messages" 	=> array(trans('creditCard.customerCreationFail'))
@@ -243,6 +258,22 @@ Class AdiqLib implements IPayment
                 );
                 
                 return $result;
+            } else {
+                return array(
+                    "success" 	=> false ,
+                    'data' 		=> null,
+                    'error' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
+                    'message' 	=> isset($response->message) && isset($response->message) 
+                        ? $response->message
+                        : trans('creditCard.chargeFail'),
+                    'transaction_id'    => '',
+                    'error' 	=> array(
+                        "code" 		=> ApiErrors::CARD_ERROR,
+                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                    )
+                );
             }
 		
 		} catch (\Throwable $ex) {
@@ -276,7 +307,9 @@ Class AdiqLib implements IPayment
 				"success" 			=> false ,
 				"type" 				=> 'api_retrieve_error' ,
 				"code" 				=> 'api_retrieve_error',
-				"message" 			=> $response['message']
+				"message" 			=> isset($response) && isset($response->message) 
+                    ? $response->message
+                    : 'error: ' . json_encode($response)
 			);            
 		}
 

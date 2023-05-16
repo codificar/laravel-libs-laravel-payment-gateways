@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7;
 
 use Codificar\PaymentGateways\Libs\CardFlag;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
+use Exception;
 use Settings, Payment, Provider, Bank;
 
 
@@ -242,7 +243,7 @@ class JunoApi {
             $headersOk = $this->setHeaders();
             if($headersOk) {
                 $holder = $payment->user_id ? $payment->User : $payment->Provider;
-                $response = $this->guzzle->request('POST', 'payments', [
+                $data = array(
                     'headers' => $this->headers, 
                     'json' => [
                         'chargeId' => $chargeId,
@@ -252,16 +253,21 @@ class JunoApi {
                             'delayed' => $capture ? false : true
                         ),
                         'creditCardDetails' => array(
-                            'creditCardId' => $payment->card_token
+                            'creditCardHash' => $payment->card_token,
+                            'creditCardHash' => $payment->card_token,
+                            'creditCardHash' => $payment->card_token,
+                            'creditCardHash' => $payment->card_token,
                         )
                     ]
-                ]);
+                );
+
+                $response = $this->guzzle->request('POST', 'payments', $data);
                 if($response->getStatusCode() == 200) {
                     return json_decode($response->getBody());
                 } else {
                     // se deu erro com cartao, entao cancela cobranca
                     $this->cancelCharge($chargeId);
-                    return null;
+                    return $response->getBody();
                 }
             }
             
@@ -270,8 +276,10 @@ class JunoApi {
             $this->cancelCharge($chargeId);
             
             \Log::error("Erro ao cobrar no cartao de credito");
-            \Log::error(print_r($e->getResponse()->getBody()->getContents(), true));
-            return null;
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+            $message = print_r($e->getResponse()->getBody()->getContents(), true);
+            \Log::error($message);
+            throw new Exception($message, $e->getCode(), $e);
         }
     }
 

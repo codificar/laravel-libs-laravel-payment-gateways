@@ -264,13 +264,13 @@ class BraspagLib implements IPayment
         try {
             $retrieve = $this->api->retrieve($transaction);
 
-            $refundStatus = $this->getStatusString($retrieve->data->Payment->Status);
+            $refundStatus = $retrieve->data->Payment->Status; ;
 
             if(
                 ($refundStatus != self::CODE_NOTFINISHED && 
                 $refundStatus != self::CODE_AUTHORIZED && 
                 $refundStatus != self::CODE_CONFIRMED && 
-                $refundStatus != self::CODE_PENDING && 
+                $refundStatus != self::CODE_PENDING &&
                 $refundStatus != self::CODE_SCHEDULED) || 
                 !$retrieve->success
             )
@@ -312,7 +312,9 @@ class BraspagLib implements IPayment
             return array(
                 "success" 				=> false ,
                 "type" 					=> 'api_billet_error' ,
-                "code" 					=> '',
+                "error" 				=> $response['message'] ,
+                "message" 				=> $response['message'] ,
+                "code" 					=> '400',
                 "message" 				=> '',
                 "transaction_id"		=> ''
             );
