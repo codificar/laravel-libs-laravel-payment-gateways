@@ -804,36 +804,15 @@ class PagarmeLib2 implements IPayment
             if ($ledgerBankAccount->recipient_id) {
                 $recipientData["id"] = $ledgerBankAccount->recipient_id ;
             }
-            
-            //\Log::info("[PagarMe_Recipient] Entrada: ". print_r($recipientData, 1));
-
+           
             if (!$recipient) {
-                $recipient = $pagarme->recipients()->create([
-                    'transfer_day' => $recipientData["transfer_day"],
-                    'transfer_enabled' => $recipientData["transfer_enabled"], 
-                    'transfer_interval' => $recipientData["transfer_interval"],
-                    'bank_account'		=> $bankAccount
-
-                ]);
+                $recipient = $pagarme->recipients()->create($recipientData);
             } elseif ($recipient && $recipient->id) {
-                
                 /**
                  * Para atualizar conta bancária é utilizado as funções SET presentes em PagarMe_Recipient.
                  */
-                
-                $recipient = $pagarme->recipients()->update([
-                    'id'              => $recipient->id,
-                    'transfer_day' => $recipientData["transfer_day"],
-                    'transfer_enabled' => $recipientData["transfer_enabled"], 
-                    'transfer_interval' => $recipientData["transfer_interval"],
-                    'bank_account'		=> $bankAccount
-
-                ]);
-
+                $recipient = $pagarme->recipients()->update($recipientData);
             }
-
-            //\Log::info("[PagarMe_Recipient] Saida: ". print_r($recipientData, 1));
-
             
             if ($recipient->id == null) {
                 $return['recipient_id'] = $recipient[0]->id;
