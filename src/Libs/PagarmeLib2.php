@@ -57,9 +57,11 @@ class PagarmeLib2 implements IPayment
             $cardExpirationYear 	= $payment->getCardExpirationYear();
             $cardCvv 				= $payment->getCardCvc();
             $cardHolder 			= $payment->getCardHolder();
-            $expirationDate         = str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT);
+            if(strlen($cardExpirationYear) > 2) {
+                $cardExpirationYear = (string) ($cardExpirationYear % 100);
+            }
+            $expirationDate         = str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . $cardExpirationYear;
 
-            $cardExpirationYear = $cardExpirationYear % 100;
 
             $card = $pagarme->cards()->create([
                 'card_expiration_date' => $expirationDate,
@@ -239,6 +241,7 @@ class PagarmeLib2 implements IPayment
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
             );
+
             $pagarMeTransaction = $pagarme->transactions()->create($data);
           
             $pagarJson = json_decode(json_encode($pagarMeTransaction));
