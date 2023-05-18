@@ -443,7 +443,6 @@ class PagarmeLib2 implements IPayment
         $customer = array(
             "name" 				=> $user->getFullName(),
             "email" 			=> $user->email,
-            "document_number"   => $documentNumber,
             "documents" => [
                             [
                                 'type'			=> $docType,
@@ -454,20 +453,6 @@ class PagarmeLib2 implements IPayment
             "type"				=> $type,
             "country"			=> "br",
             "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber()),
-            "phone" => array(
-                "ddi" => $phoneLib->getDDI(),
-                "ddd" => $phoneLib->getDDD(),
-                "number" => $phoneLib->getPhoneNumber()
-            ),
-            "address" => array(
-                "street" => $user->getStreet(),
-                "street_number" => $user->getStreetNumber(),
-                "neighborhood" => $user->getNeighborhood(),
-                "city" => $user->address_city,
-                "state" => $user->state,
-                "zipcode" => $zipcode,
-                "country" => "br"
-            ),
         );
 
         return $customer ;
