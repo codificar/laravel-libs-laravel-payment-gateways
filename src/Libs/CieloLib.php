@@ -210,8 +210,10 @@ class CieloLib implements IPayment
         $captureStatus = self::CODE_NOTFINISHED;
         $amount = round((floatval($amount) * 100), 2);
 
-        if($amount <= 0)
+        if($amount <= 0) {
+            \Log::error(__CLASS__ . '.' . __FUNCTION__ . '.' . __LINE__ . ' -' . $amount);
             return $this->responseApiError('gateway_cielo.amount_negative');
+        }
 
         $cardNumber = $payment->getCardNumber();
         $cardCvv    = $payment->getCardCvc();
@@ -275,7 +277,8 @@ class CieloLib implements IPayment
 
             if($chargeStatus != self::CODE_AUTHORIZED || ($captureStatus != self::CODE_CONFIRMED  && $capture == true))
 			{
-                return $this->responseApiError('paymentError.refused');
+                \Log::error(__CLASS__ . '.' . __FUNCTION__ . '.' . __LINE__ . ' -' .  json_encode($sale));
+                return $this->responseApiError('paymentError.refused', $paymentId);
 			}
 
 			return array (
@@ -693,7 +696,7 @@ class CieloLib implements IPayment
      *                      'message'
      *                     ]
      */
-    private function responseApiError($message)
+    private function responseApiError($message, $transactionId = '')
     {
         \Log::error($message);
 
@@ -701,7 +704,7 @@ class CieloLib implements IPayment
             "success" 			=> false,
             "message" 			=> trans($message),
             "error" 			=> $message,
-            "transaction_id"    => '',
+            "transaction_id"    => $transactionId,
             "paid"              => false
         );
     }
