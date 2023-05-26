@@ -806,7 +806,7 @@ class CieloLib implements IPayment
 
             if($debitStatus != self::CODE_CONFIRMED)
 			{
-                return $this->responseApiError('paymentError.refused');
+                return $this->responseApiError('paymentError.refused', $paymentId);
 			}
 
 			return array (
