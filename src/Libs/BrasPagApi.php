@@ -254,7 +254,7 @@ class BraspagApi
         // $apiRequest = $this->apiRequest($url, $body, "POST");
 
         // return $apiRequest;
-        $return = (object)array(
+        return array(
             "success" 					=> false ,
             "message" 					=> 'not_implemented'
         );

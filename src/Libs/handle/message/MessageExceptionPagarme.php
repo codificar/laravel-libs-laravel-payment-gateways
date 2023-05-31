@@ -47,6 +47,8 @@ class MessageExceptionPagarme
             case Functions::contains($message, '"phone_numbers" at position 0 fails'):
                 return trans('paymentgateway::paymentError.transaction_declined');
                 break;
+            case Functions::contains($message, 'recebedor do administrador não foi encontrado'):
+                return trans('paymentgateway::paymentError.admin_recipient_not_found');
             default:
             	return trans('paymentgateway::paymentError.refused') . ": $message" ;
                 break;

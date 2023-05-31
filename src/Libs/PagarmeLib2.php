@@ -9,6 +9,7 @@ use Codificar\PaymentGateways\Libs\handle\message\MessageException;
 use Codificar\PaymentGateways\Libs\handle\message\MessageExceptionPagarme;
 use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 use Exception;
+use GuzzleHttp\Exception\RequestException;
 use PagarMe\Client as PagarMe;
 use PagarMe\Exceptions\PagarMeException;
 //models do sistema
@@ -56,9 +57,11 @@ class PagarmeLib2 implements IPayment
             $cardExpirationYear 	= $payment->getCardExpirationYear();
             $cardCvv 				= $payment->getCardCvc();
             $cardHolder 			= $payment->getCardHolder();
-            $expirationDate         = str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT);
+            if(strlen($cardExpirationYear) > 2) {
+                $cardExpirationYear = (string) ($cardExpirationYear % 100);
+            }
+            $expirationDate         = str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT) . $cardExpirationYear;
 
-            $cardExpirationYear = $cardExpirationYear % 100;
 
             $card = $pagarme->cards()->create([
                 'card_expiration_date' => $expirationDate,
@@ -238,6 +241,7 @@ class PagarmeLib2 implements IPayment
                 "items"		=>  $this->getItems(1, $description, floor($amount * 100)),
                 "card"      =>  $card
             );
+
             $pagarMeTransaction = $pagarme->transactions()->create($data);
           
             $pagarJson = json_decode(json_encode($pagarMeTransaction));
@@ -278,9 +282,10 @@ class PagarmeLib2 implements IPayment
 				"status"					=> 'error'
 			);		
 		}
-		catch(Exception $ex)
+		catch(RequestException $ex)
 		{
 			\Log::error($ex->getMessage().$ex->getTraceAsString());
+            \Log::error(print_r($ex->getResponse()->getBody()->getContents(), true));
 
 			return array(
 				"success" 					=> false ,
@@ -315,7 +320,7 @@ class PagarmeLib2 implements IPayment
             $recipient = $pagarme->recipients()->get([
                 'id' => $id
             ]);
-            if ($recipient) {
+            if (!$recipient) {
                 throw new PagarMeException("not_found","recepient","Recebedor do Administrador não foi encontrado. Corrigir no sistema Web.");
             }
 
@@ -441,7 +446,6 @@ class PagarmeLib2 implements IPayment
         $customer = array(
             "name" 				=> $user->getFullName(),
             "email" 			=> $user->email,
-            "document_number"   => $documentNumber,
             "documents" => [
                             [
                                 'type'			=> $docType,
@@ -452,20 +456,6 @@ class PagarmeLib2 implements IPayment
             "type"				=> $type,
             "country"			=> "br",
             "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber()),
-            "phone" => array(
-                "ddi" => $phoneLib->getDDI(),
-                "ddd" => $phoneLib->getDDD(),
-                "number" => $phoneLib->getPhoneNumber()
-            ),
-            "address" => array(
-                "street" => $user->getStreet(),
-                "street_number" => $user->getStreetNumber(),
-                "neighborhood" => $user->getNeighborhood(),
-                "city" => $user->address_city,
-                "state" => $user->state,
-                "zipcode" => $zipcode,
-                "country" => "br"
-            ),
         );
 
         return $customer ;
@@ -484,9 +474,12 @@ class PagarmeLib2 implements IPayment
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
+
+        $documentNumber = preg_replace( '/[^0-9]/', '', $user->document);
         $customer = array(
             "name" 				=> $user->getFullName(),
             "email" 			=> $user->email,
+            "document_number"   => $documentNumber,
             "external_id"		=> (string) $user->id,
             "phone_numbers" 	=> array($phoneLib->getFullPhoneNumber())
         );
@@ -697,6 +690,9 @@ class PagarmeLib2 implements IPayment
             'id' => $transaction->gateway_transaction_id
         ]);
 
+        if(is_array($pagarmeTransaction)) {
+            $pagarmeTransaction = $pagarmeTransaction[0];
+        }
         return array(
             'success' => true,
             'transaction_id' => strval($pagarmeTransaction->id),
@@ -796,37 +792,15 @@ class PagarmeLib2 implements IPayment
             if ($ledgerBankAccount->recipient_id) {
                 $recipientData["id"] = $ledgerBankAccount->recipient_id ;
             }
-            
-            //\Log::info("[PagarMe_Recipient] Entrada: ". print_r($recipientData, 1));
-
+           
             if (!$recipient) {
-                $recipient = $pagarme->recipients()->create([
-                    'bank_account_id' => $bankAccount["bank_code"],
-                    'transfer_day' => $recipientData["transfer_day"],
-                    'transfer_enabled' => $recipientData["transfer_enabled"], 
-                    'transfer_interval' => $recipientData["transfer_interval"],
-                    'bank_account'		=> $bankAccount
-
-                ]);
+                $recipient = $pagarme->recipients()->create($recipientData);
             } elseif ($recipient && $recipient->id) {
-                
                 /**
                  * Para atualizar conta bancária é utilizado as funções SET presentes em PagarMe_Recipient.
                  */
-                
-                $recipient = $pagarme->recipients()->update([
-                    'id'              => $recipient->id,
-                    'transfer_day' => $recipientData["transfer_day"],
-                    'transfer_enabled' => $recipientData["transfer_enabled"], 
-                    'transfer_interval' => $recipientData["transfer_interval"],
-                    'bank_account'		=> $bankAccount
-
-                ]);
-
+                $recipient = $pagarme->recipients()->update($recipientData);
             }
-
-            //\Log::info("[PagarMe_Recipient] Saida: ". print_r($recipientData, 1));
-
             
             if ($recipient->id == null) {
                 $return['recipient_id'] = $recipient[0]->id;
@@ -839,7 +813,7 @@ class PagarmeLib2 implements IPayment
                 "recipient_id" 				=> $return['recipient_id']
             );
         } catch (PagarMeException  $ex) {
-            \Log::error($ex->__toString().$ex->getTraceAsString());
+            \Log::error($ex->getMessage().$ex->getTraceAsString());
 
             return array(
                 "success" 					=> false ,

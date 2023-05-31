@@ -62,12 +62,13 @@ Class JunoLib implements IPayment
                 );
             }
         } catch (Exception $th) {
+            
 			\Log::error('Error juno charge');
 			return array(
                 "success" 					=> false ,
 				"type" 						=> 'api_charge_error' ,
-				"code" 						=> $th->getMessage(),
-				"message" 					=> "paymentError",
+				"message" 					=> $th->getMessage(),
+				"code" 					    => $th->getCode(),
 				"transaction_id"			=> ''
             );
 		}
