@@ -172,20 +172,19 @@ class PagarmeLib implements IPayment
      * Função para gerar boletos de pagamentos
      * @param int $amount valor do boleto
      * @param User/Provider $client instância do usuário ou prestador
-     * @param string $postbackUrl url para receber notificações do status do pagamento
+     * @param string $postBackUrl url para receber notificações do status do pagamento
      * @param string $billetExpirationDate data de expiração do boleto
      * @param string $billetInstructions descrição no boleto
      * @return array
      */
-    public function billetCharge($amount, $client, $postbackUrl, $billetExpirationDate, $billetInstructions)
+    public function billetCharge($amount, $client, $postBackUrl, $billetExpirationDate, $billetInstructions)
     {
         try {
             $response = PagarmeApi::billetCharge($amount, $client, $billetExpirationDate);
 
             if (
-                isset($response->success) ||
-                $response->success ||
-                isset($response->data->charges[0]->id)
+                (isset($response->success) && $response->success) 
+                || isset($response->data->charges[0]->id)
             ) {
                 return array(
                     'success'                   =>  true,
@@ -246,8 +245,8 @@ class PagarmeLib implements IPayment
             if ($transaction_id) {
                 $transaction			=	Transaction::find($transaction_id);
             } else {
-                $postbackTransaction	=	$request->data->charges[0]->id;
-                $transaction			=	Transaction::getTransactionByGatewayId($postbackTransaction);
+                $postBackTransaction	=	$request->data->charges[0]->id;
+                $transaction			=	Transaction::getTransactionByGatewayId($postBackTransaction);
             }
 
             $retrieve					=	$this->retrieve($transaction);

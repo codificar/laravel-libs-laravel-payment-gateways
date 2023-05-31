@@ -45,54 +45,59 @@ class AdiqApi
 
     public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
     {
-        $cardExpirationMonth = $payment->getCardExpirationMonth();
-        $cardExpirationYear  = $payment->getCardExpirationYear();
-        $cardExpirationYear  = $cardExpirationYear % 100;
+        try {
+            $cardExpirationMonth = $payment->getCardExpirationMonth();
+            $cardExpirationYear  = $payment->getCardExpirationYear();
+            $cardExpirationYear  = $cardExpirationYear % 100;
 
-        $orderId = self::getOrderId();
+            $orderId = self::getOrderId();
 
-        $brand = Payment::getBrand($payment);
-        $brand = strtolower($brand);
+            $brand = Payment::getBrand($payment);
+            $brand = strtolower($brand);
 
-        $url = sprintf('%s/v1/payments/', self::apiUrl());
+            $url = sprintf('%s/v1/payments/', self::apiUrl());
 
-        $header = self::getHeader();
+            $header = self::getHeader();
 
-        $totalAmount = $totalAmount;
+            $totalAmount = $totalAmount;
 
-        $cardToken = self::tokenizeCard($payment->getCardNumber());
+            $cardToken = self::tokenizeCard($payment->getCardNumber());
 
-        if(!$cardToken)
-            return false;
+            if(!$cardToken)
+                return false;
 
-        $fields = array (
-            'sellerInfo'=>  (object)array( 
-                'orderNumber' => $orderId
-            ),
-            'payment'               =>  (object)array(
-                'transactionType'   =>  self::CREDIT_CARD,
-                'amount'            =>  $totalAmount,
-                'currencyCode'      =>  strtolower(Settings::findByKey('generic_keywords_currency')),
-                'productType'       =>  "Avista",
-                'installments'      =>  1,
-                'captureType'       =>  'pa',
-                'recurrent'         =>  false,
-            ),
-            'cardInfo'              =>  (object)array(
-                'numberToken'       =>  $cardToken,
-                'cardholderName'    =>  $payment->getCardHolder(),
-                'securityCode'      =>  $payment->getCardCvc(),
-                'brand'             =>  $brand,
-                'expirationMonth'   =>  str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
-                'expirationYear'    =>  str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
-            ),
-        );
+            $fields = array (
+                'sellerInfo'=>  (object)array( 
+                    'orderNumber' => $orderId
+                ),
+                'payment'               =>  (object)array(
+                    'transactionType'   =>  self::CREDIT_CARD,
+                    'amount'            =>  $totalAmount,
+                    'currencyCode'      =>  strtolower(Settings::findByKey('generic_keywords_currency')),
+                    'productType'       =>  "Avista",
+                    'installments'      =>  1,
+                    'captureType'       =>  'pa',
+                    'recurrent'         =>  false,
+                ),
+                'cardInfo'              =>  (object)array(
+                    'numberToken'       =>  $cardToken,
+                    'cardholderName'    =>  $payment->getCardHolder(),
+                    'securityCode'      =>  $payment->getCardCvc(),
+                    'brand'             =>  $brand,
+                    'expirationMonth'   =>  str_pad($cardExpirationMonth, 2, '0', STR_PAD_LEFT),
+                    'expirationYear'    =>  str_pad($cardExpirationYear, 2, '0', STR_PAD_LEFT),
+                ),
+            );
 
-        $requestType = self::POST_REQUEST;
+            $requestType = self::POST_REQUEST;
 
-        $apiRequest = self::apiRequest($url, json_encode($fields), $header, $requestType);
+            $apiRequest = self::apiRequest($url, json_encode($fields), $header, $requestType);
 
-        return $apiRequest;
+            return $apiRequest;
+        } catch(Exception $e) {
+            Log:: error($e->getMessage() . $e->getTraceAsString());
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
+        }
     }
 
     public static function capture(Transaction $transaction, $amount)

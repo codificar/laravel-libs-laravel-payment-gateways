@@ -10,7 +10,7 @@ return array(
 	'adiq_error_brand'		=> 'No pudimos completar su pago, intente con otra tarjeta.',
 
 	//Ipag message
-	'not_authorized'		=> 'Acción/Transacción Autorizada',
+	'not_authorized'		=> 'Ups Acción/Transacción no autorizada',
 	'customer_blacklisted'	=> 'La pasarela no aceptó su tarjeta, intente en 2 o 3 días o con otro método de pago',
 
 	//Pagarme message
@@ -26,5 +26,6 @@ return array(
 	'canceled'	=> '¡Ups! cancelado, consulte sus datos y vuelva a intentarlo.',
 	'error_retrieve_webhook' => 'Error de recuperación de webhooks: :error',
 	'error_pix_gateway_disabled' => 'No fue posible recuperar webhooks, ya que la pasarela de pago no está activa',
-	'error_ipag_pix_gateway_disabled' => 'Para recuperar webhooks, debe tener la puerta de enlace de IPAG activa'
+	'error_ipag_pix_gateway_disabled' => 'Para recuperar webhooks, debe tener la puerta de enlace de IPAG activa',
+	'admin_recipient_not_found' => 'No fue posible completar la solicitud, intente más tarde o con otro método de pago.',
 );
