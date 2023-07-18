@@ -47,6 +47,13 @@ class PagarmeApi
         $body       =   self::getBody($payment, $amount, null, $capture, null, $user);
         $chargeRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
+        \Log::debug('charge: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'chargeRequest' => $chargeRequest
+        ));
+
         return $chargeRequest;
     }
 
@@ -72,6 +79,13 @@ class PagarmeApi
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
+        \Log::debug('chargeWithOrNotSplit: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'chargeSplitRequest' => $chargeSplitRequest
+        ));
+
         return $chargeSplitRequest;
     }
 
@@ -92,6 +106,13 @@ class PagarmeApi
         $body       =   $amount ? array('amount' => self::amountRound($amount)) : null;
         $header     =   self::getHeader(true);
         $captureRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        \Log::debug('capture: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'captureRequest' => $captureRequest
+        ));
 
         return $captureRequest;
     }
@@ -114,6 +135,13 @@ class PagarmeApi
         $splitUrl       =   sprintf('%s/charges/%s/capture', self::apiUrl(), $transaction->gateway_transaction_id);
         $captureSplitRequest =  self::apiRequest($splitUrl, $splitBody, $splitHeader, self::POST_REQUEST);
 
+        \Log::debug('captureWithSplit: '. array(
+            'splitBody' => $splitBody,
+            'splitHeader' => $splitHeader,
+            'splitUrl' => $splitUrl,
+            'captureSplitRequest' => $captureSplitRequest
+        ));
+
         return $captureSplitRequest;
     }
 
@@ -134,6 +162,13 @@ class PagarmeApi
         $body       =   null;
         $header     =   self::getHeader(true);
         $retrieveRequest =  self::apiRequest($url, $body, $header, self::GET_REQUEST);
+        
+        \Log::debug('retrieve: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'retrieveRequest' => $retrieveRequest
+        ));
 
         return $retrieveRequest;
     }
@@ -155,6 +190,11 @@ class PagarmeApi
         $header        =    self::getHeader(true);
         $refundRequest =    self::apiRequest($url, null, $header, self::DELETE_REQUEST);
 
+         \Log::debug('refund: '. array(
+            'url' => $url,
+            'header' => $header,
+            'refundRequest' => $refundRequest
+        ));
         return $refundRequest;
     }
 
@@ -250,6 +290,13 @@ class PagarmeApi
         $header     =   self::getHeader();
         $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
 
+        \Log::debug('getSeller: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'sellerRequest' => $sellerRequest
+        ));
+
         return $sellerRequest;
     }
 
@@ -311,6 +358,13 @@ class PagarmeApi
         $body       =   self::getBody(null, $amount, null, false, null, $client, $boletoExpirationDate);
         $billetRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
+        \Log::debug('billetCharge: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'billetRequest' => $billetRequest
+        ));
+
         return $billetRequest;
     }
 
@@ -333,6 +387,13 @@ class PagarmeApi
         $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
+        \Log::debug('pixCharge: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'pixRequest' => $pixRequest
+        ));
+
         return $pixRequest;
     }
 
@@ -354,6 +415,13 @@ class PagarmeApi
         $header         =   self::getHeader(true);
         $body           =   self::getBody($payment, $amount, null, false, null, null, null, false, true);
         $debitRequest   =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
+
+        \Log::debug('debit: '. array(
+            'url' => $url,
+            'body' => $body,
+            'header' => $header,
+            'debitRequest' => $debitRequest
+        ));
 
         return $debitRequest;
     }
@@ -547,6 +615,11 @@ class PagarmeApi
             $fields->payments[0]->split = $splitFields->split;
         }
 
+        \Log::debug('getBody: '. array(
+            'fields' => json_encode($fields),
+            'provider' => $provider
+        ));
+
         return json_encode($fields);
     }
 
@@ -604,6 +677,9 @@ class PagarmeApi
             ]
         );
 
+        \Log::debug('getSplitInfo: '. array(
+            'spliFields' => $splitFields
+        ));
         return $splitFields;
     }
 
