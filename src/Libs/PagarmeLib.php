@@ -295,7 +295,7 @@ class PagarmeLib implements IPayment
                 );
             }
 
-            $response = PagarmeApi::captureWithSplit($transaction, $provider, $providerAmount);
+            $response = PagarmeApi::captureWithSplit($transaction, $provider, $totalAmount, $providerAmount);
 
             if (
                 isset($response->success) &&
