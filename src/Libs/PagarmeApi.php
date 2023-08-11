@@ -545,7 +545,7 @@ class PagarmeApi
         if($provider && isset($provider->id) && $payment)
         {
             $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
-            $fields->payments[0]->split = $splitFields->split;
+            $fields->payments[0]->split = $splitFields->split ?? [];
         }
 
         return json_encode($fields);
