@@ -548,7 +548,7 @@ class GatewaysController extends Controller
             $newValue = '0';
         }
         else if($value) {
-            $newValue = $value;
+            $newValue = is_string($value) ? trim($value) : $value;
         } else {
             $newValue = '';
         }
