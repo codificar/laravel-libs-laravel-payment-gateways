@@ -233,4 +233,25 @@ return array(
 
 	'failed_retreive_webhook'	=> 'Failed to Retrieve List of Webhooks',
 	'Unauthorized'	 			=> 'Failed to authenticate access keys',
+
+	'webhook_notfound'			=> 'No webhook found for this domain, please check with your payment gateway.',
+	'actions'					=> 'Actions:',
+	'method'					=> 'Method:',
+	
+	'PaymentLinkPaymentSucceeded'	=> 'Link payment approved',
+	'PaymentLinkPaymentFailed'		=> 'Link reproved payment',
+	'SubscriptionPaymentSucceeded'	=> 'Subject signature payment',
+	'SubscriptionPaymentFailed'		=> 'Payment signature failure',
+	'ChargePaymentSucceeded'		=> 'Payment collection success',
+	'ChargePaymentFailed'			=> 'Payment collection failure',
+	'TransactionCreated'			=> 'Created transaction',
+	'TransactionWaitingPayment'		=> 'Pending payment transaction',
+	'TransactionCanceled'			=> 'Canceled transaction',
+	'TransactionPreAuthorized'		=> 'Pre-authorized transaction',
+	'TransactionCaptured'			=> 'Captured transaction',
+	'TransactionDenied'				=> 'Denied transaction',
+	'TransactionDisputed'			=> 'Transaction in payer/customer',
+	'TransactionChargedback'		=> 'Reversal',
+	'TransferPaymentSucceeded'		=> 'Transference performed successfully',
+	'TransferPaymentFailed'			=> 'Failed transfer',
 );
