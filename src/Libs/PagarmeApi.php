@@ -397,10 +397,11 @@ class PagarmeApi
      */
     public static function amountRound($amount)
     {
-        $amount = $amount * self::ROUND_VALUE;
-        $amount = (int)$amount;
+        $amountValue = (float)$amount; 
+        $amountValue = $amountValue * self::ROUND_VALUE;
+        $amountValue = (int)$amountValue;
 
-        return $amount;
+        return $amountValue;
     }
 
     /**
@@ -541,10 +542,10 @@ class PagarmeApi
 
         $fields->payments[] = $payFields;
 
-        if($capture && $provider && isset($provider->id) && $payment)
+        if($provider && isset($provider->id) && $payment)
         {
             $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
-            $fields->payments[0]->split = $splitFields->split;
+            $fields->payments[0]->split = $splitFields->split ?? [];
         }
 
         return json_encode($fields);
@@ -569,7 +570,7 @@ class PagarmeApi
      */
     private static function getSplitInfo($providerId, $providerAmount, $totalAmount)
     {
-        $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
+        $ledgerBankAccount = LedgerBankAccount::where('provider_id', $providerId)->first();
 
         if(!$ledgerBankAccount)
             return false;
