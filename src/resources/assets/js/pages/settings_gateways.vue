@@ -17,7 +17,8 @@ export default {
   data() {
     return {
       isLoading: false,
-      listWebhooks: null,
+      listWebhooks: [],
+      isWebhooks: false,
       messageWebhook: '',
       gateways: {},
       pix_gateways : {},
@@ -110,6 +111,7 @@ export default {
           .then((response) => {
             this.isLoading = false;
             this.listWebhooks = response.data.data.webhooks;
+            this.isWebhooks = response.data.data.success;
             this.messageWebhook = this.trans("setting.failed_retreive_webhook");
             if(response.data.message) {
               this.messageWebhook = response.data.message;
@@ -3038,7 +3040,7 @@ export default {
               </div>
 
               <!-- Webhooks Ipag -->
-              <div v-if="listWebhooks" class="row">
+              <div v-if="isWebhooks" class="row">
                 <div class="col-lg-12">
                   <div class="form-group">
                     <label for="usr">
@@ -3056,11 +3058,23 @@ export default {
                       <span class="required-field">*</span>
                     </label>
                     <div class="webhooks-ipag">
-                      <ol>
+                      <ol v-if="listWebhooks.length > 0" >
                         <li v-for="webhook in listWebhooks" :key="webhook.id">
-                          {{ webhook.url }}
+                          <p v-if="webhook.url">
+                            {{ webhook.url }} - 
+                            <i v-if="webhook.is_active" class="fa fa-check text-success" aria-hidden="true"></i>
+                            <i v-else class="fa fa-times text-danger" aria-hidden="true"></i>
+                          </p>
+                          <p v-if="webhook.http_method">{{ trans("setting.method") }} <span class="badge badge-info">{{ webhook.http_method }}</span></p>
+                          <p v-if="webhook.actions">{{ trans("setting.actions") }} </p>
+                            <div v-if="webhook.actions" class="actions-container">
+                              <p v-for="action in webhook.actions" class="actions-info">
+                                  <span class="badge badge-primary"> {{ trans(`setting.${action}`) }}</span>
+                              </p>
+                            </div>
                         </li>
                       </ol>
+                      <h5 v-else class="ml-3">{{ trans("setting.webhook_notfound") }}</h5>
                     </div>
                   </div>
                 </div>
@@ -3115,5 +3129,22 @@ export default {
 }
 .text-white {
   color: '#FFFFFF' !important;
+}
+
+.actions-container {
+  display: flex;
+  flex-direction: row;
+  max-width: 590px;
+  min-height: 115px;
+  flex-wrap: wrap;
+}
+
+.actions-info {
+  margin-right: 2px;
+  margin-block-end: 1px;
+  margin-bottom: 1px;
+  line-height: 1px;
+  height: fit-content;
+  font-size: 18px;
 }
 </style>

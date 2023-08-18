@@ -326,4 +326,51 @@ class GatewaysInterfaceTest {
 			return $newProvider;
 		}
 	}
+
+	/**
+	 * Retorna o cartão do usuário de teste
+	 * 
+	 * @return Payment|null
+	 */
+	public function getLastCardId()
+	{
+		$user = $this->userRandomForTest();
+		$payment = Payment::findDefaultOrFirstByUserId($user->id);
+		if($payment) {
+			return $payment->id;
+		}
+		return null;
+	}
+	
+	/**
+	 * Retorna a ultima transação autorizada
+	 * 
+	 * @return Transaction|null
+	 */
+	public function getLastTransactionIdAuthorized()
+	{
+		$transaction = Transaction::where('status', 'authorized')
+			->orderBy('id', 'desc')
+			->first();
+		if($transaction) {
+			return $transaction->gateway_transaction_id;
+		}
+		return null;
+	}
+
+	/**
+	 * Retorna a ultima transação Paga
+	 * 
+	 * @return Transaction|null
+	 */
+	public function getLastTransactionIdPaid()
+	{
+		$transaction = Transaction::where('status', 'paid')
+			->orderBy('id', 'desc')
+			->first();
+		if($transaction) {
+			return $transaction->gateway_transaction_id;
+		}
+		return null;
+	}
 }

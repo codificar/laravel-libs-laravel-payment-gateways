@@ -494,8 +494,9 @@ class GatewaysController extends Controller
                 try {
                     $gateway = PaymentFactory::createPixGateway();
                     $webhooks = $gateway->retrieveWebhooks(true);
-                    $success = true;
-                    $message = 'Webhooks recuperados com sucesso';
+
+                    $success = $webhooks['success'] ?? false;
+                    $message = $webhooks['message'] ?? 'Webhooks recuperados com sucesso';
                 } catch (Exception $th) {
                     \Log::error($th->getMessage());
                     $message = trans('paymentgateway::paymentError.error_retrieve_webhook', ['error' => $th->getMessage()]);
