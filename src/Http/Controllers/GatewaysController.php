@@ -38,7 +38,10 @@ class GatewaysController extends Controller
             'pagarme_secret_key',
             'pagarme_recipient_id',
             'pagarme_token',
-            'gateway_product_title'
+            'gateway_product_title',
+            'gateway_split_taxes',
+            'liable_split',
+            'charge_remainder_fee'
         ],
         'pagarmev2' => [
             'pagarme_encryption_key',

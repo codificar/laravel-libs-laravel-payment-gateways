@@ -580,6 +580,9 @@ class PagarmeApi
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             return false;
 
+        $charge_processing_fee = boolval(Settings::findByKey('gateway_split_taxes', false));
+        $liable = boolval(Settings::findByKey('liable_split', false));
+        $charge_remainder_fee = boolval(Settings::findByKey('charge_remainder_fee', false));
         $splitFields     =   (object)array(
             "split" =>  [
                 (object)array(
@@ -597,14 +600,13 @@ class PagarmeApi
                     "recipient_id"  =>  $sellerId->recipient_id,
                     "type"          =>  "flat", //flat | percentage
                     "options"       =>  (object)array(
-                        "charge_processing_fee" =>  true,
-                        "charge_remainder_fee"  =>  false,
-                        "liable"                =>  true
+                        "charge_processing_fee" =>  $charge_processing_fee,
+                        "charge_remainder_fee"  =>  $charge_remainder_fee,
+                        "liable"                =>  $liable
                     )
                 )
             ]
         );
-
         return $splitFields;
     }
 
