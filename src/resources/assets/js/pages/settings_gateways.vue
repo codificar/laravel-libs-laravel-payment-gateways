@@ -981,6 +981,54 @@ export default {
                     <div class="help-block with-errors"></div>
                   </div>
                 </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.gateway_split_taxes") }}
+                      <a class="question-field" data-toggle="tooltip" :title="trans('setting.gateway_split_taxes_msg')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field"></span>
+                    </label>
+                    <select
+                      v-model="gateways.pagarme.gateway_split_taxes"
+                      name="gateway_split_taxes"
+                      class="select form-control"
+                    >
+                      <option value="1"> {{ trans('setting.yes') }} </option>
+                      <option value="0"> {{ trans('setting.no') }} </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.liable_split") }}
+                      <a class="question-field" data-toggle="tooltip" :title="trans('setting.liable_split_msg')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field"></span>
+                    </label>
+                    <select
+                      v-model="gateways.pagarme.charge_remainder_fee"
+                      name="liable_split"
+                      class="select form-control"
+                    >
+                      <option value="1"> {{ trans('setting.yes') }} </option>
+                      <option value="0"> {{ trans('setting.no') }} </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="form-group">
+                    <label for="usr">
+                      {{ trans("setting.charge_remainder_fee") }}
+                      <a class="question-field" data-toggle="tooltip" :title="trans('setting.charge_remainder_fee_msg')"><span class="mdi mdi-comment-question-outline"></span></a> <span class="required-field"></span>
+                    </label>
+                    <select
+                      v-model="gateways.pagarme.liable_split"
+                      name="charge_remainder_fee"
+                      class="select form-control"
+                    >
+                      <option value="1"> {{ trans('setting.yes') }} </option>
+                      <option value="0"> {{ trans('setting.no') }} </option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
