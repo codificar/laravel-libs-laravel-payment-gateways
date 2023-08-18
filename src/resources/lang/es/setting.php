@@ -231,4 +231,25 @@ return array(
 
 	'failed_retreive_webhook'	=> 'Error al recuperar la lista de webhooks',
 	'Unauthorized'	 			=> 'Error al autenticar las claves de acceso',
+
+	'webhook_notfound'			=> 'No se encuentra el webhook para este dominio, consulte con su pasarela de pago.',
+	'actions'					=> 'Comportamiento:',
+	'method'					=> 'método:',
+	
+	'PaymentLinkPaymentSucceeded'	=> 'Enlace de pago aprobado',
+	'PaymentLinkPaymentFailed'		=> 'Enlace de pago reprodujo',
+	'SubscriptionPaymentSucceeded'	=> 'Pago de firma',
+	'SubscriptionPaymentFailed'		=> 'Falla de la firma de pago',
+	'ChargePaymentSucceeded'		=> 'Éxito de la colección de pagos',
+	'ChargePaymentFailed'			=> 'Falla de cobro de pagos',
+	'TransactionCreated'			=> 'Transacción creada',
+	'TransactionWaitingPayment'		=> 'Transacción de pago pendiente',
+	'TransactionCanceled'			=> 'Transacción cancelada',
+	'TransactionPreAuthorized'		=> 'Transacción preautorizada',
+	'TransactionCaptured'			=> 'Transacción capturada',
+	'TransactionDenied'				=> 'Transacción negada',
+	'TransactionDisputed'			=> 'Transacción en el pagador/cliente',
+	'TransactionChargedback'		=> 'Inversión',
+	'TransferPaymentSucceeded'		=> 'Transferencia realizada con éxito',
+	'TransferPaymentFailed'			=> 'Transferencia fallida',
 );
