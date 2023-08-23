@@ -162,7 +162,7 @@ class CieloLib implements IPayment
         catch (CieloRequestException $e) {
             $error = $e->getCieloError();
             if(!$error) { $error = $e; }
-            \Log::error($error->getMessage() . $e->getTraceAsString()); //log cielo error
+            \Log::error($e->getMessage() . $e->getTraceAsString()); //log cielo error
             return $this->responseApiError('gateway_cielo.new_card_fail');
         } 
         //Capture general error
@@ -293,7 +293,7 @@ class CieloLib implements IPayment
             $error = $e->getCieloError();
             if(!$error)
                 $error = $e;
-            \Log::error($error->getMessage() . $e->getTraceAsString());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.charge_fail');
         } catch (Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
@@ -379,7 +379,7 @@ class CieloLib implements IPayment
             
             if(!$error)
                 $error = $e;
-            \Log::error($error->getMessage());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.charge_fail');
         }
     }
@@ -486,7 +486,7 @@ class CieloLib implements IPayment
             $error = $e->getCieloError();
             if(!$error)
                 $error = $e;
-            \Log::error($error->getMessage());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.capture_fail');
         }
     }
@@ -594,7 +594,7 @@ class CieloLib implements IPayment
             $error = $e->getCieloError();
             if(!$error)
                 $error = $e;
-            \Log::error($error->getMessage());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.refund_fail');
         }
     }
@@ -821,7 +821,7 @@ class CieloLib implements IPayment
             $error = $e->getCieloError();
             if(!$error)
                 $error = $e;
-            \Log::error($error->getMessage());
+            \Log::error($e->getMessage() . $e->getTraceAsString());
             return $this->responseApiError('gateway_cielo.debit_fail');
         }
     }
