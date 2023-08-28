@@ -2,25 +2,29 @@
 
 namespace Tests\Unit\libs\gateways;
 
-use Faker\Factory as Faker;
-use Hash, Crypt;
-use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
+use Carbon\Carbon;
+use Hash;
+use Settings, User, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Location;
 
 class GatewaysInterfaceTest {
 
     public function testCreateCard($isCarto = false){
-        $faker = Faker::create('pt_BR');
-		$cardNumber = $faker->creditCardNumber;
+        $cardNumber = '4111111111111111';
 		$cardExpirationMonth = 8;
-		$cardExpirationYear = 2026 ;
+		$cardExpirationYear = Carbon::now()->addYear(5)->year() ;
 		$cardCvv = "314";
 		$cardHolder = "cartao teste";	
 		$user = $this->userRandomForTest();
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
 		
+		if(isset($response['payment'])) {
+			$payment = $response['payment'];
+			Payment::setDefaultCardData($user->id, $payment->id);
+		}
+
 		//o gateway da juno precisa de webview (iframe) para cadastrar cartao. Entao para prosseguir com os testes, foi colocado o token do cartao manualmente
 		if(Settings::findByKey('default_payment') == 'juno') {
 			$payment = Payment::find($response['payment']['id']);

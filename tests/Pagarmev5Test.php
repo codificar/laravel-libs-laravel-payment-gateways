@@ -169,7 +169,7 @@ class Pagarmev5Test extends TestCase
     public function testBilletChargeSuccess()
     {	
         if(env('APP_ENV') != 'production') {
-            $this->assertTrue(true, "billet: não pode ser realizado em ambiente de teste ou localhost");
+            $this->addWarning( "billet: não pode ser realizado em ambiente de teste ou localhost");
 		} else {
             $interface = new GatewaysInterfaceTest();
             
