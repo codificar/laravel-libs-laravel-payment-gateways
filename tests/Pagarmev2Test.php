@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\libs\gateways;
+namespace Tests\Unit\libs\gateways;
 
 use Exception;
 use Log;
 use Tests\TestCase;
 use Settings;
-use Tests\libs\gateways\GatewaysInterfaceTest;
+use Tests\Unit\libs\gateways\GatewaysInterfaceTest;
 
 // v2 no nosso projeto e v4 no pagarme
 // to run test: sail artisan test --filter Pagarmev2Test

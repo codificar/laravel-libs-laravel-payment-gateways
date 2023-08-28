@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\libs\gateways;
+namespace Tests\Unit\libs\gateways;
 
 use Hash, Crypt;
 use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;

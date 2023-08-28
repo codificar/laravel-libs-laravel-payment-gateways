@@ -1,5 +1,5 @@
 <?php
-namespace Tests\libs\gateways;
+namespace Tests\Unit\libs\gateways;
 
 class KeyAccess
 {

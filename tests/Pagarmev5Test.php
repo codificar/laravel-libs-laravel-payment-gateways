@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\libs\gateways;
+namespace Tests\Unit\libs\gateways;
 
 use Exception;
 use Log;
 use Tests\TestCase;
 use Settings;
-use Tests\libs\gateways\GatewaysInterfaceTest;
+use Tests\Unit\libs\gateways\GatewaysInterfaceTest;
 
 // to run test: sail artisan test --filter Pagarmev5Test
 class Pagarmev5Test extends TestCase
