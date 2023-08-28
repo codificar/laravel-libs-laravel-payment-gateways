@@ -16,7 +16,6 @@ class AdiqTest extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 0;
-    const CARD_NUMBER = '4761739001010036';
     const IS_TERRA_CARD = false;
 
     /**
@@ -51,7 +50,7 @@ class AdiqTest extends TestCase
         if(self::DELAY)
 			sleep(self::DELAY);
 		//Cria o cartão e verifica se todos os parâmetros estão ok
-		$createCard = $interface->testCreateCard(self::CARD_NUMBER, self::IS_TERRA_CARD);
+		$createCard = $interface->testCreateCard(self::IS_TERRA_CARD);
         $this->assertTrue($createCard['success']);
         $this->assertIsString($createCard['token']);
         $this->assertIsString($createCard['card_token']);

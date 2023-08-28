@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\libs\gateways;
 
+use Faker\Factory as Faker;
 use Hash, Crypt;
 use Settings, User, RequestCharging, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
@@ -9,7 +10,9 @@ use Location;
 
 class GatewaysInterfaceTest {
 
-    public function testCreateCard($cardNumber, $isCarto = false){
+    public function testCreateCard($isCarto = false){
+        $faker = Faker::create('pt_BR');
+		$cardNumber = $faker->creditCardNumber;
 		$cardExpirationMonth = 8;
 		$cardExpirationYear = 2026 ;
 		$cardCvv = "314";
