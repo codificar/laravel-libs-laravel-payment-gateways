@@ -288,7 +288,9 @@ class Pagarmev2Test extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
+            print_r("Pagarme v2 Teste - ** Chaves utilizadas: \n");
             foreach($credentials as $credential) {
+                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(

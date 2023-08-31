@@ -3,6 +3,7 @@
 namespace Tests\Unit\libs\gateways;
 
 use Carbon\Carbon;
+use Codificar\PaymentGateways\Models\GatewaysLibModel;
 use Hash;
 use Settings, User, Provider, Payment, PaymentFactory, Transaction, ProviderStatus, ProviderType, ProviderServices, LedgerBankAccount, Ledger;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
@@ -13,7 +14,7 @@ class GatewaysInterfaceTest {
     public function testCreateCard($isCarto = false){
         $cardNumber = '4111111111111111';
 		$cardExpirationMonth = 8;
-		$cardExpirationYear = Carbon::now()->addYear(5)->year() ;
+		$cardExpirationYear = Carbon::now()->addYear(5)->year ;
 		$cardCvv = "314";
 		$cardHolder = "cartao teste";	
 		$user = $this->userRandomForTest();
@@ -318,7 +319,7 @@ class GatewaysInterfaceTest {
 			$ledgerBankAccount->ledger_id = $ledger->id;
 			$ledgerBankAccount->holder =  $provider->first_name;
 			$ledgerBankAccount->document = $provider->document;
-			$ledgerBankAccount->bank_id = '12';
+			$ledgerBankAccount->bank_id = GatewaysLibModel::getBankIdForTest();
 			$ledgerBankAccount->agency = '1234';
 			$ledgerBankAccount->agency_digit = 5;
 			$ledgerBankAccount->account = '12345';

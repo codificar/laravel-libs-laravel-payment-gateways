@@ -38,10 +38,7 @@ class Pagarmev5Test extends TestCase
 
 	public function testSetCredentialsKeySuccess() {
         $credentials = KeyAccess::getArrayKeys(self::GATEWAY);
-        print_r("** Ambiente: Sandbox ** \n");
 		$saveKeys = $this->setCredentialsSettings($credentials);
-        print_r("** Chaves utilizadas: ");
-        print_r($credentials);
 		$this->assertTrue($saveKeys);
 	}
 
@@ -269,7 +266,9 @@ class Pagarmev5Test extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
+            print_r("** Pagarme v5 Teste - Chaves utilizadas: \n");
             foreach($credentials as $credential) {
+                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(

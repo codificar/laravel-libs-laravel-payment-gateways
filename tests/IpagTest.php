@@ -231,7 +231,9 @@ class IpagTest extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
+            print_r("Ipag Teste - ** Chaves utilizadas: \n");
             foreach($credentials as $credential) {
+                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(
