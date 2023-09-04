@@ -772,7 +772,7 @@ class IpagApi
             $fields->products           =   $productFields->products;
         }
 
-        if($capture && $provider && isset($provider->id) && $type == 'card')
+        if($provider && isset($provider->id) && $type == 'card')
         {
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
@@ -812,7 +812,7 @@ class IpagApi
     */
     private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
-        $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
+        $ledgerBankAccount = LedgerBankAccount::where('provider_id', $providerId)->first();
 
         if(!$ledgerBankAccount)
             return false;
