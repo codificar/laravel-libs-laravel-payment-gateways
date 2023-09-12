@@ -53,7 +53,7 @@ class Pagarmev5Test extends TestCase
         if(self::DELAY)
 			sleep(self::DELAY);
 		//Cria o cartão e verifica se todos os parâmetros estão ok
-		$createCard = $createCard = $interface->testCreateCard(self::IS_TERRA_CARD);;
+		$createCard = $interface->testCreateCard(self::IS_TERRA_CARD);
         $this->assertTrue($createCard['success']);
         $this->assertIsString($createCard['token']);
         $this->assertIsString($createCard['card_token']);
@@ -199,7 +199,7 @@ class Pagarmev5Test extends TestCase
         $code = isset($charge['code']) ? $charge['code'] : null;
 		
         if($charge && !$charge['success'] && $code && $code == '403') {
-			$this->addWarning(false, "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
+			$this->addWarning("criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
@@ -221,11 +221,11 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
 
         if($charge && !$charge['success'] && $code && $code == '500') {
-			$this->addWarning(false, 'charge: Não foi possível comunicar com o servidor (500)');
+			$this->addWarning('charge: Não foi possível comunicar com o servidor (500)');
 		} else if($charge && !$charge['success'] && $code
             && ($code == '0' || $code == '-2')) {
             $message = "Code: $code - Message: $message";
-            $this->addWarning(false, $message);
+            $this->addWarning($message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'paid');
@@ -247,14 +247,14 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
         
 		if($charge && !$charge['success'] && $code && $code == '500') {
-            $this->addWarning(false, "Não foi possível comunicar com o servidor (500)");
+            $this->addWarning("Não foi possível comunicar com o servidor (500)");
 		} else if($charge && !$charge['success'] && $code && 
             ($code == '0' || $code == '-2')) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning(false, $message);
+            $this->addWarning($message);
 		} else if($charge && !$charge['success'] && $code && $charge['response']) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning(false, $message);
+            $this->addWarning($message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'authorized');
