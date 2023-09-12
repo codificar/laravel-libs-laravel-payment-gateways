@@ -16,7 +16,6 @@ class AdiqTest extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 0;
-    const CARD_NUMBER = '4761739001010036';
     const IS_TERRA_CARD = false;
 
     /**
@@ -78,7 +77,7 @@ class AdiqTest extends TestCase
 		//Realiza uma cobrança direta e sem split
 		$charge = $interface->testCharge($cardId, self::IS_TERRA_CARD);
         if($charge && !$charge['success']) {
-			$this->addWarning("Error: " . " - Message: " . $charge['message']);
+			$this->addWarning( "Error: " . " - Message: " . $charge['message']);
 		} else {
             $this->assertTrue($charge['success']);
             $this->assertTrue($charge['captured']);
@@ -100,7 +99,7 @@ class AdiqTest extends TestCase
 
         $chargeNoCapture = $interface->testChargeNoCapture($cardId, self::IS_TERRA_CARD);
         if($chargeNoCapture && !$chargeNoCapture['success']) {
-			$this->addWarning("Error: " . " - Message: " . $chargeNoCapture['message']);
+			$this->addWarning( "Error: " . " - Message: " . $chargeNoCapture['message']);
 		} else {
             $this->assertTrue($chargeNoCapture['success']);
             $this->assertFalse($chargeNoCapture['captured']);
@@ -124,7 +123,7 @@ class AdiqTest extends TestCase
         //Faz o capture da pre-autorização anterior. Passa como parâmetro a transaction_id da pre-autorização.
         $capture = $interface->testCapture($transactionId, $cardId);
         if($capture && !$capture['success']) {
-			$this->addWarning("Error: " . " - Message: " . $capture['message']);
+			$this->addWarning( "Error: " . " - Message: " . $capture['message']);
 		} else {
             $this->assertTrue($capture['success']);
             $this->assertEquals($capture['status'], 'paid');
@@ -148,7 +147,7 @@ class AdiqTest extends TestCase
         //retrieve (recuperar os dados) a transaction
 		$retrieve = $interface->testRetrieve($transactionId, $cardId);
         if($retrieve && !$retrieve['success']) {
-			$this->addWarning("Error: " . " - Message: " . $retrieve['message']);
+			$this->addWarning( "Error: " . " - Message: " . $retrieve['message']);
 		} else {
             $this->assertTrue($retrieve['success']);
             $this->assertIsString($retrieve['transaction_id']);
@@ -173,7 +172,7 @@ class AdiqTest extends TestCase
         //Faz o cancelamento da transação
 		$refund = $interface->testRefund($transactionId, $cardId);
         if($refund && !$refund['success']) {
-			$this->addWarning("Error: " . " - Message: " . $refund['message']);
+			$this->addWarning( "Error: " . " - Message: " . $refund['message']);
 		} else {
             $this->assertTrue($refund['success']);
             $this->assertEquals($refund['status'], 'refunded');

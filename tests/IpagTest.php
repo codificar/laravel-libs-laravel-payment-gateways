@@ -16,7 +16,6 @@ class IpagTest extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 0;
-    const CARD_NUMBER = '5420222734962070';
     const IS_TERRA_CARD = false;
 
     /**
@@ -168,7 +167,7 @@ class IpagTest extends TestCase
 		$charge = $interface->testCreateOrUpdateAccount($cardId);
 		
         if($charge && !$charge['success'] && $charge['code'] == '403') {
-			$this->addWarning("criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
+			$this->addWarning( "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
@@ -183,11 +182,11 @@ class IpagTest extends TestCase
         $charge = $interface->testChargeWithSplit($cardId, true);
 		
         if($charge && !$charge['success'] && $charge['code'] == '500') {
-			$this->addWarning('charge: Não foi possível comunicar com o servidor (500)');
+			$this->addWarning( 'charge: Não foi possível comunicar com o servidor (500)');
 		} else if($charge && !$charge['success'] 
             && ($charge['code'] == '0' || $charge['code'] == '-2')) {
             $message = "Code: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'paid');
@@ -201,13 +200,13 @@ class IpagTest extends TestCase
         //Realiza um charge no capture com split
 		$charge = $interface->testChargeWithSplit($cardId, false);
 		if($charge && !$charge['success'] && $charge['code'] == '500') {
-            $this->addWarning("Não foi possível comunicar com o servidor (500)");
+            $this->addWarning( "Não foi possível comunicar com o servidor (500)");
 		} else if($charge && !$charge['success'] && ($charge['code'] == '0' || $charge['code'] == '-2')) {
             $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else if($charge && !$charge['success'] && $charge['response']) {
             $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'authorized');

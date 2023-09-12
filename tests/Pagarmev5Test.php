@@ -199,7 +199,7 @@ class Pagarmev5Test extends TestCase
         $code = isset($charge['code']) ? $charge['code'] : null;
 		
         if($charge && !$charge['success'] && $code && $code == '403') {
-			$this->addWarning("criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
+			$this->addWarning( "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
@@ -221,11 +221,11 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
 
         if($charge && !$charge['success'] && $code && $code == '500') {
-			$this->addWarning('charge: Não foi possível comunicar com o servidor (500)');
+			$this->addWarning( 'charge: Não foi possível comunicar com o servidor (500)');
 		} else if($charge && !$charge['success'] && $code
             && ($code == '0' || $code == '-2')) {
             $message = "Code: $code - Message: $message";
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'paid');
@@ -247,14 +247,14 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
         
 		if($charge && !$charge['success'] && $code && $code == '500') {
-            $this->addWarning("Não foi possível comunicar com o servidor (500)");
+            $this->addWarning( "Não foi possível comunicar com o servidor (500)");
 		} else if($charge && !$charge['success'] && $code && 
             ($code == '0' || $code == '-2')) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else if($charge && !$charge['success'] && $code && $charge['response']) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning($message);
+            $this->addWarning( $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'authorized');
@@ -270,7 +270,9 @@ class Pagarmev5Test extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
+            print_r("** Pagarme v5 Teste - Chaves utilizadas: \n");
             foreach($credentials as $credential) {
+                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(
