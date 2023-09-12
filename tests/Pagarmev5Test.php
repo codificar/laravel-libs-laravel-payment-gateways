@@ -16,7 +16,6 @@ class Pagarmev5Test extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 5;
-    const CARD_NUMBER = '342793631858229';
     const IS_TERRA_CARD = false;
     /**
 	 * Change settings default gateway
@@ -39,11 +38,8 @@ class Pagarmev5Test extends TestCase
 
 	public function testSetCredentialsKeySuccess() {
         $credentials = KeyAccess::getArrayKeys(self::GATEWAY);
-        print_r("** Ambiente: Sandbox ** \n");
-		$saveKeys = $this->setCredentialsSettings($credentials);
-        print_r("** Chaves utilizadas: ");
-        print_r($credentials);
-		$this->assertTrue($saveKeys);
+        $saveKeys = $this->setCredentialsSettings($credentials);
+        $this->assertTrue($saveKeys);
 	}
 
     public function testCreateCardSuccess()
@@ -170,7 +166,7 @@ class Pagarmev5Test extends TestCase
     public function testBilletChargeSuccess()
     {	
         if(env('APP_ENV') != 'production') {
-            $this->assertTrue(true, "billet: não pode ser realizado em ambiente de teste ou localhost");
+            $this->addWarning("billet: não pode ser realizado em ambiente de teste ou localhost");
 		} else {
             $interface = new GatewaysInterfaceTest();
             
@@ -199,7 +195,7 @@ class Pagarmev5Test extends TestCase
         $code = isset($charge['code']) ? $charge['code'] : null;
 		
         if($charge && !$charge['success'] && $code && $code == '403') {
-			$this->addWarning( "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
+			$this->addWarning("criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
@@ -221,11 +217,11 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
 
         if($charge && !$charge['success'] && $code && $code == '500') {
-			$this->addWarning( 'charge: Não foi possível comunicar com o servidor (500)');
+			$this->addWarning('charge: Não foi possível comunicar com o servidor (500)');
 		} else if($charge && !$charge['success'] && $code
             && ($code == '0' || $code == '-2')) {
             $message = "Code: $code - Message: $message";
-            $this->addWarning( $message);
+            $this->addWarning($message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'paid');
@@ -247,14 +243,14 @@ class Pagarmev5Test extends TestCase
 		$message = isset($charge['message']) ? $charge['message'] : '';
         
 		if($charge && !$charge['success'] && $code && $code == '500') {
-            $this->addWarning( "Não foi possível comunicar com o servidor (500)");
+            $this->addWarning("Não foi possível comunicar com o servidor (500)");
 		} else if($charge && !$charge['success'] && $code && 
             ($code == '0' || $code == '-2')) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning( $message);
+            $this->addWarning($message);
 		} else if($charge && !$charge['success'] && $code && $charge['response']) {
             $message = "\nCode: $code - Message: $message";
-            $this->addWarning( $message);
+            $this->addWarning($message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'authorized');

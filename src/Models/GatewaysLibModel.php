@@ -374,7 +374,7 @@ class GatewaysLibModel extends Eloquent
             }
         }
     }
-    
+
     /**
      * Get ank code for teste
      */
