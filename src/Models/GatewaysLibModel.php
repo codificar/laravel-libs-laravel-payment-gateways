@@ -325,7 +325,8 @@ class GatewaysLibModel extends Eloquent
      * @param array $ledgerBankAccounts
      * @return void
      */
-    public static function UpdateBankAccounts(Array $ledgerBankAccounts){
+    public static function UpdateBankAccounts(Array $ledgerBankAccounts)
+    {
 
         foreach ($ledgerBankAccounts as $ledgerBankAccount)
         {
@@ -372,6 +373,14 @@ class GatewaysLibModel extends Eloquent
 
             }
         }
+    }
+    
+    /**
+     * Get ank code for teste
+     */
+    public static function getBankIdForTest() {
+        $bank = \Bank::first();
+		return $bank->id;
     }
     
 }
