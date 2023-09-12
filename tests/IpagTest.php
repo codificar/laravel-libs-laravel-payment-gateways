@@ -167,14 +167,17 @@ class IpagTest extends TestCase
 		$charge = $interface->testCreateOrUpdateAccount($cardId);
 		
         if($charge && !$charge['success'] && $charge['code'] == '403') {
-			$this->addWarning( "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
+			$this->addWarning("Criar Recipient: Conta Ipag não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
 			$this->assertNotEmpty($charge['recipient_id']);
 		}
     }
-
+    
+    /**
+    * @depends testCreateOrUpdateAccountSuccess
+    */
     public function testChargeWithSplitSuccess()
     {
         $interface = new GatewaysInterfaceTest();
@@ -186,6 +189,9 @@ class IpagTest extends TestCase
 		} else if($charge && !$charge['success'] 
             && ($charge['code'] == '0' || $charge['code'] == '-2')) {
             $message = "Code: " . $charge['code'] . " - Message:" . $charge['message'];
+            $this->addWarning($message);
+		} else if($charge && !$charge['success'] && $charge['response']) {
+            $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
             $this->addWarning( $message);
 		} else {
 			$this->assertTrue($charge['success']);
@@ -193,6 +199,9 @@ class IpagTest extends TestCase
 		}
     }
 
+    /**
+    * @depends testCreateOrUpdateAccountSuccess
+    */
     public function testChargeNoCaptureWithSplitSuccess()
     {	
         $interface = new GatewaysInterfaceTest();
@@ -222,7 +231,9 @@ class IpagTest extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
+            print_r("Ipag Teste - ** Chaves utilizadas: \n");
             foreach($credentials as $credential) {
+                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(
