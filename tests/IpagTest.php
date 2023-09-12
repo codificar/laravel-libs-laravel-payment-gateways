@@ -174,7 +174,7 @@ class IpagTest extends TestCase
 			$this->assertNotEmpty($charge['recipient_id']);
 		}
     }
-
+    
     /**
      * @depends testCreateOrUpdateAccountSuccess
      */

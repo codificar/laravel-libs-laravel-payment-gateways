@@ -11,8 +11,9 @@ use Location;
 
 class GatewaysInterfaceTest {
 
-    public function testCreateCard($isCarto = false){
-        $cardNumber = '4111111111111111';
+    public function testCreateCard($isCarto = false)
+	{
+		$cardNumber = '4111111111111111';
 		$cardExpirationMonth = 8;
 		$cardExpirationYear = Carbon::now()->addYear(5)->year ;
 		$cardCvv = "314";
@@ -20,12 +21,12 @@ class GatewaysInterfaceTest {
 		$user = $this->userRandomForTest();
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
-		
+
 		if(isset($response['payment'])) {
 			$payment = $response['payment'];
 			Payment::setDefaultCardData($user->id, $payment->id);
 		}
-
+		
 		//o gateway da juno precisa de webview (iframe) para cadastrar cartao. Entao para prosseguir com os testes, foi colocado o token do cartao manualmente
 		if(Settings::findByKey('default_payment') == 'juno') {
 			$payment = Payment::find($response['payment']['id']);
