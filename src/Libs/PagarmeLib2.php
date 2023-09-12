@@ -265,7 +265,7 @@ class PagarmeLib2 implements IPayment
 				'success' 			=> true,
 				'captured' 			=> $capture,
 				'paid' 				=> ($pagarMeTransaction->status == self::PAGARME_PAID),
-				'status' 			=> $pagarMeTransaction->status ?? self::PAGARME_ERROR,
+				'status' 			=> self::PAGARME_ERROR,
 				'transaction_id' 	=> strval($pagarMeTransaction->id)
 			);
 		}

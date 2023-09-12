@@ -1,5 +1,5 @@
 <?php
-namespace Tests\Unit\libs\gateways;
+namespace Tests\libs\gateways;
 
 class KeyAccess
 {
@@ -15,7 +15,7 @@ class KeyAccess
         // Chaves sandbox Codificar
         array(
             ['key' => 'ipag_api_id', 'value' => 'codificar@sandbox.com.br'],
-            ['key' => 'ipag_api_key', 'value' => '7C0A-A3813B2B-84875BF7-F70ECD01-5530']
+            ['key' => 'ipag_api_key', 'value' => '2F33-EDC4568C-F8F79A86-2D462D9C-53AC']
         )
     );
 
@@ -23,7 +23,7 @@ class KeyAccess
         // Chaves sandbox Codificar
         array(
             ['key' => 'pix_ipag_api_id', 'value' => 'codificar@sandbox.com.br'],
-            ['key' => 'pix_ipag_api_key', 'value' => '7C0A-A3813B2B-84875BF7-F70ECD01-5530'],
+            ['key' => 'pix_ipag_api_key', 'value' => '2F33-EDC4568C-F8F79A86-2D462D9C-53AC'],
             ['key' => 'pix_ipag_expiration_time', 'value' => '30'],
             ['key' => 'pix_ipag_version', 'value' => '2'],
         )

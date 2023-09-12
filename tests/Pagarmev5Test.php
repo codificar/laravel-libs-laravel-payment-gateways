@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\Unit\libs\gateways;
+namespace Tests\libs\gateways;
 
 use Exception;
 use Log;
 use Tests\TestCase;
 use Settings;
-use Tests\Unit\libs\gateways\GatewaysInterfaceTest;
+use Tests\libs\gateways\GatewaysInterfaceTest;
 
 // to run test: sail artisan test --filter Pagarmev5Test
 class Pagarmev5Test extends TestCase
@@ -16,6 +16,7 @@ class Pagarmev5Test extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 5;
+    const CARD_NUMBER = '342793631858229';
     const IS_TERRA_CARD = false;
     /**
 	 * Change settings default gateway
@@ -38,7 +39,10 @@ class Pagarmev5Test extends TestCase
 
 	public function testSetCredentialsKeySuccess() {
         $credentials = KeyAccess::getArrayKeys(self::GATEWAY);
+        print_r("** Ambiente: Sandbox ** \n");
 		$saveKeys = $this->setCredentialsSettings($credentials);
+        print_r("** Chaves utilizadas: ");
+        print_r($credentials);
 		$this->assertTrue($saveKeys);
 	}
 
@@ -49,7 +53,7 @@ class Pagarmev5Test extends TestCase
         if(self::DELAY)
 			sleep(self::DELAY);
 		//Cria o cartão e verifica se todos os parâmetros estão ok
-		$createCard = $interface->testCreateCard(self::IS_TERRA_CARD);
+		$createCard = $interface->testCreateCard(self::CARD_NUMBER, self::IS_TERRA_CARD);
         $this->assertTrue($createCard['success']);
         $this->assertIsString($createCard['token']);
         $this->assertIsString($createCard['card_token']);
@@ -166,7 +170,7 @@ class Pagarmev5Test extends TestCase
     public function testBilletChargeSuccess()
     {	
         if(env('APP_ENV') != 'production') {
-            $this->addWarning( "billet: não pode ser realizado em ambiente de teste ou localhost");
+            $this->assertTrue(true, "billet: não pode ser realizado em ambiente de teste ou localhost");
 		} else {
             $interface = new GatewaysInterfaceTest();
             
@@ -266,9 +270,7 @@ class Pagarmev5Test extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
-            print_r("** Pagarme v5 Teste - Chaves utilizadas: \n");
             foreach($credentials as $credential) {
-                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(

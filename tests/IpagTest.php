@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\Unit\libs\gateways;
+namespace Tests\libs\gateways;
 
 use Exception;
 use Log;
 use Tests\TestCase;
 use Settings;
-use Tests\Unit\libs\gateways\GatewaysInterfaceTest;
+use Tests\libs\gateways\GatewaysInterfaceTest;
 
 // to run test: sail artisan test --filter IpagTest
 class IpagTest extends TestCase
@@ -16,6 +16,7 @@ class IpagTest extends TestCase
     const SUB_CATEGORY = 0;
     const PAGE = 1;
     const DELAY = 0;
+    const CARD_NUMBER = '5420222734962070';
     const IS_TERRA_CARD = false;
 
     /**
@@ -51,7 +52,7 @@ class IpagTest extends TestCase
     {
         $interface = new GatewaysInterfaceTest();
 		//Cria o cartão e verifica se todos os parâmetros estão ok
-		$createCard = $interface->testCreateCard(self::IS_TERRA_CARD);
+		$createCard = $interface->testCreateCard(self::CARD_NUMBER, self::IS_TERRA_CARD);
         $this->assertTrue($createCard['success']);
         $this->assertIsString($createCard['token']);
         $this->assertIsString($createCard['card_token']);
@@ -140,7 +141,7 @@ class IpagTest extends TestCase
     public function testBilletChargeSuccess()
     {	
         if(env('APP_ENV') != 'production') {
-            $this->addWarning("billet: não pode ser realizado em ambiente de teste ou localhost");
+            $this->assertTrue(true, "billet: não pode ser realizado em ambiente de teste ou localhost");
 		} else {
             $interface = new GatewaysInterfaceTest();
             $billet = $interface->testBilletCharge();
@@ -167,7 +168,7 @@ class IpagTest extends TestCase
 		$charge = $interface->testCreateOrUpdateAccount($cardId);
 		
         if($charge && !$charge['success'] && $charge['code'] == '403') {
-			$this->addWarning("Criar Recipient: Conta Ipag não tem permissão para efetuar ação.");
+			$this->assertTrue(false, "criar conta do prestador (Recipient): Conta não tem permissão para efetuar ação.");
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertIsString($charge['recipient_id']);
@@ -175,9 +176,6 @@ class IpagTest extends TestCase
 		}
     }
 
-    /**
-     * @depends testCreateOrUpdateAccountSuccess
-     */
     public function testChargeWithSplitSuccess()
     {
         $interface = new GatewaysInterfaceTest();
@@ -185,23 +183,17 @@ class IpagTest extends TestCase
         $charge = $interface->testChargeWithSplit($cardId, true);
 		
         if($charge && !$charge['success'] && $charge['code'] == '500') {
-			$this->addWarning('charge: Não foi possível comunicar com o servidor (500)');
+			$this->assertTrue(false, 'charge: Não foi possível comunicar com o servidor (500)');
 		} else if($charge && !$charge['success'] 
             && ($charge['code'] == '0' || $charge['code'] == '-2')) {
             $message = "Code: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
-		} else if($charge && !$charge['success'] && $charge['response']) {
-            $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->assertTrue(false, $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'paid');
 		}
     }
 
-    /**
-     * @depends testCreateOrUpdateAccountSuccess
-     */
     public function testChargeNoCaptureWithSplitSuccess()
     {	
         $interface = new GatewaysInterfaceTest();
@@ -209,13 +201,13 @@ class IpagTest extends TestCase
         //Realiza um charge no capture com split
 		$charge = $interface->testChargeWithSplit($cardId, false);
 		if($charge && !$charge['success'] && $charge['code'] == '500') {
-            $this->addWarning("Não foi possível comunicar com o servidor (500)");
+            $this->assertTrue(false, "Não foi possível comunicar com o servidor (500)");
 		} else if($charge && !$charge['success'] && ($charge['code'] == '0' || $charge['code'] == '-2')) {
             $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->assertTrue(false, $message);
 		} else if($charge && !$charge['success'] && $charge['response']) {
             $message = "\nCode: " . $charge['code'] . " - Message:" . $charge['message'];
-            $this->addWarning($message);
+            $this->assertTrue(false, $message);
 		} else {
 			$this->assertTrue($charge['success']);
 			$this->assertEquals($charge['status'], 'authorized');
@@ -231,9 +223,7 @@ class IpagTest extends TestCase
 	private function setCredentialsSettings(array $credentials): bool
 	{
         try {
-            print_r("Ipag Teste - ** Chaves utilizadas: \n");
             foreach($credentials as $credential) {
-                print_r($credential['key'] . ": " . $credential['value'] . " \n");
                 Settings::updateOrCreate(
                     array('key' => $credential['key']), 
                     array(
