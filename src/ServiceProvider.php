@@ -42,7 +42,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         // Publish the tests files 
         $this->publishes([
             __DIR__ . '/../tests/' => base_path('tests/Unit/libs/gateways'),
-        ], 'publishes_gateway_tests');
+        ], 'publishes_tests');
     }
 
     /**
