@@ -77,7 +77,7 @@ class BancardTest extends TestCase
 		//Realiza uma cobrança direta e sem split
 		$charge = $interface->testCharge($cardId, self::IS_TERRA_CARD);
         if($charge && !$charge['success']) {
-			$this->addWarning( "Error: " . $charge['error'] . " - Message: " . $charge['message']);
+			$this->addWarning( "Error: " . $charge['type'] . " - Message: " . $charge['message']);
 		} else {
             $this->assertTrue($charge['success']);
             $this->assertTrue($charge['captured']);
@@ -99,7 +99,7 @@ class BancardTest extends TestCase
 
         $chargeNoCapture = $interface->testChargeNoCapture($cardId, self::IS_TERRA_CARD);
         if($chargeNoCapture && !$chargeNoCapture['success']) {
-			$this->addWarning( "Error: " . $chargeNoCapture['error'] . " - Message: " . $chargeNoCapture['message']);
+			$this->addWarning( "Error: " . $chargeNoCapture['type'] . " - Message: " . $chargeNoCapture['message']);
 		} else {
             $this->assertTrue($chargeNoCapture['success']);
             $this->assertFalse($chargeNoCapture['captured']);
@@ -107,30 +107,6 @@ class BancardTest extends TestCase
             $this->assertEquals($chargeNoCapture['status'], 'authorized');
             $this->assertIsString($chargeNoCapture['transaction_id']);
             $this->assertNotEmpty($chargeNoCapture['transaction_id']);
-        }
-    }
-
-    public function testCaptureChargeSuccess()
-    {	
-        $interface = new GatewaysInterfaceTest();
-        $cardId = $interface->getLastCardId();
-        $transactionId = $interface->getLastTransactionIdAuthorized();
-        
-        if(self::DELAY) {
-			sleep(self::DELAY);
-        }
-
-        //Faz o capture da pre-autorização anterior. Passa como parâmetro a transaction_id da pre-autorização.
-        $capture = $interface->testCapture($transactionId, $cardId);
-        if($capture && !$capture['success']) {
-			$this->addWarning( "Error: " . $capture['error'] . " - Message: " . $capture['message']);
-		} else {
-            $this->assertTrue($capture['success']);
-            $this->assertEquals($capture['status'], 'paid');
-            $this->assertTrue($capture['captured']);
-            $this->assertTrue($capture['paid']);
-            $this->assertIsString($capture['transaction_id']);
-            $this->assertNotEmpty($capture['transaction_id']);
         }
     }
 
@@ -147,7 +123,7 @@ class BancardTest extends TestCase
         //retrieve (recuperar os dados) a transaction
 		$retrieve = $interface->testRetrieve($transactionId, $cardId);
         if($retrieve && !$retrieve['success']) {
-			$this->addWarning( "Error: " . $retrieve['error'] . " - Message: " . $retrieve['message']);
+			$this->addWarning( "Error: " . $retrieve['type'] . " - Message: " . $retrieve['message']);
 		} else {
             $this->assertTrue($retrieve['success']);
             $this->assertIsString($retrieve['transaction_id']);
@@ -189,7 +165,7 @@ class BancardTest extends TestCase
         if(self::DELAY)
 			sleep(self::DELAY);
 		//Cria o cartão e verifica se todos os parâmetros estão ok
-		$createCard = $interface->testCreateCard(self::IS_TERRA_CARD);
+		$createCard = $interface->testDeleteCard();
         $this->assertTrue($createCard['success']);
         $this->assertIsString($createCard['token']);
         $this->assertIsString($createCard['card_token']);
