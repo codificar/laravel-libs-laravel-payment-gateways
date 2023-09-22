@@ -11,6 +11,14 @@ class KeyAccess
         ),
     );
 
+    const BANCARD = array(
+        // Chaves sandbox Codificar
+        array(
+            ['key' => 'bancard_public_key', 'value' => 'CG22puGHxrRMtIIbxoxnFkhKH0PIgRl'],
+            ['key' => 'bancard_private_key', 'value' => 'hWj2OrfeKQAjQwUm(RgUx3co,UDThPJiS4qB)x)7']
+        ),
+    );
+
     const IPAG = array( 
         // Chaves sandbox Codificar
         array(
@@ -71,6 +79,9 @@ class KeyAccess
         switch ($gateway) {
             case 'cielo':
                 $keys = self::CIELO;
+                break;
+            case 'bancard':
+                $keys = self::BANCARD;
                 break;
             case 'ipag':
                 $keys = self::IPAG;
