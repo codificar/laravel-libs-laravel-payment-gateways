@@ -19,7 +19,7 @@ class LibPaymentLanguageSpanishTest extends TestCase
         
         $path = base_path() . '/vendor/codificar/payment-gateway/src/resources/lang';
         $directoryPt = "$path/pt-br/*.php";
-        $directoryEs = "$path/es/*.php";
+        $directoryEs = "$path/es-py/*.php";
         $filesPt = glob($directoryPt);
         $filesEs = glob($directoryEs);
 
