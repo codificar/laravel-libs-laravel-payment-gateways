@@ -22,7 +22,7 @@ class GatewaysInterfaceTest {
 
 		$response = Payment::createCardByGateway($user->id, $cardNumber, $cardHolder, $cardExpirationMonth, $cardExpirationYear, $cardCvv, "123456", $isCarto);
 
-		if(isset($response['payment'])) {
+		if($response['success'] && isset($response['payment'])) {
 			$payment = $response['payment'];
 			Payment::setDefaultCardData($user->id, $payment->id);
 		}
@@ -36,6 +36,12 @@ class GatewaysInterfaceTest {
 		}
 
 		return($response);
+    }
+
+    public function testDeleteCard()
+	{
+		$user = $this->userRandomForTest();
+		return \Payment::deleteByIdAndUserId($user->getDefaultCard(), $user->id);
     }
 
     public function testCharge($cardId, $isCarto = false)

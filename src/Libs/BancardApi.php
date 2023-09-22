@@ -35,7 +35,7 @@ class BancardApi
      * @return string
      */
 
-    public function getApi()
+    public static function getApi()
     {
         //se não estiver em ambiente de produção, retorna o dev
         if (App::environment('production')) {
@@ -51,7 +51,7 @@ class BancardApi
      * @return string
      */
 
-    public function generateToken($vars = [])
+    public static function generateToken($vars = [])
     {
 
         //monta chave unindo as variáveis
@@ -71,7 +71,7 @@ class BancardApi
      * @return string
      */
 
-    public function generateURL($endpoint)
+    public static function generateURL($endpoint)
     {
 
         //monta url
@@ -98,7 +98,10 @@ class BancardApi
             $url = self::generateURL("cards/new");
 
             //gera um token para o usuário
-            $customer_vars = array($user ? $user->id : ($provider ? $provider->id : null), $user ? "customer_id" : ($provider ? "provider_id" : null));
+            $customer_vars = array(
+                $user ? $user->id : ($provider ? $provider->id : null), 
+                $user ? "customer_id" : ($provider ? "provider_id" : null)
+            );
             $customer_id = crc32(self::generateToken($customer_vars));
 
             //gera um token para o cartão
@@ -152,12 +155,19 @@ class BancardApi
             if ($result->status == self::STATUS_SUCCESS) {
                 return \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $result->process_id;
             } else {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => $result->messages
                 );
             }
         } catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
@@ -259,12 +269,19 @@ class BancardApi
                 //retorna cartões
                 return $result;
             } else {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => trans("paymentError." . (isset($result->messages[0]->key) ? $result->messages[0]->key : 'general'))
                 );
             }
         } catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
@@ -330,6 +347,12 @@ class BancardApi
 
             //verifica se deu erro
             if ($result->status != self::STATUS_SUCCESS) {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => $result->messages
@@ -344,6 +367,7 @@ class BancardApi
         }
         //exceções
         catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
@@ -398,6 +422,12 @@ class BancardApi
 
             //verifica se deu erro
             if ($result->status != self::STATUS_SUCCESS) {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => $result->messages
@@ -409,12 +439,11 @@ class BancardApi
                 'success' => true,
             );
         } catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
             );
-
-            \Log::error(json_encode($return));
 
             return $return;
         }
@@ -423,6 +452,15 @@ class BancardApi
     public static function capture($clientId, $token, $userId, $paymentId, $amount)
     {
         //não utilizado para bancard no momento
+        \Log::error ("Bancard > " . __FUNCTION__ . ': not_implemented');
+
+        return array(
+            "success" 			=> false ,
+            "type" 				=> 'api_capture_error' ,
+            "code" 				=> 'api_capture_error',
+            "message" 			=> 'capture_not_implementd',
+            "transaction_id" 	=> null
+        );
     }
 
     /* Método para recuperar transação na Bancard
@@ -470,6 +508,12 @@ class BancardApi
 
             //verifica se deu erro
             if ($result->status != self::STATUS_SUCCESS) {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => $result->messages
@@ -487,6 +531,7 @@ class BancardApi
                 'capture' => true
             );
         } catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
@@ -541,6 +586,12 @@ class BancardApi
 
             //verifica se deu erro
             if ($result->status != self::STATUS_SUCCESS) {
+                \Log::error("Bancard Error > " . __FUNCTION__, 
+                    array(
+                        'fields' =>   $fields,
+                        'gateway_response' => $result->messages,
+                    )
+                );
                 return array(
                     'success' => false,
                     'message' => $result->messages
@@ -553,6 +604,7 @@ class BancardApi
                 'card_id' => $payment->id
             );
         } catch (Exception $ex) {
+            \Log::error($ex->getMessage() . $ex->getTraceAsString());
             $return = array(
                 "success" => false,
                 "message" => $ex->getMessage()
