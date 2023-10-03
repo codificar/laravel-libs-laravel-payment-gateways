@@ -92,7 +92,7 @@ class IpagApi
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
-
+        dd($chargeSplitRequest);
 
         if(self::isForceCapture($chargeSplitRequest, $capture)){
             $chargeSplitRequest = self::captureById($chargeSplitRequest->data->id, $amount);
@@ -413,7 +413,6 @@ class IpagApi
         $body       =   null;
         $header     =   self::getHeader();
         $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
-
         return $sellerRequest;
     }
 
@@ -460,7 +459,6 @@ class IpagApi
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $sellerId = $ledgerBankAccount->recipient_id;
-
         $response  = null;
         if(isset($sellerId)) {
             $response = self::getSeller($sellerId);
@@ -697,10 +695,9 @@ class IpagApi
                 \Log::error($e->getMessage() . $e->getTraceAsString());
             }
         }
-    
 
         $fields         =   (object)array(
-            'amount'            =>  floatval(number_format($amount, 2)),
+            'amount'            =>  floatval($amount),
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
@@ -771,13 +768,11 @@ class IpagApi
             $fields->payment->boleto    =   $billetFields->boleto;
             $fields->products           =   $productFields->products;
         }
-
         if($provider && isset($provider->id) && $type == 'card')
         {
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
         }
-
         return json_encode($fields);
     }
 
@@ -813,12 +808,10 @@ class IpagApi
     private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
         $ledgerBankAccount = LedgerBankAccount::where('provider_id', $providerId)->first();
-
         if(!$ledgerBankAccount)
             return false;
 
         $sellerId = self::checkProviderAccount($ledgerBankAccount);
-
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             return false;
 
