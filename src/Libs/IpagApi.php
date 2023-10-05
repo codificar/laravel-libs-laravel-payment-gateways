@@ -697,7 +697,7 @@ class IpagApi
         }
 
         $fields         =   (object)array(
-            'amount'            =>  floatval($amount),
+            'amount'            =>  floatval(number_format($amount, 2)),
             'order_id'          =>  $orderId,
             'customer'          =>  (object)array(
                 'name'          =>  $client->first_name.' '.$client->last_name,
