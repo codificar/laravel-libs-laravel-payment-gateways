@@ -92,7 +92,6 @@ class IpagApi
         $header     =   self::getHeader(true);
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
-        dd($chargeSplitRequest);
 
         if(self::isForceCapture($chargeSplitRequest, $capture)){
             $chargeSplitRequest = self::captureById($chargeSplitRequest->data->id, $amount);
