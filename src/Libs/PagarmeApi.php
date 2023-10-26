@@ -325,12 +325,12 @@ class PagarmeApi
      *                      ?'message' //if it fails, with false success
      *                     }
      */
-    public static function pixCharge($amount, $user)
+    public static function pixCharge($amount, $user, $providerAmount = null, $provider = null)
     {
         $url = sprintf('%s/orders/', self::URL);
 
         $header     =   self::getHeader(true);
-        $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
+        $body       =   self::getBody(null, $amount, $providerAmount, true, $provider, $user, null, true, false);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $pixRequest;
@@ -418,7 +418,7 @@ class PagarmeApi
      * @param  Boolean   $isDebit
      * @return Json
      */
-    private static function getBody($payment = null, $amount, $providerAmount, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false, $isDebit = false)
+    private static function getBody($payment = null, $amount, $providerAmount = null, $capture = false, Provider $provider = null, $client = null, $billetExpiry = null, $isPix = false, $isDebit = false)
     {
         $paymentDocument = null;
         if($payment)
@@ -428,12 +428,20 @@ class PagarmeApi
 
             }
             $paymentType = $isDebit ? 'debit_card' : 'credit_card';
-
             if($payment->document){
                 $paymentDocument = $payment->document;
             }
         }
         
+        // $isPix = $payment_opt == 9;
+        // // dd($isPix, $payment, "encima");
+        // if ($isPix) {
+        //     $paymentType = "pix";
+        //     $payment = null;
+        // }
+
+
+
         if($client && !$paymentDocument) {
             $paymentDocument = $client->document;
         }
@@ -448,6 +456,8 @@ class PagarmeApi
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
+        // $isPix = true;
+        // $payment = null;
 
         $fields = (object)array(
             "items"     => [
@@ -541,13 +551,12 @@ class PagarmeApi
         }
 
         $fields->payments[] = $payFields;
-
-        if($provider && isset($provider->id) && $payment)
+        if($provider && isset($provider->id) && ($payment || $isPix))
         {
             $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
             $fields->payments[0]->split = $splitFields->split ?? [];
         }
-
+        // dd($fields);
         return json_encode($fields);
     }
 
