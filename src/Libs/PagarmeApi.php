@@ -432,15 +432,6 @@ class PagarmeApi
                 $paymentDocument = $payment->document;
             }
         }
-        
-        // $isPix = $payment_opt == 9;
-        // // dd($isPix, $payment, "encima");
-        // if ($isPix) {
-        //     $paymentType = "pix";
-        //     $payment = null;
-        // }
-
-
 
         if($client && !$paymentDocument) {
             $paymentDocument = $client->document;
@@ -456,8 +447,7 @@ class PagarmeApi
         } catch (\Exception $e) {
             \Log::error($e->getMessage() . $e->getTraceAsString());
         }
-        // $isPix = true;
-        // $payment = null;
+        
 
         $fields = (object)array(
             "items"     => [
@@ -556,7 +546,6 @@ class PagarmeApi
             $splitFields = self::getSplitInfo($provider->id, $providerAmount, $amount);
             $fields->payments[0]->split = $splitFields->split ?? [];
         }
-        // dd($fields);
         return json_encode($fields);
     }
 
