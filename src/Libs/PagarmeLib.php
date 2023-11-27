@@ -75,49 +75,90 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
     {
-        try {
-            $response = PagarmeApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture);
-
-            if (
-                isset($response->success) &&
-                $response->success &&
-                isset($response->data) &&
-                (
-                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
-                    $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
-                )
-            ) {
-                $statusMessage = $response->data->charges[0]->last_transaction->status;
-                $result = array(
-                    'success' 		    => true,
-                    'status' 		    => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'authorized',
-                    'captured' 			=> $statusMessage == self::GATEWAY_CAPTURED ? true	 : false,
-                    'paid' 		        => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'denied',
-                    'transaction_id'    => (string)$response->data->charges[0]->id
-                );
-                return $result;
-            } else {
+        if ($payment_opt == 0) {
+            try {
+                    $response = PagarmeApi::chargeWithOrNotSplit($payment, $provider, $totalAmount, $providerAmount, $capture, $payment_opt);
+                    if (
+                        isset($response->success) &&
+                        $response->success &&
+                        isset($response->data) &&
+                        (
+                            $response->data->charges[0]->last_transaction->status == self::GATEWAY_CAPTURED ||
+                            $response->data->charges[0]->last_transaction->status == self::GATEWAY_AUTHORIZED_PENDING_CAPTURE
+                        )
+                    ) {
+                        $statusMessage = $response->data->charges[0]->last_transaction->status;
+                        $result = array(
+                            'success' 		    => true,
+                            'status' 		    => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'authorized',
+                            'captured' 			=> $statusMessage == self::GATEWAY_CAPTURED ? true	 : false,
+                            'paid' 		        => $statusMessage == self::GATEWAY_CAPTURED ? 'paid' : 'denied',
+                            'transaction_id'    => (string)$response->data->charges[0]->id
+                        );
+                        return $result;
+                    } else {
+                        return array(
+                            "success" 	=> false ,
+                            'data' 		=> null,
+                            'error' 	=> array(
+                                "code" 		=> ApiErrors::CARD_ERROR,
+                                "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                            )
+                        );
+                    }
+            } catch (Exception $th) {
                 return array(
-                    "success" 	=> false ,
-                    'data' 		=> null,
-                    'error' 	=> array(
-                        "code" 		=> ApiErrors::CARD_ERROR,
-                        "messages" 	=> array(trans('creditCard.customerCreationFail'))
+                    "success"           =>  false ,
+                    'data'              =>  null,
+                    'transaction_id'    =>  '',
+                    'error'     => array(
+                        "code"          => ApiErrors::CARD_ERROR,
+                        "messages"      => array(trans('creditCard.customerCreationFail'))
                     )
                 );
             }
-        } catch (Exception $th) {
-            return array(
-                "success"           =>  false ,
-                'data'              =>  null,
-                'transaction_id'    =>  '',
-                'error'     => array(
-                    "code"          => ApiErrors::CARD_ERROR,
-                    "messages"      => array(trans('creditCard.customerCreationFail'))
-                )
-            );
+        }
+        elseif ($payment_opt == 9){
+            try {
+                $response = PagarmeApi::pixCharge($totalAmount, $user, $providerAmount, $provider);
+                if (
+                    isset($response->success) ||
+                    $response->success ||
+                    isset($response->data->charges[0]->id)
+                ) {
+                    return array(
+                        'success'                   =>  true,
+                        'captured'                  =>  true,
+                        'paid'                      =>  false,
+                        'status'                    =>  self::WAITING_PAYMENT,
+                        'transaction_id'            =>  (string)$response->data->charges[0]->id,
+                        'billet_expiration_date'    =>  $response->data->charges[0]->last_transaction->qr_code,
+                        'expires_at'                =>  $response->data->charges[0]->last_transaction->expires_at
+                    );
+                } else {
+                    return array(
+                        "success" 				=>  false,
+                        "type" 					=>  'api_charge_error',
+                        "code" 					=>  '',
+                        "message" 				=>  '',
+                        "transaction_id"		=>  '',
+                        'billet_expiration_date'=>  ''
+                    );
+                }
+            } catch (\Throwable $th) {
+                Log::error($th->getMessage() . $th->getTraceAsString());
+    
+                return array(
+                    "success" 				=>  false,
+                    "type" 					=>  'api_charge_error',
+                    "code" 					=>  '',
+                    "message"               => MessageExceptionPagarme::handleMessagePagarmeException($th->getMessage()),
+                    "transaction_id"		=>  '',
+                    'billet_expiration_date'=>  ''
+                );
+            }
         }
     }
     
@@ -785,11 +826,11 @@ class PagarmeLib implements IPayment
      * @param User    $user
      * @return array
      */
-    public function pixCharge($amount, $user)
+    public function pixCharge($totalAmount, $user, $providerAmount = null, $provider = null)
     {
         try {
-            $response = PagarmeApi::pixCharge($amount, $user);
-
+            $response = PagarmeApi::pixCharge($totalAmount, $user, $providerAmount, $provider);
+            
             if (
                 isset($response->success) ||
                 $response->success ||
