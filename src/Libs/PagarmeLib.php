@@ -481,7 +481,7 @@ class PagarmeLib implements IPayment
     {
         try {
             $response = PagarmeApi::refund($transaction);
-
+            
             if (
                 isset($response->success) &&
                 $response->success &&
@@ -503,7 +503,7 @@ class PagarmeLib implements IPayment
                 "success" 			=> false ,
                 "type" 				=> 'api_refund_error' ,
                 "code" 				=> 'api_refund_error',
-                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($e->getMessage()),
+                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()),
                 "transaction_id" 	=> ''
             );
         }
