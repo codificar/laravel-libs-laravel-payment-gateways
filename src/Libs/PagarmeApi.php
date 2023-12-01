@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use Log, Exception;
 use Payment;
 use Provider;
-use Codificar\Finance\Models\Transaction;
+use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
@@ -196,6 +196,11 @@ class PagarmeApi
         $providerType   =   ((strlen($provider->document)) > 11) ? 'company' : 'individual';
         $ledgerType     =   ((strlen($ledgerBankAccount->document)) > 11) ? 'company' : 'individual';
 
+        $settingTransferInterval = Settings::where('key', 'provider_transfer_interval')->first()->value;
+        
+        $settingTransferDay = (int)Settings::where('key', 'provider_transfer_day')->first()->value;
+
+
         $fields = (object)array(
             "name"      => $provider->first_name . $provider->last_name,
             "email"     => $provider->email,
@@ -214,8 +219,8 @@ class PagarmeApi
             ),
             "transfer_settings"     =>  (object)array(
                 "transfer_enabled"    =>  (Settings::findByKey('auto_transfer_provider_payment') == '1') ?? false,
-                "transfer_interval"   =>  "Daily",
-                "transfer_day"        =>  0
+                "transfer_interval"   =>  $settingTransferInterval ?? "Daily",
+                "transfer_day"        =>  $settingTransferDay ?? 0
             )
         );
 
