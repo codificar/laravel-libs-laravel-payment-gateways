@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use Log, Exception;
 use Payment;
 use Provider;
-use Codificar\Finance\Models\Transaction;
+use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;

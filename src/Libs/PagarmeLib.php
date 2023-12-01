@@ -75,7 +75,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
+    public function chargeWithSplit(Payment $payment = null, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
     {
         if ($payment_opt == 0) {
             try {
