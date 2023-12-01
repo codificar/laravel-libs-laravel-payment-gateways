@@ -154,7 +154,7 @@ class PagarmeApi
 
         $header        =    self::getHeader(true);
         $refundRequest =    self::apiRequest($url, null, $header, self::DELETE_REQUEST);
-        
+
         return $refundRequest;
     }
 
@@ -196,9 +196,10 @@ class PagarmeApi
         $providerType   =   ((strlen($provider->document)) > 11) ? 'company' : 'individual';
         $ledgerType     =   ((strlen($ledgerBankAccount->document)) > 11) ? 'company' : 'individual';
 
-        $settingTransferInterval = Settings::where('key', 'provider_transfer_interval')->first();
+        $settingTransferInterval = Settings::where('key', 'provider_transfer_interval')->first()->value;
+        
+        $settingTransferDay = (int)Settings::where('key', 'provider_transfer_day')->first()->value;
 
-        $settingTransferDay = Settings::where('key', 'provider_transfer_day')->first();
 
         $fields = (object)array(
             "name"      => $provider->first_name . $provider->last_name,
