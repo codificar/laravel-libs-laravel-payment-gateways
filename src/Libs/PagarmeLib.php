@@ -173,10 +173,10 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null, $estimateValueProvider = null)
     {
         try {
-            $response = PagarmeApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $response = PagarmeApi::chargeWithOrNotSplit($payment, $provider ?? null, $amount, $estimateValueProvider ?? null, $capture);
             $response = HandleResponsePagarmeV5::handle($response);
 
             if(!$response['success']){
