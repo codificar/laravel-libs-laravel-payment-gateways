@@ -64,7 +64,7 @@ class PagarmeApi
      *                      ?'message' //if it fails, with false success
      *                     }
      */
-    public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $amount, $providerAmount = null, $capture)
+    public static function chargeWithOrNotSplit(Payment $payment = null, Provider $provider = null, $amount, $providerAmount = null, $capture)
     {
         $url = sprintf('%s/orders/', self::URL);
 
