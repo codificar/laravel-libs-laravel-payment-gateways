@@ -75,7 +75,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
+    public function chargeWithSplit(Payment $payment = null, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
     {
         if ($payment_opt == 0) {
             try {
@@ -173,10 +173,10 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null, Provider $provider = null, $estimateValueProvider = null)
     {
         try {
-            $response = PagarmeApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
+            $response = PagarmeApi::chargeWithOrNotSplit($payment, $provider ?? null, $amount, $estimateValueProvider ?? null, $capture);
             $response = HandleResponsePagarmeV5::handle($response);
 
             if(!$response['success']){
@@ -481,7 +481,7 @@ class PagarmeLib implements IPayment
     {
         try {
             $response = PagarmeApi::refund($transaction);
-
+            
             if (
                 isset($response->success) &&
                 $response->success &&
@@ -503,7 +503,7 @@ class PagarmeLib implements IPayment
                 "success" 			=> false ,
                 "type" 				=> 'api_refund_error' ,
                 "code" 				=> 'api_refund_error',
-                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($e->getMessage()),
+                "message"           => MessageExceptionPagarme::handleMessagePagarmeException($ex->getMessage()),
                 "transaction_id" 	=> ''
             );
         }
