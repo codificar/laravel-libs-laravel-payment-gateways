@@ -61,12 +61,15 @@ class BancardLib implements IPayment
 
         try {
             //recupera user do payment caso não existe
-            if (!$user)
-                $user = $payment->User;
-
+            if (isset($payment->user)){
+                $user = $payment->user;
+            }
+            if (isset($payment->provider)){
+                $provider = $payment->provider;
+            }
             //solicita criação de cartão e retorna um iframe para usuário preencher os dados
-            $response = BancardApi::createCard($this->public_key, $this->private_key, $user);
-
+            $response = BancardApi::createCard($this->public_key, $this->private_key, $payment);
+            
             //retorna iframe
             return $response;
         } catch (Exception $ex) {

@@ -88,91 +88,84 @@ class BancardApi
      * @return array
      */
 
-    public static function createCard($public_key, $private_key, $user = null, $provider = null)
-    {
-
+    public static function createCard($public_key, $private_key, $payment) {
         try {
+            $user = $payment->user;
+            $provider = $payment->provider;
 
-            //inicia e gera a url
+            // Inicializa a sessão cURL e gera a URL de solicitação
             $session = curl_init();
             $url = self::generateURL("cards/new");
-
-            //gera um token para o usuário
-            $customer_vars = array(
-                $user ? $user->id : ($provider ? $provider->id : null), 
-                $user ? "customer_id" : ($provider ? "provider_id" : null)
-            );
+    
+            // Gera um customer_id e um card_id únicos
+            $customer_vars = array($user ? $user->id : ($provider ? $provider->id : null), $user ? "customer_id" : ($provider ? "provider_id" : null));
             $customer_id = crc32(self::generateToken($customer_vars));
-
-            //gera um token para o cartão
+    
             $card_vars = array($user ? $user->id : ($provider ? $provider->id : null), rand(), "card_id");
             $card_id = crc32(self::generateToken($card_vars));
 
-            //gera o token da requisição da bancard
+            // Gera o token da requisição
             $token_vars = array($private_key, $card_id, $customer_id, "request_new_card");
             $token = self::generateToken($token_vars);
-
-            $phoneNumber = null;
-            try {
-                if($user) {
-                    $phoneLib = new PhoneNumber($user->phone);
-                    $phoneNumber = $phoneLib->getFullPhoneNumber();
-                } else if($provider) {
-                    $phoneLib = new PhoneNumber($provider->phone);
-                    $phoneNumber = $phoneLib->getFullPhoneNumber();
-                }
-            } catch (Exception $e) {
-                \Log::error($e->getMessage() . $e->getTraceAsString());
-            }
-
-            //monta os campos para solicitação
-            $fields = array(
+    
+            // Tenta obter o número de telefone
+            $phoneNumber = $user ? $user->phone : ($provider ? $provider->phone : null);
+    
+            // Monta os campos da solicitação
+            $fields = [
                 "public_key" => $public_key,
-                "operation" => array(
+                "operation" => [
                     "token" => $token,
                     "card_id" => $card_id,
                     "user_id" => $customer_id,
                     "user_cell_phone" => $phoneNumber,
                     "user_mail" => $user ? $user->email : ($provider ? $provider->email : null),
-                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/return/" . ($user ? $user->id : 0) . "/" . ($provider ? $provider->id : 0)
-                )
-            );
-
-            curl_setopt($session, CURLOPT_URL, $url);
-            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($session, CURLOPT_POST, true);
-            curl_setopt($session, CURLOPT_POSTFIELDS, json_encode($fields));
-            curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
-            curl_setopt($session, CURLOPT_HTTPHEADER, self::HEADER);
-
-            //solicita
-            $msg_chk = curl_exec($session);
-            //retorno
-            $result = json_decode($msg_chk);
-
-            //em caso de sucesso, chama o iframe para cadastro das informações
-            if ($result->status == self::STATUS_SUCCESS) {
-                return \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $result->process_id;
+                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . ($user ? $user->id : ($provider ? $provider->id : 0))
+                ]
+            ];
+    
+            // Configurações do cURL
+            curl_setopt_array($session, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode($fields),
+                CURLOPT_TIMEOUT => self::APP_TIMEOUT,
+                CURLOPT_HTTPHEADER => self::HEADER
+            ]);
+    
+            // Executa a solicitação e decodifica a resposta
+            $response = json_decode(curl_exec($session));
+            // Verifica o status da resposta
+            curl_close($session);
+    
+            // Verifica o status da resposta
+            if ($response->status == self::STATUS_SUCCESS) {
+                $newUrl = \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $response->process_id;
+                // dd("dd response", $newUrl);
+                
+                return $newUrl;
             } else {
-                \Log::error("Bancard Error > " . __FUNCTION__, 
-                    array(
-                        'fields' =>   $fields,
-                        'gateway_response' => $result->messages,
-                    )
-                );
-                return array(
-                    'success' => false,
-                    'message' => $result->messages
-                );
+                \Log::error("Bancard Error > " . __FUNCTION__, [
+                    'fields' => $fields,
+                    'gateway_response' => $response->messages,
+                ]);
+                return ['success' => false, 'message' => $response->messages];
             }
         } catch (Exception $ex) {
             \Log::error($ex->getMessage() . $ex->getTraceAsString());
-            $return = array(
-                "success" => false,
-                "message" => $ex->getMessage()
-            );
-            return $return;
+            return ["success" => false, "message" => $ex->getMessage()];
+        }
+    }
+    
+    private static function getPhoneNumber($user) {
+        try {
+            $phoneLib = new PhoneNumber($user);
+            return $phoneLib->getNewPhone();
+        } catch (Exception $e) {
+            \Log::error($e->getMessage() . $e->getTraceAsString());
+            return null;
         }
     }
 
