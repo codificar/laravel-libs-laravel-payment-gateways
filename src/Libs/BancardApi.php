@@ -142,10 +142,12 @@ class BancardApi
     
             // Verifica o status da resposta
             if ($response->status == self::STATUS_SUCCESS) {
-                $newUrl = \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $response->process_id;
-                // dd("dd response", $newUrl);
-                
-                return $newUrl;
+                $response = [
+                    'success'       => true,
+                    'url'           => \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $response->process_id,
+                    'process_id'    => $response->process_id
+                ];
+                return $response;
             } else {
                 \Log::error("Bancard Error > " . __FUNCTION__, [
                     'fields' => $fields,
