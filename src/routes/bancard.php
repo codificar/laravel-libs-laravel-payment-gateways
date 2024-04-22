@@ -70,6 +70,6 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
         Route::get('/bancard/iframe_card/{process_id}', 'BancardController@getIframeCard');
         
         //rota return
-        Route::get('/bancard/return/{user_id}/{provider_id}', 'BancardController@getReturn');
+        Route::get('/bancard/return', 'BancardController@getReturn');
     });
 });

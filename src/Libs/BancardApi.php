@@ -100,7 +100,6 @@ class BancardApi
             // Gera um customer_id e um card_id únicos
             $customer_vars = array($user ? $user->id : ($provider ? $provider->id : null), $user ? "customer_id" : ($provider ? "provider_id" : null));
             $customer_id = crc32(self::generateToken($customer_vars));
-    
             $card_vars = array($user ? $user->id : ($provider ? $provider->id : null), rand(), "card_id");
             $card_id = crc32(self::generateToken($card_vars));
 
@@ -120,8 +119,8 @@ class BancardApi
                     "user_id" => $customer_id,
                     "user_cell_phone" => $phoneNumber,
                     "user_mail" => $user ? $user->email : ($provider ? $provider->email : null),
-                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . ($user ? $user->id : ($provider ? $provider->id : 0))
-                ]
+                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/return?user_id=" . ($user ? $user->id : '0') . "&provider_id=" . ($provider ? $provider->id : '0')
+                    ]
             ];
     
             // Configurações do cURL
@@ -178,112 +177,102 @@ class BancardApi
      * @return array
      */
 
-    public static function getCards($public_key, $private_key, $user = null, $provider = null)
-    {
+        public static function getCards($public_key, $private_key, $provider, $user)
+        {
 
-        try {
-            //get token do usuário relacionado ao id
-            $customer_vars = array($user ? $user->id : ($provider ?  $provider->id : null),  $user ? "customer_id" : ($provider ? "provider_id" : null));
-            $customer_id = crc32(self::generateToken($customer_vars));
+            try {
+                //get token do usuário relacionado ao id
+                $customer_vars = array($user ? $user->id : ($provider ? $provider->id : null), $user ? "customer_id" : ($provider ? "provider_id" : null));
+                $customer_id = crc32(self::generateToken($customer_vars));
 
-            //inicia e gera a url
-            $session = curl_init();
-            $url = self::generateURL('users/' . $customer_id . '/cards');
+                //inicia e gera a url
+                $session = curl_init();
+                $url = self::generateURL('users/' . $customer_id . '/cards');
 
-            //gera o token da requisição da bancard
-            $token_vars = array($private_key, $customer_id, "request_user_cards");
-            $token = self::generateToken($token_vars);
+                //gera o token da requisição da bancard
+                $token_vars = array($private_key, $customer_id, "request_user_cards");
+                $token = self::generateToken($token_vars);
 
-            //monta os campos para solicitação
-            $fields = array(
-                "public_key" => $public_key,
-                "operation" => array(
-                    "token" => $token
-                )
-            );
-
-            curl_setopt($session, CURLOPT_URL, $url);
-            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($session, CURLOPT_POST, true);
-            curl_setopt($session, CURLOPT_POSTFIELDS, json_encode($fields));
-            curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
-            curl_setopt($session, CURLOPT_HTTPHEADER, self::HEADER);
-
-            //solicita
-            $msg_chk = curl_exec($session);
-            //retorno
-            $result = json_decode($msg_chk);
-
-            //em caso de sucesso, salva no banco os cartões que não existem
-            if ($result->status == self::STATUS_SUCCESS) {
-
-                foreach ($result->cards as $card) {
-
-                    //recupera card antigo
-                    $card_old = Payment::whereCardToken($card->card_id)->first();
-
-                    //se não existir o cartão no banco, salva
-                    if ($card_old == null) {
-
-                        $card_brand = $card->card_brand;
-
-                        if (preg_match('/MASTER/', $card_brand)) {
-                            $card_brand = "master";
-                        } elseif (preg_match('/VISA/', $card_brand)) {
-                            $card_brand = "visa";
-                        } else {
-                            $card_brand = strtolower(explode(" ", $card_brand)[0]);
-                        }
-
-                        // Do necessary operations
-                        if ($user)
-                            $payments_array = Payment::whereUserId($user->id);
-                        elseif ($provider) {
-                            $ledger = Ledger::whereProviderId($provider->id)->first();
-                            $payments_array = Payment::whereLedgerId($ledger->id);
-                        }
-
-                        if (!$payments_array->get()) Payment::whereLedgerId($user->ledger->id);
-
-                        $payments_array->update(array('is_default' => false));
-
-                        $payment = new Payment();
-                        $payment->card_type = $card_brand;
-                        $payment->ledger_id = $provider && $ledger ? $ledger->id : null;
-                        $payment->user_id = $user ? $user->id : null;
-                        $payment->customer_id = $customer_id;
-                        $payment->last_four = substr($card->card_masked_number, -4);
-                        $payment->is_default = true;
-                        $payment->is_active = true;
-                        $payment->card_token = $card->card_id;
-                        $payment->save();
-                    }
-                }
-
-                //retorna cartões
-                return $result;
-            } else {
-                \Log::error("Bancard Error > " . __FUNCTION__, 
-                    array(
-                        'fields' =>   $fields,
-                        'gateway_response' => $result->messages,
+                //monta os campos para solicitação
+                $fields = array(
+                    "public_key" => $public_key,
+                    "operation" => array(
+                        "token" => $token
                     )
                 );
-                return array(
-                    'success' => false,
-                    'message' => trans("paymentError." . (isset($result->messages[0]->key) ? $result->messages[0]->key : 'general'))
+
+                curl_setopt($session, CURLOPT_URL, $url);
+                curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($session, CURLOPT_POST, true);
+                curl_setopt($session, CURLOPT_POSTFIELDS, json_encode($fields));
+                curl_setopt($session, CURLOPT_TIMEOUT, self::APP_TIMEOUT);
+                curl_setopt($session, CURLOPT_HTTPHEADER, self::HEADER);
+
+                //solicita
+                $msg_chk = curl_exec($session);
+                //retorno
+                $result = json_decode($msg_chk);            
+
+                //em caso de sucesso, salva no banco os cartões que não existem
+                if ($result->status == self::STATUS_SUCCESS) {
+
+                    foreach ($result->cards as $card) {
+                        //recupera card antigo
+                        $card_old = Payment::whereCardToken($card->card_id)->first();
+
+                        //se não existir o cartão no banco, salva
+                        if ($card_old == null) {
+
+                            $card_brand = $card->card_brand;
+
+                            if (preg_match('/MASTER/', $card_brand)) {
+                                $card_brand = "MASTER";
+                            } elseif (preg_match('/VISA/', $card_brand)) {
+                                $card_brand = "VISA";
+                            } else {
+                                $card_brand = strtolower(explode(" ", $card_brand)[0]);
+                            }
+
+                    
+                            $payment = new Payment();
+                            $payment->card_type = $card_brand;
+                            $payment->user_id = $user ? $user->id : null;
+                            $payment->provider_id = $provider ? $provider->id : null;
+                            $payment->customer_id = $customer_id;
+                            $payment->last_four = substr($card->card_masked_number, -4);
+                            $payment->is_default = true;
+                            $payment->is_active = true;
+                            $payment->card_token = $card->card_id;
+                            $payment->encrypted = $card->alias_token;
+                            $payment->gateway = 'bancard';
+                            $payment->save();
+                        }
+                    }
+
+                    //retorna cartões
+                    return $result;
+                } else {
+                    \Log::error("Bancard Error > " . __FUNCTION__, 
+                        array(
+                            'fields' =>   $fields,
+                            'gateway_response' => $result->messages,
+                        )
+                    );
+                    return array(
+                        'success' => false,
+                        'message' => trans("paymentError." . (isset($result->messages[0]->key) ? $result->messages[0]->key : 'general'))
+                    );
+                }
+            } catch (Exception $ex) {
+                \Log::error($ex->getMessage() . $ex->getTraceAsString());
+                $return = array(
+                    "success" => false,
+                    "message" => $ex->getMessage()
                 );
+                return $return;
             }
-        } catch (Exception $ex) {
-            \Log::error($ex->getMessage() . $ex->getTraceAsString());
-            $return = array(
-                "success" => false,
-                "message" => $ex->getMessage()
-            );
-            return $return;
         }
-    }
 
     /* Método para realizar cobrança no cartão do comprador sem repassar valor algum ao prestador
      * @param $public_key - chave pública da bancard para solicitação

@@ -11,9 +11,11 @@ use Codificar\PaymentGateways\Http\Requests\AddCardBancardFormRequest;
 use Codificar\PaymentGateways\Http\Resources\AddCardBancardResource;
 
 use Codificar\PaymentGateways\Libs\BancardApi;
+use Codificar\PaymentGateways\Libs\PaymentFactory;
 
-use View, User, Input;
+use View, User, Provider, Input;
 use Payment;
+
 
 class BancardController extends Controller
 {
@@ -53,38 +55,24 @@ class BancardController extends Controller
      * {get}/bancard/return
      * @return Json
      */
-    public function getReturn($user_id, $provider_id)
+    public function getReturn(Request $request)
     {
-        if ($user_id)
-            $user = \User::find($user_id);
-        else
-            $user = null;
+        $user_id = $request->query('user_id');
+        $provider_id = $request->query('provider_id');
 
-        if ($provider_id)
-            $provider = \Provider::find($provider_id);
-        else
-            $provider = null;
+        $user = User::find($user_id);
+        $provider = Provider::find($provider_id);
 
-        $status = Input::get('status');
-        $description = Input::get('description');
+        $status = $request->query('status');
+        $description = $request->query('description');
 
         if ($status == self::SUCCESS) {
-            $gateway = \PaymentFactory::createGateway();
-            //busca cartões do user na bancard e salva no banco
-            BancardApi::getCards($gateway->public_key, $gateway->private_key, $user, $provider);
-
-            /* $payment = null;
-            if (isset($cards->status) && $cards->status == BancardApi::STATUS_SUCCESS) {
-                foreach ($cards->cards as $card) {
-                    $payment = Payment::whereCardToken($card->card_id)->first();
-                }
-            } */
+            $gateway = PaymentFactory::createGateway();
+            // Chama a função para buscar os cartões e salvar no banco
+            BancardApi::getCards($gateway->public_key, $gateway->private_key, $provider, $user);
         }
 
         //retorno para view
-        return View::make('gateways::bancard.result')->with(array('status' => $status, 'description' => $description));
-
-        //validação de sucesso com retorno de iframe
-        //return new AddCardBancardUserResource(['status' => $status, 'description' => $description, 'payment' => $payment]);
+        return View::make('gateways::bancard.result', compact('status', 'description'));
     }
 }
