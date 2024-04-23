@@ -342,11 +342,11 @@ class BancardLib implements IPayment
         try {
 
             //recupera user
-            if (!$user)
-                $user = $payment->User;
+            $user = User::where('id', $payment->user_id)->first();
+            $provider = Provider::where('id', $payment->provider_id)->first();
 
             //busca cartões do user na bancard
-            $cards = BancardApi::getCards($this->public_key, $this->private_key, $user);
+            $cards = BancardApi::getCards($this->public_key, $this->private_key, $provider, $user);
 
 
             $aliasToken = null;
