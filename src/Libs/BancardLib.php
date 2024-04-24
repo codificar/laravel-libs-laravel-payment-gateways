@@ -13,6 +13,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Illuminate\Support\Facades\App;
 
 /**
  * Class BancardLib
@@ -31,6 +32,10 @@ class BancardLib implements IPayment
     //armaneza chaves
     public $public_key;
     public $private_key;
+    public $api;
+
+    public static $APP_API_PROD = "https://vpos.infonet.com.py";
+    public static $APP_API_DEV = "https://vpos.infonet.com.py:8888";
 
     //define split automático com provider
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
@@ -48,6 +53,12 @@ class BancardLib implements IPayment
     {
         $this->public_key = Settings::findByKey(self::BANCARD_PUBLIC_KEY);
         $this->private_key = Settings::findByKey(self::BANCARD_PRIVATE_KEY);
+        if (App::environment('production')) {
+            $api = self::$APP_API_PROD;
+        } else {
+            $api = self::$APP_API_DEV;
+        }
+        $this->api = $api;
     }
 
     /* Método para solicitar a criação de um cartão na Bancard
@@ -107,13 +118,11 @@ class BancardLib implements IPayment
                 );
             }
 
-            //recupera user
-            if (!$user) {
-                $user = $payment->User;
-            }
+            $user = User::where('id', $payment->user_id)->first();
+            $provider = Provider::where('id', $payment->provider_id)->first();
 
             //busca cartões do user na bancard
-            $cards = BancardApi::getCards($this->public_key, $this->private_key, $user);
+            $cards = BancardApi::getCards($this->public_key, $this->private_key, $provider, $user);
 
             $aliasToken = null;
             //verifica se obteve sucesso na busca
