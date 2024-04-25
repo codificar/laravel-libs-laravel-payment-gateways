@@ -107,17 +107,6 @@ class BancardLib implements IPayment
     {
         try {
 
-            //não capturar não é permitido na bancard neste momento
-            if (!$capture) {
-                return array(
-                    "success" => false,
-                    "type" => 'api_charge_error',
-                    "code" => 'api_charge_error',
-                    "message" => trans("paymentError.noChargeWithCapture"),
-                    "transaction_id" => ''
-                );
-            }
-
             $user = User::where('id', $payment->user_id)->first();
             $provider = Provider::where('id', $payment->provider_id)->first();
 
