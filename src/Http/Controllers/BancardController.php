@@ -15,6 +15,9 @@ use Codificar\PaymentGateways\Libs\PaymentFactory;
 
 use View, User, Provider, Input;
 use Payment;
+use Transaction;
+use Illuminate\Support\Facades\DB;
+use Requests;
 
 
 class BancardController extends Controller
@@ -74,5 +77,19 @@ class BancardController extends Controller
 
         //retorno para view
         return View::make('gateways::bancard.result', compact('status', 'description'));
+    }
+
+    public function confirmPaymentWebHook(Request $request){
+
+        DB::transaction(function () use ($request) {
+            $transaction = Transaction::where('gateway_transaction_id', $request->shop_process_id)->first();
+
+            if ($transaction && $request->response_code == 00 && $request->response === "S") {
+                Transaction::changeStatusForPaid($transaction->id);
+                Requests::changeIsPaidToSuccess($transaction->request_id);
+            }
+        });
+
+        return response()->json(['message' => 'Processamento concluído'], 200);
     }
 }

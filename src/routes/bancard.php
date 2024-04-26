@@ -72,4 +72,6 @@ Route::group(array('namespace' => 'Codificar\PaymentGateways\Http\Controllers'),
         //rota return
         Route::get('/bancard/return', 'BancardController@getReturn');
     });
+    // Rota de resposta para o webhook bancard
+    Route::post('/confirm-payment', 'BancardController@confirmPaymentWebHook');
 });
