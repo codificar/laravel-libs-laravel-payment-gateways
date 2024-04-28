@@ -82,9 +82,13 @@ class BancardController extends Controller
     public function confirmPaymentWebHook(Request $request){
 
         DB::transaction(function () use ($request) {
-            $transaction = Transaction::where('gateway_transaction_id', $request->shop_process_id)->first();
+            $shop_process_id = $request->input('operation.shop_process_id');
+            $response_code = $request->input('operation.response_code');
+            $response = $request->input('operation.response');
 
-            if ($transaction && $request->response_code == 00 && $request->response === "S") {
+            $transaction = Transaction::where('gateway_transaction_id', $shop_process_id)->first();
+
+            if ($transaction && $response_code == 00 && $response === "S") {
                 Transaction::changeStatusForPaid($transaction->id);
                 Requests::changeIsPaidToSuccess($transaction->request_id);
             }
