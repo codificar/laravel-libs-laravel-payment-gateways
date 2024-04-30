@@ -13,6 +13,7 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Requests;
 use Illuminate\Support\Facades\App;
 
 /**
@@ -109,6 +110,12 @@ class BancardLib implements IPayment
 
             $user = User::where('id', $payment->user_id)->first();
             $provider = Provider::where('id', $payment->provider_id)->first();
+            if($user){
+                $lastRide = Requests::getUserLastRide($user->id);
+                if($lastRide){
+                    $description = sprintf($description, $lastRide->id);
+                }
+            }
 
             //busca cartões do user na bancard
             $cards = BancardApi::getCards($this->public_key, $this->private_key, $provider, $user);
