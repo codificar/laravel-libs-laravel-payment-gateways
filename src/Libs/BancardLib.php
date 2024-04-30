@@ -287,6 +287,7 @@ class BancardLib implements IPayment
             //solicita a recuperação do pagamento
             $response = BancardApi::retrieve($this->public_key, $this->private_key, $transaction->gateway_transaction_id);
 
+            $amountFormatted = $response['amount_cents'] * 100;
             //verifica se deu erro ou rollback
             if (!$response['success']) {
 
@@ -296,7 +297,7 @@ class BancardLib implements IPayment
                         return array(
                             'success' => true,
                             'transaction_id' => $transaction->gateway_transaction_id,
-                            'amount' => $transaction->gross_value,
+                            'amount' => $amountFormatted,
                             'destination' => '',
                             'status' => 'refund',
                             'card_last_digits' => $payment->last_four,
@@ -316,7 +317,7 @@ class BancardLib implements IPayment
             return array(
                 'success' => true,
                 'transaction_id' => $response['id'],
-                'amount' => $response['amount_cents'],
+                'amount' => $amountFormatted,
                 'destination' => '',
                 'status' => 'paid',
                 'card_last_digits' => $payment->last_four,
