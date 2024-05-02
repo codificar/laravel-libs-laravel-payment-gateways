@@ -12,6 +12,8 @@ use Codificar\PaymentGateways\Http\Resources\AddCardBancardResource;
 
 use Codificar\PaymentGateways\Libs\BancardApi;
 use Codificar\PaymentGateways\Libs\PaymentFactory;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 use View, User, Provider, Input;
 use Payment;
@@ -79,21 +81,27 @@ class BancardController extends Controller
         return View::make('gateways::bancard.result', compact('status', 'description'));
     }
 
-    public function confirmPaymentWebHook(Request $request){
+    public function confirmPaymentWebHook(Request $request)
+    {        
+        $shop_id = $request['operation']['shop_process_id'];
+        $response = $request['operation']['response'];
 
-        DB::transaction(function () use ($request) {
-            $shop_process_id = $request->input('operation.shop_process_id');
-            $response_code = $request->input('operation.response_code');
-            $response = $request->input('operation.response');
+        if ($response !== "S") {
+            return response()->json(['message' => 'Erro ao realizar a cobrança'], 400); 
+        }
 
-            $transaction = Transaction::where('gateway_transaction_id', $shop_process_id)->first();
+        try {
+            $transaction = Transaction::where('gateway_transaction_id', $shop_id)->firstOrFail();
+            Transaction::changeStatusForPaid($transaction);
+            Requests::changeIsPaidToSuccess($transaction->request_id);
 
-            if ($transaction && $response_code == 00 && $response === "S") {
-                Transaction::changeStatusForPaid($transaction->id);
-                Requests::changeIsPaidToSuccess($transaction->request_id);
-            }
-        });
-
-        return response()->json(['message' => 'Processamento concluído'], 200);
+            return response()->json(['message' => 'Processamento concluído'], 200);
+        } catch (ModelNotFoundException $e) {
+            Log::error('Transação não encontrada', ['shop_id' => $shop_id]);
+            return response()->json(['message' => 'Transação não encontrada'], 404);
+        } catch (\Exception $e) {
+            Log::error('Erro ao processar transação', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erro interno do servidor'], 500);
+        }
     }
 }
