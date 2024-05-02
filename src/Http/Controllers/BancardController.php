@@ -83,7 +83,7 @@ class BancardController extends Controller
 
     public function confirmPaymentWebHook(Request $request)
     {        
-        $shop_id = $request['operation']['shop_process_id'];
+        $shop_id = (string)$request['operation']['shop_process_id'];
         $response = $request['operation']['response'];
 
         if ($response !== "S") {
