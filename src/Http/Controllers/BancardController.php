@@ -81,8 +81,8 @@ class BancardController extends Controller
         return View::make('gateways::bancard.result', compact('status', 'description'));
     }
 
-    public function confirmPaymentWebHook(Request $request)
-    {        
+    public function confirmPaymentWebHook(Request $request) {
+
         $shop_id = (string)$request['operation']['shop_process_id'];
         $response = $request['operation']['response'];
 
@@ -90,18 +90,31 @@ class BancardController extends Controller
             return response()->json(['message' => 'Erro ao realizar a cobrança'], 400); 
         }
 
-        try {
-            $transaction = Transaction::where('gateway_transaction_id', $shop_id)->firstOrFail();
-            Transaction::changeStatusForPaid($transaction);
-            Requests::changeIsPaidToSuccess($transaction->request_id);
+        // Inicia a tentativa de localizar a transação com um máximo de tentativas e intervalo entre elas
+        $maxAttempts = 10;
+        $attemptDelay = 30; 
 
-            return response()->json(['message' => 'Processamento concluído'], 200);
-        } catch (ModelNotFoundException $e) {
-            Log::error('Transação não encontrada', ['shop_id' => $shop_id]);
-            return response()->json(['message' => 'Transação não encontrada'], 404);
-        } catch (\Exception $e) {
-            Log::error('Erro ao processar transação', ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Erro interno do servidor'], 500);
+        for ($attempts = 0; $attempts < $maxAttempts; $attempts++) {
+            try {
+                $transaction = Transaction::where('gateway_transaction_id', $shop_id)->firstOrFail();
+                
+                // Se a transação for encontrada, prossegue com o processamento
+                Transaction::changeStatusForPaid($transaction);
+                Requests::changeIsPaidToSuccess($transaction->request_id);
+
+                return response()->json(['message' => 'Processamento concluído'], 200);
+            } catch (ModelNotFoundException $e) {
+                if ($attempts < $maxAttempts - 1) {
+                    sleep($attemptDelay);
+                } else {
+                    // Loga a falha após esgotar as tentativas
+                    Log::error('Transação não encontrada após várias tentativas', ['shop_id' => $shop_id]);
+                    return response()->json(['message' => 'Transação não encontrada'], 404);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao processar transação', ['error' => $e->getMessage()]);
+                return response()->json(['message' => 'Erro interno do servidor'], 500);
+            }
         }
     }
 }
