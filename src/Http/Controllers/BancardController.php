@@ -81,7 +81,16 @@ class BancardController extends Controller
         return View::make('gateways::bancard.result', compact('status', 'description'));
     }
 
-    public function confirmPaymentWebHook(Request $request) {
+    public function confirmPaymentWebHook(Request $request){
+        $response = $request['operation']['response'];
+
+        if ($response !== "S") {
+            return response()->json(['message' => 'Erro ao realizar a cobrança'], 400); 
+        }
+        return response()->json(['message' => 'Processamento concluído'], 200);
+    }
+
+    public function confirmPaymentWebHookBancard(Request $request) {
 
         $shop_id = (string)$request['operation']['shop_process_id'];
         $response = $request['operation']['response'];
@@ -92,7 +101,7 @@ class BancardController extends Controller
 
         // Inicia a tentativa de localizar a transação com um máximo de tentativas e intervalo entre elas
         $maxAttempts = 10;
-        $attemptDelay = 30; 
+        $attemptDelay = 10; 
 
         for ($attempts = 0; $attempts < $maxAttempts; $attempts++) {
             try {
