@@ -330,16 +330,17 @@ class BancardApi
             $result = json_decode($msg_chk);
 
             //verifica se deu erro
-            if ($result->status != self::STATUS_SUCCESS) {
+            if ($result->status != self::STATUS_SUCCESS || $result->confirmation->response_code != 00) {
                 \Log::error("Bancard Error > " . __FUNCTION__, 
                     array(
                         'fields' =>   $fields,
-                        'gateway_response' => $result->messages,
+                        'gateway_response' => $result->messages[0]->key ?? $result->confirmation->extended_response_description,
                     )
                 );
                 return array(
                     'success' => false,
-                    'message' => $result->messages
+                    'message' => $result->messages[0]->key ?? $result->confirmation->extended_response_description,
+                    'response_code' => $result->confirmation->response_code ?? null
                 );
             }
 

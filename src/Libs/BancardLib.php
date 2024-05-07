@@ -159,8 +159,8 @@ class BancardLib implements IPayment
                 return array(
                     "success" => false,
                     "type" => 'api_charge_error',
-                    "code" => 'api_charge_error',
-                    "message" => trans("paymentError." . (isset($response['message'][0]->key) ? $response['message'][0]->key : 'general')),
+                    "code" => $response['response_code'] ?? 'api_charge_error',
+                    "message" => $response['message'] ?? 'paymentError.general',
                     "transaction_id" => ''
                 );
             }
