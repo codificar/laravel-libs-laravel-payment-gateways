@@ -119,7 +119,7 @@ class BancardApi
                     "user_id" => $customer_id,
                     "user_cell_phone" => $phoneNumber,
                     "user_mail" => $user ? $user->email : ($provider ? $provider->email : null),
-                    "return_url" => \Config::get('app.url') . "/libs/gateways/bancard/return?user_id=" . ($user ? $user->id : '0') . "&provider_id=" . ($provider ? $provider->id : '0')
+                    "return_url" => \Config::get('app.url') . "libs/gateways/bancard/return?user_id=" . ($user ? $user->id : '0') . "&provider_id=" . ($provider ? $provider->id : '0')
                     ]
             ];
     
@@ -143,7 +143,7 @@ class BancardApi
             if ($response->status == self::STATUS_SUCCESS) {
                 $response = [
                     'success'       => true,
-                    'url'           => \Config::get('app.url') . "/libs/gateways/bancard/iframe_card/" . $response->process_id,
+                    'url'           => \Config::get('app.url') . "libs/gateways/bancard/iframe_card/" . $response->process_id,
                     'process_id'    => $response->process_id
                 ];
                 return $response;
