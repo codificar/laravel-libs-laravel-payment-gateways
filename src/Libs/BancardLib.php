@@ -13,6 +13,8 @@ use Transaction;
 use User;
 use LedgerBankAccount;
 use Settings;
+use Requests;
+use Illuminate\Support\Facades\App;
 
 /**
  * Class BancardLib
@@ -31,6 +33,10 @@ class BancardLib implements IPayment
     //armaneza chaves
     public $public_key;
     public $private_key;
+    public $api;
+
+    public static $APP_API_PROD = "https://vpos.infonet.com.py";
+    public static $APP_API_DEV = "https://vpos.infonet.com.py:8888";
 
     //define split automático com provider
     const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
@@ -48,6 +54,12 @@ class BancardLib implements IPayment
     {
         $this->public_key = Settings::findByKey(self::BANCARD_PUBLIC_KEY);
         $this->private_key = Settings::findByKey(self::BANCARD_PRIVATE_KEY);
+        if (App::environment('production')) {
+            $api = self::$APP_API_PROD;
+        } else {
+            $api = self::$APP_API_DEV;
+        }
+        $this->api = $api;
     }
 
     /* Método para solicitar a criação de um cartão na Bancard
@@ -61,12 +73,15 @@ class BancardLib implements IPayment
 
         try {
             //recupera user do payment caso não existe
-            if (!$user)
-                $user = $payment->User;
-
+            if (isset($payment->user)){
+                $user = $payment->user;
+            }
+            if (isset($payment->provider)){
+                $provider = $payment->provider;
+            }
             //solicita criação de cartão e retorna um iframe para usuário preencher os dados
-            $response = BancardApi::createCard($this->public_key, $this->private_key, $user);
-
+            $response = BancardApi::createCard($this->public_key, $this->private_key, $payment);
+            
             //retorna iframe
             return $response;
         } catch (Exception $ex) {
@@ -93,24 +108,17 @@ class BancardLib implements IPayment
     {
         try {
 
-            //não capturar não é permitido na bancard neste momento
-            if (!$capture) {
-                return array(
-                    "success" => false,
-                    "type" => 'api_charge_error',
-                    "code" => 'api_charge_error',
-                    "message" => trans("paymentError.noChargeWithCapture"),
-                    "transaction_id" => ''
-                );
-            }
-
-            //recupera user
-            if (!$user) {
-                $user = $payment->User;
+            $user = User::where('id', $payment->user_id)->first();
+            $provider = Provider::where('id', $payment->provider_id)->first();
+            if($user){
+                $lastRide = Requests::getUserLastRide($user->id);
+                if($lastRide){
+                    $description = sprintf($description, $lastRide->id);
+                }
             }
 
             //busca cartões do user na bancard
-            $cards = BancardApi::getCards($this->public_key, $this->private_key, $user);
+            $cards = BancardApi::getCards($this->public_key, $this->private_key, $provider, $user);
 
             $aliasToken = null;
             //verifica se obteve sucesso na busca
@@ -151,8 +159,8 @@ class BancardLib implements IPayment
                 return array(
                     "success" => false,
                     "type" => 'api_charge_error',
-                    "code" => 'api_charge_error',
-                    "message" => trans("paymentError." . (isset($response['message'][0]->key) ? $response['message'][0]->key : 'general')),
+                    "code" => $response['response_code'] ?? 'api_charge_error',
+                    "message" => $response['message'] ?? 'paymentError.general',
                     "transaction_id" => ''
                 );
             }
@@ -279,6 +287,7 @@ class BancardLib implements IPayment
             //solicita a recuperação do pagamento
             $response = BancardApi::retrieve($this->public_key, $this->private_key, $transaction->gateway_transaction_id);
 
+            $amountFormatted = $response['amount_cents'] * 100;
             //verifica se deu erro ou rollback
             if (!$response['success']) {
 
@@ -288,7 +297,7 @@ class BancardLib implements IPayment
                         return array(
                             'success' => true,
                             'transaction_id' => $transaction->gateway_transaction_id,
-                            'amount' => $transaction->gross_value,
+                            'amount' => $amountFormatted,
                             'destination' => '',
                             'status' => 'refund',
                             'card_last_digits' => $payment->last_four,
@@ -308,7 +317,7 @@ class BancardLib implements IPayment
             return array(
                 'success' => true,
                 'transaction_id' => $response['id'],
-                'amount' => $response['amount_cents'],
+                'amount' => $amountFormatted,
                 'destination' => '',
                 'status' => 'paid',
                 'card_last_digits' => $payment->last_four,
@@ -339,11 +348,11 @@ class BancardLib implements IPayment
         try {
 
             //recupera user
-            if (!$user)
-                $user = $payment->User;
+            $user = User::where('id', $payment->user_id)->first();
+            $provider = Provider::where('id', $payment->provider_id)->first();
 
             //busca cartões do user na bancard
-            $cards = BancardApi::getCards($this->public_key, $this->private_key, $user);
+            $cards = BancardApi::getCards($this->public_key, $this->private_key, $provider, $user);
 
 
             $aliasToken = null;
