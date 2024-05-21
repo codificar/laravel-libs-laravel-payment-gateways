@@ -11,9 +11,16 @@ use Codificar\PaymentGateways\Http\Requests\AddCardBancardFormRequest;
 use Codificar\PaymentGateways\Http\Resources\AddCardBancardResource;
 
 use Codificar\PaymentGateways\Libs\BancardApi;
+use Codificar\PaymentGateways\Libs\PaymentFactory;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
-use View, User, Input;
+use View, User, Provider, Input;
 use Payment;
+use Transaction;
+use Illuminate\Support\Facades\DB;
+use Requests;
+
 
 class BancardController extends Controller
 {
@@ -53,38 +60,70 @@ class BancardController extends Controller
      * {get}/bancard/return
      * @return Json
      */
-    public function getReturn($user_id, $provider_id)
+    public function getReturn(Request $request)
     {
-        if ($user_id)
-            $user = \User::find($user_id);
-        else
-            $user = null;
+        $user_id = $request->query('user_id');
+        $provider_id = $request->query('provider_id');
 
-        if ($provider_id)
-            $provider = \Provider::find($provider_id);
-        else
-            $provider = null;
+        $user = User::find($user_id);
+        $provider = Provider::find($provider_id);
 
-        $status = Input::get('status');
-        $description = Input::get('description');
+        $status = $request->query('status');
+        $description = $request->query('description');
 
         if ($status == self::SUCCESS) {
-            $gateway = \PaymentFactory::createGateway();
-            //busca cartões do user na bancard e salva no banco
-            BancardApi::getCards($gateway->public_key, $gateway->private_key, $user, $provider);
-
-            /* $payment = null;
-            if (isset($cards->status) && $cards->status == BancardApi::STATUS_SUCCESS) {
-                foreach ($cards->cards as $card) {
-                    $payment = Payment::whereCardToken($card->card_id)->first();
-                }
-            } */
+            $gateway = PaymentFactory::createGateway();
+            // Chama a função para buscar os cartões e salvar no banco
+            BancardApi::getCards($gateway->public_key, $gateway->private_key, $provider, $user);
         }
 
         //retorno para view
-        return View::make('gateways::bancard.result')->with(array('status' => $status, 'description' => $description));
+        return View::make('gateways::bancard.result', compact('status', 'description'));
+    }
 
-        //validação de sucesso com retorno de iframe
-        //return new AddCardBancardUserResource(['status' => $status, 'description' => $description, 'payment' => $payment]);
+    public function confirmPaymentWebHook(Request $request){
+        $response = $request['operation']['response'];
+
+        if ($response !== "S") {
+            return response()->json(['message' => 'Erro ao realizar a cobrança'], 400); 
+        }
+        return response()->json(['message' => 'Processamento concluído'], 200);
+    }
+
+    public function confirmPaymentWebHookBancard(Request $request) {
+
+        $shop_id = (string)$request['operation']['shop_process_id'];
+        $response = $request['operation']['response'];
+
+        if ($response !== "S") {
+            return response()->json(['message' => 'Erro ao realizar a cobrança'], 400); 
+        }
+
+        // Inicia a tentativa de localizar a transação com um máximo de tentativas e intervalo entre elas
+        $maxAttempts = 10;
+        $attemptDelay = 10; 
+
+        for ($attempts = 0; $attempts < $maxAttempts; $attempts++) {
+            try {
+                $transaction = Transaction::where('gateway_transaction_id', $shop_id)->firstOrFail();
+                
+                // Se a transação for encontrada, prossegue com o processamento
+                Transaction::changeStatusForPaid($transaction);
+                Requests::changeIsPaidToSuccess($transaction->request_id);
+
+                return response()->json(['message' => 'Processamento concluído'], 200);
+            } catch (ModelNotFoundException $e) {
+                if ($attempts < $maxAttempts - 1) {
+                    sleep($attemptDelay);
+                } else {
+                    // Loga a falha após esgotar as tentativas
+                    Log::error('Transação não encontrada após várias tentativas', ['shop_id' => $shop_id]);
+                    return response()->json(['message' => 'Transação não encontrada'], 404);
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao processar transação', ['error' => $e->getMessage()]);
+                return response()->json(['message' => 'Erro interno do servidor'], 500);
+            }
+        }
     }
 }
