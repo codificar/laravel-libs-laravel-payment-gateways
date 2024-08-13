@@ -1,66 +1,32 @@
 {
-    "name": "codificar/payment-gateways",
-    "description": "Library for payment gateways",
-    "type": "package",
-    "require": {
-        "league/omnipay": "~3.0"
-    },
-    "license": "Codificar Sistemas LTDA",
-    "authors": [
-        {
-            "name": "Guilherme Assis",
-            "email": "guilherme.assis@codificar.com.br"
-        },
-        {
-            "name": "Oto Luz",
-            "email": "oto.luz@codificar.com.br"
-        },
-        {
-            "name": "Raphael Canguçu",
-            "email": "raphael.cangucu@codificar.com.br"
-        }
-    ],
-    "repositories": [
-        {
-          "type": "package",
-          "package": {
-            "name": "codificar/payment-gateways",
-            "version": "master",
-            "source": {
-              "url": "https://libs:ofImhksJ@git.codificar.com.br/laravel-libs/laravel-payment-gateways.git",
-              "type": "git",
-              "reference": "master"
-            }
-          }
-        }
-    ],    
-    "config": {
-        "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "sort-packages": true,
-        "allow-plugins": {
-            "php-http/discovery": true
-        }
-    },
-    "autoload": {
-        "psr-4": {
-            "Codificar\\PaymentGateways\\": "src/"
-        }
-        
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.3-dev"
-        },
-        "laravel": {
-            "providers": [
-                "Codificar\\PaymentGateways\\ServiceProvider"
-            ],
-            "aliases": {
-                "Omnipay": "Codificar\\PaymentGateways\\Facade",                
-                "PaymentFactory": "Codificar\\PaymentGateways\\PaymentFacade"
-            }
-        }
-    },
-    "minimum-stability": "dev"
+	"name": "pagarme/pagarme-php",
+	"description": "Pagar.me PHP Library",
+	"keywords": [
+		"pagar.me",
+		"pagarme",
+		"pagamentos",
+		"payments brazil",
+		"pagamento brasil",
+		"api"
+	],
+	"homepage": "http://pagar.me",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Pagar.me and contributors",
+			"homepage": "https://github.com/pagarme/pagarme-php/graphs/contributors"
+		}
+	],
+	"require": {
+		"php": ">5.3",
+		"ext-curl":"*",
+		"ext-json":"*",
+		"ext-mbstring":"*"
+	},
+	"require-dev": {
+		 "simpletest/simpletest": "*"
+	},
+	"autoload": { 
+		"classmap":["lib/Pagarme"]
+	}
 }
