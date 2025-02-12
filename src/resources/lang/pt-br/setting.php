@@ -30,6 +30,7 @@ return array(
 	'payment_prepaid'			=> 'Pré-Pago',
 	'payment_prepaid_msg'		=> 'Permite ao usuário e/ou prestador adicionar saldo na plataforma (cartão ou boleto)',
 	'payment_billing'			=> 'Pagamento por Faturamento',
+	'payment_association'		=> 'Pagamento por Associação',
 	'pay_gateway'				=> 'Gateway de Pagamento - Cartão',
 	'default_pay_gate'			=> 'Intermediador Padrão de Pagamento',
 	'save_data'					=> 'Salvar Dados',
