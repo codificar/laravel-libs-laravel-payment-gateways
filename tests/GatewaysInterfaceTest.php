@@ -261,6 +261,7 @@ class GatewaysInterfaceTest {
 		$provider = Provider::Where('email' , 'testegmail@gmail.com')->first();
 
 		if ( isset($provider) ) {
+			self::createLedgerBankAccount($provider);
 			return $provider;
 		} else {
 			$status = ProviderStatus::where('name', 'APROVADO')->first();
@@ -319,9 +320,23 @@ class GatewaysInterfaceTest {
 
 			//Create a bank cont for test
 			$provider = Provider::find($newProvider->id);
-			$ledger = ($provider ? $provider->createLedger() : new Ledger);
+			self::createLedgerBankAccount($provider);
 
+			return $newProvider;
+		}
+	}
 
+	/**
+	 * Create ledger bank account for teste
+	 * 
+	 * @param Provider $provider
+	 * @return LedgerBankAccount
+	 */
+	public static function createLedgerBankAccount(Provider $provider)
+	{
+		$ledger = ($provider ? $provider->createLedger() : new Ledger);
+		$ledgerBankAccount = LedgerBankAccount::where('provider_id', $provider->id)->first();
+		if(!$ledgerBankAccount) {
 			$ledgerBankAccount = new LedgerBankAccount();
 			$ledgerBankAccount->ledger_id = $ledger->id;
 			$ledgerBankAccount->holder =  $provider->first_name;
@@ -333,13 +348,13 @@ class GatewaysInterfaceTest {
 			$ledgerBankAccount->account_type = 'conta_corrente';
 			$ledgerBankAccount->account_digit = 6;
 			$ledgerBankAccount->recipient_id = 'empty';
-            $ledgerBankAccount->person_type = 'person_type';
-           	$ledgerBankAccount->provider_id = $provider->id;
+			$ledgerBankAccount->person_type = 'person_type';
+			$ledgerBankAccount->provider_id = $provider->id;
 			$ledgerBankAccount->birthday_date = '1990-10-10 00:00:00';
-            $ledgerBankAccount->save();
-
-			return $newProvider;
+			$ledgerBankAccount->save();
 		}
+
+		return $ledgerBankAccount;
 	}
 
 	/**

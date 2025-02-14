@@ -288,17 +288,6 @@ export default {
                   <input
                     class="form-check-input checkbox-style"
                     type="checkbox"
-                    id="payment_billing"
-                    v-model="payment_methods.payment_billing"
-                  />
-                  <label class="form-check-label" for="payment_billing">{{
-                    trans("setting.payment_billing")
-                  }}</label>
-                </div>
-                <div class="form-check">
-                  <input
-                    class="form-check-input checkbox-style"
-                    type="checkbox"
                     id="payment_direct_pix"
                     v-model="payment_methods.payment_direct_pix"
                   />
@@ -329,6 +318,46 @@ export default {
                       :title="trans('setting.payment_gateway_pix_msg')"
                       ><span class="mdi mdi-comment-question-outline"></span
                     ></a>
+                  </label>
+                </div>
+                <!-- Instituition Payment Types -->
+                <hr>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_association"
+                    v-model="payment_methods.payment_association"
+                  />
+                  <label class="form-check-label" for="payment_association">
+                    {{trans("setting.payment_association")}}
+                    <a
+                      href="#"
+                      class="question-field"
+                      data-toggle="tooltip"
+                      :title="trans('setting.payment_association_msg')"
+                      >
+                      <span class="mdi mdi-comment-question-outline"></span>
+                    </a>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input checkbox-style"
+                    type="checkbox"
+                    id="payment_billing"
+                    v-model="payment_methods.payment_billing"
+                  />
+                  <label class="form-check-label" for="payment_billing">
+                    {{trans("setting.payment_billing")}}
+                    <a
+                      href="#"
+                      class="question-field"
+                      data-toggle="tooltip"
+                      :title="trans('setting.payment_billing_msg')"
+                      >
+                      <span class="mdi mdi-comment-question-outline"></span>
+                    </a>
                   </label>
                 </div>
               </div>
@@ -516,6 +545,20 @@ export default {
                     class="form-control input-gateway_pix"
                     v-model="nomenclatures.name_payment_gateway_pix"
                     :placeholder="trans('setting.payment_gateway_pix')"
+                  />
+                  <div class="help-block with-errors"></div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="form-group">
+                  <label for="usr">
+                    {{ trans("setting.payment_association") }}
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control input-association"
+                    v-model="nomenclatures.name_payment_association"
+                    :placeholder="trans('setting.payment_association')"
                   />
                   <div class="help-block with-errors"></div>
                 </div>
