@@ -93,7 +93,6 @@ class IpagApi
         $body       =   self::getBody($payment, $amount, $providerAmount, $capture, $provider);
         $chargeSplitRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
-
         if(self::isForceCapture($chargeSplitRequest, $capture)){
             $chargeSplitRequest = self::captureById($chargeSplitRequest->data->id, $amount);
         }
@@ -413,7 +412,6 @@ class IpagApi
         $body       =   null;
         $header     =   self::getHeader();
         $sellerRequest =   self::apiRequest($url, $body, $header, self::GET_REQUEST);
-
         return $sellerRequest;
     }
 
@@ -460,7 +458,6 @@ class IpagApi
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
         $sellerId = $ledgerBankAccount->recipient_id;
-
         $response  = null;
         if(isset($sellerId)) {
             $response = self::getSeller($sellerId);
@@ -771,12 +768,11 @@ class IpagApi
             $fields->products           =   $productFields->products;
         }
 
-        if($capture && $provider && isset($provider->id) && ($type == 'card' || $type == 'pix'))
+        if($provider && isset($provider->id) && ($type == 'card' || $type == 'pix'))
         {
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
         }
-
         return json_encode($fields);
     }
 
@@ -811,13 +807,11 @@ class IpagApi
     */
     private static function getSplitInfo($providerId, $providerAmount, $sellerIndex)
     {
-        $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
-
+        $ledgerBankAccount = LedgerBankAccount::where('provider_id', $providerId)->first();
         if(!$ledgerBankAccount)
              throw new Exception('Failed to recover BankAccount');
 
         $sellerId = self::checkProviderAccount($ledgerBankAccount);
-
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
             throw new Exception('Failed to find seller on gateway');
 

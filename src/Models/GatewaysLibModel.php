@@ -27,7 +27,8 @@ class GatewaysLibModel extends Eloquent
         'payment_prepaid',
         'payment_billing',
         'payment_direct_pix',
-        'payment_gateway_pix'
+        'payment_gateway_pix',
+        'payment_association'
     );
 
     //Custom names of payment methods
@@ -42,7 +43,8 @@ class GatewaysLibModel extends Eloquent
         'name_payment_prepaid',
         'name_payment_billing',
         'name_payment_direct_pix',
-        'name_payment_gateway_pix'
+        'name_payment_gateway_pix',
+        'name_payment_association'
     );
 
     // Values used to save at request table
@@ -72,6 +74,7 @@ class GatewaysLibModel extends Eloquent
         'payment_billing'      => self::BILLING,
         'payment_direct_pix'   => self::GATEWAY_PIX,
         'payment_gateway_pix'  => self::DIRECT_PIX,
+        'payment_association'  => self::ASSOCIATION
    ];
 
     protected $table = 'payment';
@@ -160,6 +163,12 @@ class GatewaysLibModel extends Eloquent
 			$payment['index'] = self::DIRECT_PIX;
 			$paymentArray[] = $payment;
 		}
+
+        // Association
+        if ($payment = self::getPayment('payment_association')) {
+            $payment['index'] = self::ASSOCIATION;
+            $paymentArray[] = $payment;
+        }
 
 		return array_filter(
 			$paymentArray,
