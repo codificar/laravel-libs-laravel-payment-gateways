@@ -527,12 +527,12 @@ class IpagApi
         return $billetRequest;
     }
 
-    public static function pixCharge($amount, $user)
+    public static function pixCharge($amount, $user, $provider)
     {
         $url = sprintf('%s/payment', self::apiUrl());
 
         $header     =   self::getHeader(true, true);
-        $body       =   self::getBody(null, $amount, null, true, null, $user, null, true);
+        $body       =   self::getBody(null, $amount, null, true, $provider, $user, null, true);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $pixRequest;
@@ -771,7 +771,7 @@ class IpagApi
             $fields->products           =   $productFields->products;
         }
 
-        if($capture && $provider && isset($provider->id) && $type == 'card')
+        if($capture && $provider && isset($provider->id) && ($type == 'card' || $type == 'pix'))
         {
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
@@ -814,12 +814,12 @@ class IpagApi
         $ledgerBankAccount = LedgerBankAccount::findBy('provider_id', $providerId);
 
         if(!$ledgerBankAccount)
-            return false;
+             throw new Exception('Failed to recover BankAccount');
 
         $sellerId = self::checkProviderAccount($ledgerBankAccount);
 
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
-            return false;
+            throw new Exception('Failed to find seller on gateway');
 
         $fields = (object)array(
             $sellerIndex            =>  $sellerId->recipient_id,

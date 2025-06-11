@@ -983,11 +983,11 @@ Class IpagLib implements IPayment
         }
     }
 
-    public function pixCharge($amount, $user)
+    public function pixCharge($amount, $user, $provider = null)
     {
         try
         {
-            $response = IpagApi::pixCharge($amount, $user);
+            $response = IpagApi::pixCharge($amount, $user, $provider);
 
             if (
                 isset($response->success) &&

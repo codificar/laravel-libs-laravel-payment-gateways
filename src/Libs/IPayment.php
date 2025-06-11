@@ -227,7 +227,8 @@ interface IPayment
      * Create a pix charge
      *
      * @param Decimal       $amount         A positive decimal representing how much to charge.
-     * @param Object        $holder         User / Provider instance
+     * @param Object        $holder         User / Provider payer instance
+     * @param Object        $provider       Provider seller instance
      * @return Array       [
      *                      'success',
      *                      'qr_code_base64'
@@ -235,7 +236,7 @@ interface IPayment
 	 *                      'transaction_id'
      *                     ]
      */
-    public function pixCharge($amount, $holder);
+    public function pixCharge($amount, $holder, $provider = null);
 
     /**
      * Retrieve a pix charge
