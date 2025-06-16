@@ -457,6 +457,8 @@ class IpagApi
 
     public static function checkProviderAccount(LedgerBankAccount $ledgerBankAccount)
     {
+        \Log::debug('LBA');
+        \Log::debug(print_r($ledgerBankAccount,1));
         $sellerId = $ledgerBankAccount->recipient_id;
         $response  = null;
         if(isset($sellerId)) {
@@ -467,7 +469,8 @@ class IpagApi
         {
             $response = self::createOrUpdateAccount($ledgerBankAccount);
         }
-
+        \Log::debug('resp');
+        \Log::debug(print_r($response,1));
         if($response->success)
         {
             $result = (object)array(
@@ -476,15 +479,18 @@ class IpagApi
                 'is_active'         =>  $response->data->attributes->is_active
             );
             $ledgerBankAccount->recipient_id = $response->data->id;
+            \Log::debug('save');
             $ledgerBankAccount->save();
         }
         else
         {
+                \Log::debug('else');
             #TODO remover após job de recriar recipients ao trocar gateway
             $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
             if($newAccount->success)
             {
                 $ledgerBankAccount->recipient_id = $newAccount->data->id;
+                \Log::debug('save2');
                 $ledgerBankAccount->save();
                 $result = (object)array(
                     'success'       =>  true,
@@ -494,6 +500,7 @@ class IpagApi
             }
             else
             {
+                \Log::debug('else2');
                 $result = (object)array(
                     'success'       =>  false,
                     'recipient_id'  =>  ""
@@ -501,12 +508,13 @@ class IpagApi
             }
         }
 
+        \Log::debug('active');
         if(isset($result->is_active) && $result->is_active === false)
             self::activeSeller($result['recipient_id']);
 
+        \Log::debug('pos active');
         return $result;
     }
-
     /**
 	 * Função para gerar boletos de pagamentos
 	 * @param int $amount valor do boleto
