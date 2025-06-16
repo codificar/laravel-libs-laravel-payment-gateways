@@ -4,7 +4,8 @@ namespace Codificar\PaymentGateways\Libs;
 use Carbon\Carbon;
 
 //models do sistema
-use Log, Exception;
+use Illuminate\Support\Facades\Log;
+use Exception;
 use App;
 use Payment;
 use Provider;
