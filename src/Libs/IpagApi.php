@@ -822,7 +822,7 @@ class IpagApi
 
         $sellerId = self::checkProviderAccount($ledgerBankAccount);
         if(!isset($sellerId->success) || (isset($sellerId->success) && !$sellerId->success))
-            throw new Exception(print_r($ledgerBankAccount,1));
+            throw new Exception(print_r($sellerId,1));
 
         $fields = (object)array(
             $sellerIndex            =>  $sellerId->recipient_id,
