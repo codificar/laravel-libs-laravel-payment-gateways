@@ -534,12 +534,12 @@ class IpagApi
         return $billetRequest;
     }
 
-    public static function pixCharge($amount, $user, $provider)
+    public static function pixCharge($amount, $user, $provider, $providerAmount)
     {
         $url = sprintf('%s/payment', self::apiUrl());
 
         $header     =   self::getHeader(true, true);
-        $body       =   self::getBody(null, $amount, null, true, $provider, $user, null, true);
+        $body       =   self::getBody(null, $amount, $providerAmount, true, $provider, $user, null, true);
         $pixRequest =   self::apiRequest($url, $body, $header, self::POST_REQUEST);
 
         return $pixRequest;

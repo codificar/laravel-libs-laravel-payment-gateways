@@ -502,7 +502,7 @@ class BancardLib implements IPayment
         );
     }
 
-    public function pixCharge($amount, $holder)
+    public function pixCharge($amount, $holder, $provider = null, $providerAmount = null)
     {
         \Log::error('pix_not_implemented');
         return array(

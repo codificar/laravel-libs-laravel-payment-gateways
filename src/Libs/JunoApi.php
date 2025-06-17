@@ -364,7 +364,7 @@ class JunoApi {
         }
     }
 
-    public function pixCharge($amount) {
+    public function pixCharge($amount, $user, $provider = null, $providerAmount = null) {
 
         try {
             $headersOk = $this->setPixHeaders();

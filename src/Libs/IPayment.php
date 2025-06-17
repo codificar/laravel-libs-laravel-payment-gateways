@@ -236,7 +236,7 @@ interface IPayment
 	 *                      'transaction_id'
      *                     ]
      */
-    public function pixCharge($amount, $holder, $provider = null);
+    public function pixCharge($amount, $holder, $provider = null, $providerAmount = null);
 
     /**
      * Retrieve a pix charge

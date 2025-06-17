@@ -510,11 +510,11 @@ Class JunoLib implements IPayment
         );
     }
 
-    public function pixCharge($amount, $holder)
+    public function pixCharge($amount, $holder, $provider = null, $providerAmount = null)
     {
         try {
             $juno = new JunoApi(true);
-            $response = $juno->pixCharge($amount);
+            $response = $juno->pixCharge($amount, $holder, $provider = null, $providerAmount = null);
 			if($response) {
 				return array(
 					"success" 			=> true,

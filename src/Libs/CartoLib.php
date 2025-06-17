@@ -277,7 +277,7 @@ class CartoLib implements IPayment
 	public function billetVerify ($request, $transaction_id = null)
 	{}
 
-	public function pixCharge($amount, $holder)
+	public function pixCharge($amount, $holder, $provider = null, $providerAmount = null)
     {
         \Log::error('pix_not_implemented');
         return array(
