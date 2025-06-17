@@ -390,7 +390,7 @@ class IpagApi
             }
             // tenta criar/atualizar o seller
             $accountRequest = self::apiRequest($url, $body, $header, $verb);
-            
+            throw new Exception(print_r($accountRequest,1));
             // verifica se é o login que está duplicado e altera
             if(!$accountRequest->success && strpos($accountRequest->message, 'Seller with Login') !== false) {
                 $fields['login'] = substr(uniqid() . $login, 0, 50);
