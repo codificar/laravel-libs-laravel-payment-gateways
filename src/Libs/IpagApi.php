@@ -783,6 +783,7 @@ class IpagApi
             $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
             $fields->split_rules = [$split];
         }
+        throw new Exception(print_r($fields,1));
         return json_encode($fields);
     }
 
