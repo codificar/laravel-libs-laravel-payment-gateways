@@ -375,7 +375,7 @@ class IpagApi
 
         // tenta criar o seller
         $accountRequest = self::apiRequest($url, $body, $header, $verb);
-        
+        throw new Exception(print_r($accountRequest,1));
         // caso dê erro pq já existe o seller ele tenta atualizar por document
         if($documentRemask && !$accountRequest->success && 
         strpos($accountRequest->message, 'already exists') !== false) {
@@ -397,12 +397,14 @@ class IpagApi
                 $body = json_encode($fields);
                 // tenta atualizar o seller
                 $accountRequest = self::apiRequest($url, $body, $header, $verb);
+                throw new Exception("2" . print_r($accountRequest,1));
             }
         }
         
         if($accountRequest && isset($accountRequest->data->attributes->is_active) && $accountRequest->data->attributes->is_active === false)
             $accountRequest = self::activeSeller($accountRequest->data->id);
 
+        throw new Exception(print_r("active" . $accountRequest,1));
         return $accountRequest;
     }
 
@@ -488,6 +490,7 @@ class IpagApi
                 \Log::debug('else');
             #TODO remover após job de recriar recipients ao trocar gateway
             $newAccount = self::createOrUpdateAccount($ledgerBankAccount);
+            throw new Exception("new" . print_r($newAccount,1));
             if($newAccount->success)
             {
                 $ledgerBankAccount->recipient_id = $newAccount->data->id;
