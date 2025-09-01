@@ -356,15 +356,18 @@ class IpagApi
             } else {
                 $birthday = '1970-01-01';
             }
-            $documentOwnerRemask = self::remaskDocument($provider->document);
-            if(!$documentRemask) {
-                \Log::info('[remaskDocument] Document Invalid $provider: ' . json_encode($provider) );
+            $ownerCpfRemask = self::remaskDocument($ledgerBankAccount->document);
+            if(!$ownerCpfRemask) {
+                \Log::info('[remaskDocument] Document Invalid $ledgerBankAccount: ' . json_encode($ledgerBankAccount) );
             }
-
+            
+            $ownerName  = trim(($ledgerBankAccount->holder ?? '') ?: ($provider->first_name . ' ' . $provider->last_name));
+            $ownerEmail = $provider->email; // se você tiver email do titular na tabela, prefira-o aqui
+            
             $fields['owner'] = (object)array(
-                'name'      =>  $provider->first_name . $provider->last_name,
-                'email'     =>  $provider->email,
-                'cpf'       =>  $documentOwnerRemask, //document remask BR
+                'name'      =>  $ownerName,
+                'email'     =>  $ownerEmail,
+                'cpf'       =>  $ownerCpfRemask, // mesmo documento base usado em cpf_cnpj
                 'phone'     =>  $phone,
                 'birthdate' =>  $birthday
             );
@@ -503,8 +506,9 @@ class IpagApi
             }
         }
 
-        if(isset($result->is_active) && $result->is_active === false)
-            self::activeSeller($result['recipient_id']);
+        if(isset($result->is_active) && $result->is_active === false) {
+            self::activeSeller($result->recipient_id);
+        }        
 
         return $result;
     }
@@ -769,11 +773,25 @@ class IpagApi
             $fields->products           =   $productFields->products;
         }
 
-        if($provider && isset($provider->id) && ($type == 'card' || $type == 'pix'))
-        {
-            $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
-            $fields->split_rules = [$split];
-        }
+        if($provider && isset($provider->id) && ($type == 'card' || $type == 'pix')) {
+            try {
+                $split = self::getSplitInfo($provider->id, $providerAmount, 'seller_id');
+                $fields->split_rules = [$split];
+            } catch (\Exception $e) {
+                // Não derruba a criação do pagamento: segue sem split
+                \Log::warning('IpagApi: split_rules omitidas (fallback) - ' . $e->getMessage(), [
+                    'provider_id'     => $provider->id ?? null,
+                    'provider_amount' => $providerAmount,
+                    'request_id'      => $requestId ?? null
+                ]);
+                // Anexe um "sinalizador" para camadas superiores, se quiser tratar
+                $fields->metadata = (object)[
+                    'reason' => 'missing_seller',
+                    'split'  => 'skipped'
+                ];
+                // OBS: se você preferir **bloquear** a criação sem split, retorne erro aqui.
+            }
+        }        
 
         return json_encode($fields);
     }
@@ -823,7 +841,6 @@ class IpagApi
             'liable'                =>  false,
             'charge_processing_fee' =>  false
         );
-
         return $fields;
     }
 
