@@ -54,8 +54,28 @@ class StripeLib implements IPayment
 		\Stripe\Stripe::setApiKey(Settings::findByKey('stripe_secret_key'));
 	}
 
+	/**
+	 * Create a new credit card in Stripe
+	 * 
+	 * @param Payment $payment Payment object with card information
+	 * @param User|null $user User object (optional, will be retrieved from payment if not provided)
+	 * @return array ['success' => bool, 'customer_id' => string, 'token' => string, 'card_token' => string, 'last_four' => string, 'card_type' => string, 'gateway' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function createCard(Payment $payment, User $user = null){
 		
+		// Validações de entrada
+		if (empty($payment->getCardNumber())) {
+			return array(
+				"success" 	=> false,
+				'data' 		=> null,
+				'error' 	=> array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+				)
+			);
+		}
+
 		$cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
 		$cardExpirationYear 	= $payment->getCardExpirationYear();
@@ -67,29 +87,47 @@ class StripeLib implements IPayment
 		try {
 			// captura o usuario
 			$user = $payment->user_id ? $payment->User : $payment->Provider;
+			
+			if (!$user) {
+				return array(
+					"success" 	=> false,
+					'data' 		=> null,
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+
 			// verifica se e um cartao stripe
-			if(self::isCustomerIdFromStripe($payment->customer_id)){
-				// verifica se existe
-				$stripeCustomer = \Stripe\Customer::retrieve($payment->customer_id);
+			if(!empty($payment->customer_id) && self::isCustomerIdFromStripe($payment->customer_id)){
+				try {
+					// verifica se existe
+					$stripeCustomer = \Stripe\Customer::retrieve($payment->customer_id);
 
-				// atualiza cartao e outros dados
-				if($stripeCustomer && $stripeCustomer->id){
-					// adiciona a nova fonte de cartao
-					$card_Token = $stripeCustomer->sources->create(
-										array(
-											"card" => array(
-												"number" 	=> $cardNumber,
-												"exp_month" => $cardExpirationMonth,
-												"exp_year" 	=> $cardExpirationYear,
-												"cvc"	 	=> $cardCvc ,
-												"name"	 	=> $cardHolder
+					// atualiza cartao e outros dados
+					if($stripeCustomer && $stripeCustomer->id){
+						// adiciona a nova fonte de cartao
+						$card_Token = $stripeCustomer->sources->create(
+											array(
+												"card" => array(
+													"number" 	=> $cardNumber,
+													"exp_month" => $cardExpirationMonth,
+													"exp_year" 	=> $cardExpirationYear,
+													"cvc"	 	=> $cardCvc ,
+													"name"	 	=> $cardHolder
+												)
 											)
-										)
-									);
+										);
 
-					$stripeCustomer->description 	= $user->getFullName();
-					$stripeCustomer->email 			= $user->email ;
-					$stripeCustomer->save();
+						$stripeCustomer->description 	= $user->getFullName();
+						$stripeCustomer->email 			= $user->email ;
+						$stripeCustomer->save();
+					}
+				} catch (\Stripe\Exception\ApiErrorException $ex) {
+					// Se o customer não existir, continuar para criar um novo
+					\Log::warning('Stripe customer not found: ' . $ex->getMessage());
+					$stripeCustomer = null;
 				}
 			}
 
@@ -99,6 +137,17 @@ class StripeLib implements IPayment
 				 * Create Stripe Credit Card with Token (safe transaction).
 				 */
 				$card_Token = $this->createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder);
+
+				if (!$card_Token || !$card_Token["success"]) {
+					return array(
+						"success" 	=> false,
+						'data' 		=> null,
+						'error' 	=> array(
+							"code" 		=> ApiErrors::CARD_ERROR,
+							"messages" 	=> array($card_Token["message"] ?? trans('creditCard.customerCreationFail'))
+						)
+					);
+				}
 
 				$stripeCustomer = \Stripe\Customer::create(array(
 						"source"		=> $card_Token["token"],
@@ -113,7 +162,7 @@ class StripeLib implements IPayment
 						'data' 		=> null,
 						'error' 	=> array(
 							"code" 		=> ApiErrors::CARD_ERROR,
-							"messages" 	=> isset($stripeCustomer->error) ? $stripeCustomer->error['message'] : trans('creditCard.customerCreationFail')
+							"messages" 	=> array(trans('creditCard.customerCreationFail'))
 						)
 					);
 				}
@@ -130,26 +179,25 @@ class StripeLib implements IPayment
 			);
 
 		}
-		catch (Stripe\Error\Base $ex){
+		catch (\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe createCard error: ' . $ex->getMessage());
+			
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
-			//Log::info(__FUNCTION__.":error". __LINE__);
-			//Log::info(print_r($error,1));
-			if(array_key_exists('code', $body)) $code = $body["code"];
-			else $code = null ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 	=> false ,
 				'data' => null,
-				'type' => $body,
+				'type' => $error ? ($error['type'] ?? '') : '',
 				'error' => array(
 					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					"messages" 	=> array($error ? ($error['message'] ?? trans('creditCard.customerCreationFail')) : trans('creditCard.customerCreationFail'))
 				)
 			);
 		}
 		catch(\Throwable $th)
         {
+			\Log::error('Stripe createCard unexpected error: ' . $th->getMessage());
             return array(
 				"success" 	=> false ,
 				'data' => null,
@@ -172,9 +220,40 @@ class StripeLib implements IPayment
 	 * Reference Link: https://stripe.com/docs/connect/destination-charges
 	 * 
 	 * Charge the user service using Split.
+	 * 
+	 * @param Payment $payment Payment object with customer_id
+	 * @param Provider $provider Provider object with bank account
+	 * @param float $totalAmount Total amount to charge
+	 * @param float $providerAmount Amount to transfer to provider
+	 * @param string $description Description of the charge
+	 * @param bool $capture Whether to immediately capture the charge
+	 * @param User|null $user User object (optional)
+	 * @return array ['success' => bool, 'paid' => bool, 'status' => string, 'captured' => bool, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
 	 */
 	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
 	{
+		// Validações de entrada
+		if (empty($payment->customer_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_customer_id',
+				"message" 			=> trans('paymentError.missing_customer_id'),
+				"transaction_id" 	=> ''
+			);
+		}
+
+		if ($totalAmount <= 0 || $providerAmount < 0) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'invalid_amount',
+				"message" 			=> trans('paymentError.invalid_amount'),
+				"transaction_id" 	=> ''
+			);
+		}
+
 		// fix amount for payment (Total and provider value)
 		$totalAmount 		= round($totalAmount*100);
 		$providerAmount = round($providerAmount*100);
@@ -220,26 +299,70 @@ class StripeLib implements IPayment
 			);
 
 		}
-		catch(Stripe\Error\InvalidRequest $ex){
+		catch(\Stripe\Exception\InvalidRequestException $ex){
 
-			\Log::error($ex->getMessage());
+			\Log::error('Stripe chargeWithSplit error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
-			// Log::info(__FUNCTION__.":error". __LINE__);
-			// Log::info(print_r($error,1));
+			$error = isset($body['error']) ? $body['error'] : null;
+
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe chargeWithSplit API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}
 	}
 
+	/**
+	 * Charge a credit card
+	 * 
+	 * @param Payment $payment Payment object with customer_id
+	 * @param float $amount Amount to charge
+	 * @param string $description Description of the charge
+	 * @param bool $capture Whether to immediately capture the charge
+	 * @param User|null $user User object (optional)
+	 * @return array ['success' => bool, 'paid' => bool, 'status' => string, 'captured' => bool, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
 	{
+		// Validações de entrada
+		if (empty($payment->customer_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_customer_id',
+				"message" 			=> trans('paymentError.missing_customer_id'),
+				"transaction_id" 	=> ''
+			);
+		}
+
+		if ($amount <= 0) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'invalid_amount',
+				"message" 			=> trans('paymentError.invalid_amount'),
+				"transaction_id" 	=> ''
+			);
+		}
 
 		// fix amount for payment
 		$amount = round($amount*100) ;
@@ -274,24 +397,70 @@ class StripeLib implements IPayment
 			);
 	
 		}
-		catch(Stripe\Error\InvalidRequest $ex){
-			\Log::error($ex->getMessage());
+		catch(\Stripe\Exception\InvalidRequestException $ex){
+			\Log::error('Stripe charge error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe charge API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}
 	}
 
+	/**
+	 * Capture the payment of an existing, uncaptured, charge with split rules
+	 * 
+	 * @param Transaction $transaction Transaction object with gateway_transaction_id
+	 * @param Provider $provider Provider object with bank account
+	 * @param float $totalAmount Total amount to capture
+	 * @param float $providerAmount Amount to transfer to provider
+	 * @param Payment|null $payment Payment object (optional)
+	 * @return array ['success' => bool, 'status' => string, 'captured' => bool, 'paid' => bool, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
 	{
+		// Validações de entrada
+		if (empty($transaction->gateway_transaction_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_transaction_id',
+				"message" 			=> trans('paymentError.missing_transaction_id'),
+				"transaction_id" 	=> ''
+			);
+		}
+
+		if ($totalAmount <= 0 || $providerAmount < 0) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'invalid_amount',
+				"message" 			=> trans('paymentError.invalid_amount'),
+				"transaction_id" 	=> ''
+			);
+		}
+
 		try
 		{
 			$charge = \Stripe\Charge::retrieve($transaction->gateway_transaction_id);
@@ -343,25 +512,69 @@ class StripeLib implements IPayment
 			);
 
 		}
-		catch(Stripe\Error\InvalidRequest $ex)
+		catch(\Stripe\Exception\InvalidRequestException $ex)
 		{
-			\Log::error($ex->getMessage());
+			\Log::error('Stripe captureWithSplit error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex)
+		{
+			\Log::error('Stripe captureWithSplit API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}
 	}
     
+	/**
+	 * Capture the payment of an existing, uncaptured, charge
+	 * 
+	 * @param Transaction $transaction Transaction object with gateway_transaction_id
+	 * @param float $amount Amount to capture
+	 * @param Payment|null $payment Payment object (optional)
+	 * @return array ['success' => bool, 'status' => string, 'captured' => bool, 'paid' => bool, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function capture(Transaction $transaction, $amount, Payment $payment = null)
 	{
+		// Validações de entrada
+		if (empty($transaction->gateway_transaction_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_transaction_id',
+				"message" 			=> trans('paymentError.missing_transaction_id'),
+				"transaction_id" 	=> ''
+			);
+		}
+
+		if ($amount <= 0) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'invalid_amount',
+				"message" 			=> trans('paymentError.invalid_amount'),
+				"transaction_id" 	=> ''
+			);
+		}
 
 		try
 		{
@@ -398,23 +611,38 @@ class StripeLib implements IPayment
 			);
 
 		}
-		catch(Stripe\Error\InvalidRequest $ex)
+		catch(\Stripe\Exception\InvalidRequestException $ex)
 		{
-			\Log::error($ex->getMessage());
+			\Log::error('Stripe capture error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex)
+		{
+			\Log::error('Stripe capture API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}
 		catch (\Throwable $th) {
-			\Log::error($th);
+			\Log::error('Stripe capture unexpected error: ' . $th->getMessage());
 			return array(
 				"success" 			=> false ,
 				"type" 				=> '' ,
@@ -427,8 +655,27 @@ class StripeLib implements IPayment
 	}
 
 
+	/**
+	 * Refund a charge that has previously been created
+	 * 
+	 * @param Transaction $transaction Transaction object with gateway_transaction_id
+	 * @param Payment|null $payment Payment object (optional)
+	 * @return array ['success' => bool, 'status' => string, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function refund(Transaction $transaction, Payment $payment = null){
 		
+		// Validações de entrada
+		if (empty($transaction->gateway_transaction_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_transaction_id',
+				"message" 			=> trans('paymentError.missing_transaction_id'),
+				"transaction_id" 	=> ''
+			);
+		}
+
 		try
 		{
 			$refund = \Stripe\Refund::create(
@@ -456,18 +703,33 @@ class StripeLib implements IPayment
 
 
 		}
-		catch(Stripe\Error\InvalidRequest $ex)
+		catch(\Stripe\Exception\InvalidRequestException $ex)
 		{
-			\Log::error($ex->getMessage());
+			\Log::error('Stripe refund error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex)
+		{
+			\Log::error('Stripe refund API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}		
@@ -476,8 +738,24 @@ class StripeLib implements IPayment
 
 	/**
 	 * Do refund recovering value sent to Provider
+	 * 
+	 * @param Transaction $transaction Transaction object with gateway_transaction_id
+	 * @param Payment|null $payment Payment object (optional)
+	 * @return array ['success' => bool, 'status' => string, 'transaction_id' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
 	 */
 	public function refundWithSplit(Transaction $transaction, Payment $payment = null){
+
+		// Validações de entrada
+		if (empty($transaction->gateway_transaction_id)) {
+			return array(
+				"success" 			=> false,
+				"type" 				=> 'invalid_request_error',
+				"code" 				=> 'missing_transaction_id',
+				"message" 			=> trans('paymentError.missing_transaction_id'),
+				"transaction_id" 	=> ''
+			);
+		}
 
 		try
 		{
@@ -512,18 +790,33 @@ class StripeLib implements IPayment
 			);
 
 		}
-		catch(Stripe\Error\InvalidRequest $ex)
+		catch(\Stripe\Exception\InvalidRequestException $ex)
 		{
-			\Log::error($ex->getMessage());
+			\Log::error('Stripe refundWithSplit error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 			=> false ,
-				"type" 				=> $error["type"] ,
-				"code" 				=> '' ,
-				"message" 			=> $error["message"] ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
+				"transaction_id" 	=> ''
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex)
+		{
+			\Log::error('Stripe refundWithSplit API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				"success" 			=> false ,
+				"type" 				=> $error ? ($error["type"] ?? 'api_error') : 'api_error' ,
+				"code" 				=> $error ? ($error["code"] ?? '') : '' ,
+				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
 		}			
@@ -544,6 +837,14 @@ class StripeLib implements IPayment
 		);		
 	}	
 
+	/**
+	 * Upload identity document to Stripe for account verification
+	 * 
+	 * @param string|null $filePath Path to the file to upload
+	 * @param string|null $accountId Stripe account ID (optional)
+	 * @return array ['success' => bool, 'file_token' => string|null, 'type' => string, 'message' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public static function uploadIdentityDocument($filePath = null, $accountId = null){
 
 		$return = [];
@@ -554,6 +855,16 @@ class StripeLib implements IPayment
 					"success" 					=> true ,
 					"file_token" 				=> null,
 			);		
+		}
+
+		// Validações de entrada
+		if (empty($filePath) || !file_exists($filePath)) {
+			return array(
+				"success" 					=> false,
+				"file_token" 				=> 'empty',
+				"type" 						=> 'invalid_request_error',
+				"message" 					=> trans('paymentError.invalid_file_path'),
+			);
 		}				
 
 		 try{
@@ -561,26 +872,17 @@ class StripeLib implements IPayment
 					"purpose" 	=> "identity_document",
 					"file" 		=> fopen($filePath, 'r')
 				);
-				array("stripe_account" => $accountId);
-		
 
-			$file = null;
-			
-			if(!$file) {
-				\Stripe\Stripe::setApiKey(Settings::findByKey('stripe_secret_key'));
+			// Adiciona stripe_account se fornecido
+			if ($accountId) {
+				$uploadData["stripe_account"] = $accountId;
+			}
 
-				$file = \Stripe\FileUpload::create($uploadData);
-			}
-			else{
-				$file->save($uploadData);
-			}
+			\Stripe\Stripe::setApiKey(Settings::findByKey('stripe_secret_key'));
+
+			$file = \Stripe\File::create($uploadData);
 
 			$return['file_token'] = $file->id;
-			
-			//Log::info("acc".$providerDocument->file_token);
-			// Log::info("file:".print_r($file->id,1));
-		
-			//return $return;
 			
 			return array(
 					"success" 					=> true ,
@@ -588,16 +890,30 @@ class StripeLib implements IPayment
 			);
 			
 		}		
-		catch(Stripe\Error\InvalidRequest $ex){
+		catch(\Stripe\Exception\InvalidRequestException $ex){
+			\Log::error('Stripe uploadIdentityDocument error: ' . $ex->getMessage());
+			
 			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+			$error = isset($body['error']) ? $body['error'] : null;
+			
 			return array(
 				"success" 					=> false,
 				"file_token" 				=> 'empty',
-				"type" 						=> $error["type"] ,
-				"message" 					=> $error["message"] ,
-				
-				
+				"type" 						=> $error ? ($error["type"] ?? 'api_error') : 'api_error',
+				"message" 					=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage(),
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe uploadIdentityDocument API error: ' . $ex->getMessage());
+			
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+			
+			return array(
+				"success" 					=> false,
+				"file_token" 				=> 'empty',
+				"type" 						=> $error ? ($error["type"] ?? 'api_error') : 'api_error',
+				"message" 					=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage(),
 			);
 		}
 	}
@@ -772,8 +1088,8 @@ class StripeLib implements IPayment
 			
 			try{
 				$dataStripe = $account->save();
-			} catch(Stripe\Error\InvalidRequest $ex){
-				\Log::error($ex);
+			} catch(\Stripe\Exception\InvalidRequestException $ex){
+				\Log::error('Stripe createOrUpdateAccount save error: ' . $ex->getMessage());
 				$body = $ex->getJsonBody();
 				$error = trans('setting.bank_stripe_error');
 
@@ -784,6 +1100,23 @@ class StripeLib implements IPayment
 				$return = array(
 					"success" 					=> false,
 					"recipient_id"				=> $account->id,
+					"message_error"				=> $error
+				);
+
+				return $return;
+			}
+			catch(\Stripe\Exception\ApiErrorException $ex){
+				\Log::error('Stripe createOrUpdateAccount API error: ' . $ex->getMessage());
+				$body = $ex->getJsonBody();
+				$error = trans('setting.bank_stripe_error');
+
+				if(isset($body['error']['message'])){
+					$error = trans("setting." . str_replace(" ", "_", $body['error']['message']));
+				}
+
+				$return = array(
+					"success" 					=> false,
+					"recipient_id"				=> isset($account->id) ? $account->id : 'empty',
 					"message_error"				=> $error
 				);
 
@@ -808,6 +1141,17 @@ class StripeLib implements IPayment
 		return $return;
 	}
 
+	/**
+	 * Create a Stripe token from card information
+	 * 
+	 * @param string $cardNumber Card number
+	 * @param int $cardExpirationMonth Expiration month
+	 * @param int $cardExpirationYear Expiration year
+	 * @param string $cardCvc Card CVC
+	 * @param string $cardHolder Card holder name
+	 * @return array ['success' => bool, 'token' => string, 'card_token' => string, 'card_type' => string, 'last_four' => string, 'type' => string, 'code' => string, 'message' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	private function createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder){
 
 		try {
@@ -832,13 +1176,28 @@ class StripeLib implements IPayment
 				"last_four" 			=> $token->card->last4 ,
 			);
 		}
-		catch(Stripe\CardError $ex){
+		catch(\Stripe\Exception\CardException $ex){
+			\Log::error('Stripe createToken card error: ' . $ex->getMessage());
 			$body = $ex->getJsonBody();
+			$error = isset($body["error"]) ? $body["error"] : null;
+			
 			return array(
 				"success" 				=> false ,
-				"type" 					=> $body["error"]["type"] ,
-				"code" 					=> $body["error"]["code"] ,
-				"message" 				=> trans("paymentError.".$body["error"]["code"]) ,
+				"type" 					=> $error ? ($error["type"] ?? 'card_error') : 'card_error',
+				"code" 					=> $error ? ($error["code"] ?? '') : '',
+				"message" 				=> $error ? trans("paymentError.".$error["code"]) : $ex->getMessage(),
+			);
+		}
+		catch(\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe createToken API error: ' . $ex->getMessage());
+			$body = $ex->getJsonBody();
+			$error = isset($body["error"]) ? $body["error"] : null;
+			
+			return array(
+				"success" 				=> false ,
+				"type" 					=> $error ? ($error["type"] ?? 'api_error') : 'api_error',
+				"code" 					=> $error ? ($error["code"] ?? '') : '',
+				"message" 				=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage(),
 			);
 		}
 	}	
@@ -853,7 +1212,27 @@ class StripeLib implements IPayment
 	}
 
 
+	/**
+	 * Delete a credit card from Stripe
+	 * 
+	 * @param Payment $payment Payment object with customer_id
+	 * @param User|null $user User object (optional)
+	 * @return array ['success' => bool, 'data' => null, 'error' => array]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public function deleteCard(Payment $payment, User $user = null){
+		// Validações de entrada
+		if (empty($payment->customer_id)) {
+			return array(
+				"success" 	=> false,
+				'data' 		=> null,
+				'error' 	=> array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array(trans('creditCard.customerNotFound'))
+				)
+			);
+		}
+
 		try{
 			self::setApiKey();
 
@@ -864,24 +1243,30 @@ class StripeLib implements IPayment
 				"success" 	=> true
 			);
 		} 
-		catch (Stripe\Error\Base $ex){
-			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+		catch (\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe deleteCard error: ' . $ex->getMessage());
 			
-			if(array_key_exists('code', $body)) $code = $body["code"];
-			else $code = null ;
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
 	
 			return array(
 				"success" 	=> false ,
 				'data' => null,
 				'error' => array(
 					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> $error
+					"messages" 	=> $error ? ($error['message'] ?? $ex->getMessage()) : $ex->getMessage()
 				)
 			);
 		}
 	}
 
+	/**
+	 * Verify the status of a Stripe Connect account
+	 * 
+	 * @param string|null $account_id Stripe account ID
+	 * @return array ['success' => bool, 'data' => string, 'error' => array]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
 	public static function verifyStatus($account_id){
 		try{
 			if($account_id != null && $account_id != 'empty'){
@@ -896,19 +1281,18 @@ class StripeLib implements IPayment
 				"success"	=> true,
 				"data"		=> $verification
 			);
-		} catch(Stripe\Error\Base $ex){
-			$body = $ex->getJsonBody();
-			$error = $body['error'] ;
+		} catch(\Stripe\Exception\ApiErrorException $ex){
+			\Log::error('Stripe verifyStatus error: ' . $ex->getMessage());
 			
-			if(array_key_exists('code', $body)) $code = $body["code"];
-			else $code = null ;
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
 
 			return array(
 				"success" 	=> false ,
 				'data' => null,
 				'error' => array(
 					"code" 		=> ApiErrors::CARD_ERROR,
-					"messages" 	=> $error
+					"messages" 	=> $error ? ($error['message'] ?? $ex->getMessage()) : $ex->getMessage()
 				)
 			);
 		}
@@ -952,9 +1336,9 @@ class StripeLib implements IPayment
             else
                 return(false);
         }
-        catch(Exception$ex)
+        catch(\Exception $ex)
         {
-            \Log::error($ex);
+            \Log::error('Stripe checkAutoTransferProvider error: ' . $ex->getMessage());
 
             return(false);
         }
@@ -1040,6 +1424,77 @@ class StripeLib implements IPayment
             "copy_and_paste"    => ''
         );
     }
+
+	/**
+	 * Create a transfer to a connected account
+	 * 
+	 * @param float $amount Amount to transfer (in currency units, not cents)
+	 * @param string $currency Currency code (e.g., 'usd', 'brl')
+	 * @param string $destination Stripe account ID of the destination
+	 * @param array $metadata Additional metadata to attach to the transfer
+	 * @return array ['success' => bool, 'transfer_id' => string|null, 'error' => string|null]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
+	public function createTransfer($amount, $currency, $destination, $metadata = [])
+	{
+		// Validações de entrada
+		if (empty($destination)) {
+			return array(
+				'success' => false,
+				'transfer_id' => null,
+				'error' => trans('paymentError.missing_destination')
+			);
+		}
+
+		if ($amount <= 0) {
+			return array(
+				'success' => false,
+				'transfer_id' => null,
+				'error' => trans('paymentError.invalid_amount')
+			);
+		}
+
+		if (empty($currency)) {
+			$currency = $this->getCurrency();
+		}
+
+		try {
+			$transfer = \Stripe\Transfer::create([
+				'amount' => round($amount * 100), // Converter para centavos
+				'currency' => strtolower($currency),
+				'destination' => $destination,
+				'metadata' => $metadata,
+			]);
+
+			return array(
+				'success' => true,
+				'transfer_id' => $transfer->id,
+				'error' => null
+			);
+		} catch(\Stripe\Exception\InvalidRequestException $ex) {
+			\Log::error('Stripe createTransfer error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				'success' => false,
+				'transfer_id' => null,
+				'error' => $error ? ($error['message'] ?? $ex->getMessage()) : $ex->getMessage()
+			);
+		} catch(\Stripe\Exception\ApiErrorException $ex) {
+			\Log::error('Stripe createTransfer API error: ' . $ex->getMessage());
+
+			$body = $ex->getJsonBody();
+			$error = isset($body['error']) ? $body['error'] : null;
+
+			return array(
+				'success' => false,
+				'transfer_id' => null,
+				'error' => $error ? ($error['message'] ?? $ex->getMessage()) : $ex->getMessage()
+			);
+		}
+	}
 
 	/**
      * Check if currency is 3 char length. If not, get the 'BRL' as default
