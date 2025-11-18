@@ -333,6 +333,168 @@ class StripeLib implements IPayment
 
 	}
 
+	/**
+	 * Create a new credit card in Stripe using Payment Method ID (modern and secure method)
+	 * 
+	 * This method uses Stripe Payment Methods API, which is the recommended approach
+	 * for PCI compliance. The Payment Method is created in the frontend using Stripe.js
+	 * and only the payment_method_id is sent to the backend.
+	 * 
+	 * @param Payment $payment Payment object
+	 * @param string $paymentMethodId Payment Method ID created via Stripe.js
+	 * @param string $cardHolder Name of the card holder
+	 * @return array ['success' => bool, 'customer_id' => string, 'payment_method_id' => string, 'card_token' => string, 'last_four' => string, 'card_type' => string, 'gateway' => string]
+	 * @throws \Stripe\Exception\ApiErrorException
+	 */
+	public function createCardFromPaymentMethod(Payment $payment, $paymentMethodId, $cardHolder) {
+		try {
+			$this->setApiKey();
+			
+			// Validar payment_method_id
+			if (empty($paymentMethodId)) {
+				return array(
+					"success" 	=> false,
+					'data' 		=> null,
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+			
+			// Capturar o usuário
+			$user = $payment->user_id ? $payment->User : $payment->Provider;
+			
+			if (!$user) {
+				return array(
+					"success" 	=> false,
+					'data' 		=> null,
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+			
+			// Validar email do usuário
+			$userEmail = $user->email ?? null;
+			if (empty($userEmail) || !filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
+				\Log::error('Stripe createCardFromPaymentMethod: Invalid or empty email', [
+					'user_id' => $user->id ?? null,
+					'user_email' => $userEmail,
+				]);
+				
+				return array(
+					"success" 	=> false,
+					'data' 		=> null,
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+			
+			// Recuperar Payment Method do Stripe
+			$paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+			
+			if (!$paymentMethod || $paymentMethod->type !== 'card') {
+				return array(
+					"success" 	=> false,
+					'data' 		=> null,
+					'error' 	=> array(
+						"code" 		=> ApiErrors::CARD_ERROR,
+						"messages" 	=> array(trans('creditCard.customerCreationFail'))
+					)
+				);
+			}
+			
+			// Verificar se já existe customer no Stripe
+			$stripeCustomer = null;
+			if (!empty($payment->customer_id) && self::isCustomerIdFromStripe($payment->customer_id)) {
+				try {
+					$stripeCustomer = \Stripe\Customer::retrieve($payment->customer_id);
+					
+					// Atualizar dados do customer
+					$stripeCustomer->description = $user->getFullName();
+					$stripeCustomer->email = $userEmail;
+					$stripeCustomer->save();
+				} catch (\Stripe\Exception\ApiErrorException $ex) {
+					\Log::warning('Stripe customer not found: ' . $ex->getMessage());
+					$stripeCustomer = null;
+				}
+			}
+			
+			// Criar novo customer se não existir
+			if (!$stripeCustomer) {
+				$stripeCustomer = \Stripe\Customer::create([
+					'email' => $userEmail,
+					'description' => $user->getFullName(),
+					'name' => $cardHolder,
+				]);
+			}
+			
+			// Anexar Payment Method ao Customer
+			$paymentMethod->attach(['customer' => $stripeCustomer->id]);
+			
+			// Definir como Payment Method padrão do customer
+			\Stripe\Customer::update($stripeCustomer->id, [
+				'invoice_settings' => [
+					'default_payment_method' => $paymentMethod->id
+				]
+			]);
+			
+			// Extrair informações do cartão do Payment Method
+			$card = $paymentMethod->card;
+			$lastFour = $card->last4 ?? '';
+			$cardType = isset($card->brand) ? strtolower($card->brand) : '';
+			
+			// Retornar sucesso
+			return array(
+				"success" 			=> true,
+				"customer_id" 		=> $stripeCustomer->id,
+				"payment_method_id" => $paymentMethod->id,
+				"card_token" 		=> $paymentMethod->id, // Para compatibilidade
+				"token" 			=> $paymentMethod->id, // Para compatibilidade
+				"last_four" 		=> $lastFour,
+				"card_type" 		=> $cardType,
+				"gateway" 			=> "stripe"
+			);
+			
+		} catch (\Stripe\Exception\ApiErrorException $ex) {
+			\Log::error('Stripe createCardFromPaymentMethod API error: ' . $ex->getMessage(), [
+				'user_id' => isset($user) ? ($user->id ?? null) : null,
+				'payment_method_id' => $paymentMethodId,
+				'stripe_error' => $ex->getMessage(),
+			]);
+			
+			$body = $ex->getJsonBody();
+			$error = $body['error'] ?? null;
+			
+			return array(
+				"success" 	=> false,
+				'data' => null,
+				'type' => $error ? ($error['type'] ?? '') : '',
+				'message' => $error ? ($error['message'] ?? trans('creditCard.customerCreationFail')) : trans('creditCard.customerCreationFail'),
+				'error' => array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array($error ? ($error['message'] ?? trans('creditCard.customerCreationFail')) : trans('creditCard.customerCreationFail'))
+				)
+			);
+		} catch (\Throwable $th) {
+			\Log::error('Stripe createCardFromPaymentMethod unexpected error: ' . $th->getMessage());
+			return array(
+				"success" 	=> false,
+				'data' => null,
+				'type' => '',
+				'message' 	=> trans('creditCard.card_declined'),
+				'error' => array(
+					"code" 		=> ApiErrors::CARD_ERROR,
+					"messages" 	=> array(trans('creditCard.customerCreationFail'))
+				)
+			);
+		}
+	}
+
 	public static function isCustomerIdFromStripe($customerId){
 		return !(strpos($customerId, "cus_") === FALSE);
 	}
