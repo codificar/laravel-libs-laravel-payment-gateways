@@ -47,11 +47,32 @@ class StripeLib implements IPayment
 
     public function __construct()
     {
-        $this->setApiKey();
+        try {
+            $this->setApiKey();
+        } catch (\Exception $ex) {
+            \Log::error('StripeLib: Failed to initialize - API key not configured', [
+                'error' => $ex->getMessage()
+            ]);
+            // Não lança exceção aqui para não quebrar a instanciação
+            // A validação será feita quando tentar usar a API
+        }
     }	
 
+	/**
+	 * Set Stripe API Key
+	 * Validates that the API key is configured before setting it
+	 * 
+	 * @throws \Exception if API key is not configured
+	 */
 	private function setApiKey(){
-		\Stripe\Stripe::setApiKey(Settings::findByKey('stripe_secret_key'));
+		$apiKey = Settings::findByKey('stripe_secret_key');
+		
+		if (empty($apiKey)) {
+			\Log::error('Stripe API key not configured');
+			throw new \Exception('Stripe API key not configured. Please set stripe_secret_key in settings.');
+		}
+		
+		\Stripe\Stripe::setApiKey($apiKey);
 	}
 
 	/**
@@ -108,7 +129,7 @@ class StripeLib implements IPayment
 					// atualiza cartao e outros dados
 					if($stripeCustomer && $stripeCustomer->id){
 						// adiciona a nova fonte de cartao
-						$card_Token = $stripeCustomer->sources->create(
+						$cardSource = $stripeCustomer->sources->create(
 											array(
 												"card" => array(
 													"number" 	=> $cardNumber,
@@ -119,6 +140,16 @@ class StripeLib implements IPayment
 												)
 											)
 										);
+
+						// Normaliza o card_Token para ter a mesma estrutura que quando criado via token
+						// O objeto Card do Stripe tem propriedades: id, last4, brand, etc.
+						$card_Token = array(
+							"success" 		=> true,
+							"token" 		=> $cardSource->id ?? '',
+							"card_token" 	=> $cardSource->id ?? '',
+							"card_type" 	=> isset($cardSource->brand) ? strtolower($cardSource->brand) : '',
+							"last_four" 	=> $cardSource->last4 ?? ''
+						);
 
 						$stripeCustomer->description 	= $user->getFullName();
 						$stripeCustomer->email 			= $user->email ;
@@ -138,7 +169,16 @@ class StripeLib implements IPayment
 				 */
 				$card_Token = $this->createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder);
 
+				// Validação robusta do token
 				if (!$card_Token || !$card_Token["success"]) {
+					\Log::error('Stripe createCard: Token creation failed', [
+						'user_id' => $user->id ?? null,
+						'user_email' => $user->email ?? null,
+						'token_error' => $card_Token["message"] ?? 'Unknown token error',
+						'token_type' => $card_Token["type"] ?? null,
+						'token_code' => $card_Token["code"] ?? null,
+					]);
+					
 					return array(
 						"success" 	=> false,
 						'data' 		=> null,
@@ -149,20 +189,94 @@ class StripeLib implements IPayment
 					);
 				}
 
-				$stripeCustomer = \Stripe\Customer::create(array(
-						"source"		=> $card_Token["token"],
-						"description" 	=> $user->getFullName() ,
-						"email" 		=> $user->email
-					)
-				);
+				// Validação de dados obrigatórios antes de criar o Customer
+				$userEmail = $user->email ?? null;
+				$userFullName = $user->getFullName() ?? '';
 
-				if (!$stripeCustomer) {
+				// Validação de email
+				if (empty($userEmail) || !filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
+					\Log::error('Stripe createCard: Invalid or empty email', [
+						'user_id' => $user->id ?? null,
+						'user_email' => $userEmail,
+					]);
+					
 					return array(
-						"success" 	=> false ,
+						"success" 	=> false,
 						'data' 		=> null,
 						'error' 	=> array(
 							"code" 		=> ApiErrors::CARD_ERROR,
 							"messages" 	=> array(trans('creditCard.customerCreationFail'))
+						)
+					);
+				}
+
+				// Criação do Customer com tratamento específico de exceção
+				try {
+					$stripeCustomer = \Stripe\Customer::create(array(
+						"source"		=> $card_Token["token"],
+						"description" 	=> $userFullName,
+						"email" 		=> $userEmail
+					));
+
+					if (!$stripeCustomer || !isset($stripeCustomer->id)) {
+						\Log::error('Stripe createCard: Customer creation returned invalid object', [
+							'user_id' => $user->id ?? null,
+							'user_email' => $userEmail,
+						]);
+						
+						return array(
+							"success" 	=> false,
+							'data' => null,
+							'error' => array(
+								"code" 		=> ApiErrors::CARD_ERROR,
+								"messages" 	=> array(trans('creditCard.customerCreationFail'))
+							)
+						);
+					}
+				} catch (\Stripe\Exception\InvalidRequestException $ex) {
+					// Erro específico de requisição inválida (ex: token já usado, email inválido, etc.)
+					$body = $ex->getJsonBody();
+					$error = isset($body['error']) ? $body['error'] : null;
+					
+					\Log::error('Stripe createCard: InvalidRequestException when creating customer', [
+						'user_id' => $user->id ?? null,
+						'user_email' => $userEmail,
+						'stripe_error' => $ex->getMessage(),
+						'stripe_code' => $error ? ($error['code'] ?? null) : null,
+						'stripe_type' => $error ? ($error['type'] ?? null) : null,
+						'stripe_message' => $error ? ($error['message'] ?? null) : null,
+					]);
+					
+					return array(
+						"success" 	=> false,
+						'data' => null,
+						'type' => $error ? ($error['type'] ?? '') : '',
+						'error' => array(
+							"code" 		=> ApiErrors::CARD_ERROR,
+							"messages" 	=> array($error ? ($error['message'] ?? trans('creditCard.customerCreationFail')) : trans('creditCard.customerCreationFail'))
+						)
+					);
+				} catch (\Stripe\Exception\ApiErrorException $ex) {
+					// Outros erros da API do Stripe
+					$body = $ex->getJsonBody();
+					$error = isset($body['error']) ? $body['error'] : null;
+					
+					\Log::error('Stripe createCard: ApiErrorException when creating customer', [
+						'user_id' => $user->id ?? null,
+						'user_email' => $userEmail,
+						'stripe_error' => $ex->getMessage(),
+						'stripe_code' => $error ? ($error['code'] ?? null) : null,
+						'stripe_type' => $error ? ($error['type'] ?? null) : null,
+						'stripe_message' => $error ? ($error['message'] ?? null) : null,
+					]);
+					
+					return array(
+						"success" 	=> false,
+						'data' => null,
+						'type' => $error ? ($error['type'] ?? '') : '',
+						'error' => array(
+							"code" 		=> ApiErrors::CARD_ERROR,
+							"messages" 	=> array($error ? ($error['message'] ?? trans('creditCard.customerCreationFail')) : trans('creditCard.customerCreationFail'))
 						)
 					);
 				}
@@ -180,10 +294,17 @@ class StripeLib implements IPayment
 
 		}
 		catch (\Stripe\Exception\ApiErrorException $ex){
-			\Log::error('Stripe createCard error: ' . $ex->getMessage());
-			
+			// Este catch é um fallback para erros não capturados nos try/catch internos
 			$body = $ex->getJsonBody();
 			$error = isset($body['error']) ? $body['error'] : null;
+
+			\Log::error('Stripe createCard: Unexpected ApiErrorException', [
+				'user_id' => isset($user) ? ($user->id ?? null) : null,
+				'user_email' => isset($user) ? ($user->email ?? null) : null,
+				'stripe_error' => $ex->getMessage(),
+				'stripe_code' => $error ? ($error['code'] ?? null) : null,
+				'stripe_type' => $error ? ($error['type'] ?? null) : null,
+			]);
 
 			return array(
 				"success" 	=> false ,
