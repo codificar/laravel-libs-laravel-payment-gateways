@@ -408,9 +408,30 @@ class StripeLib implements IPayment
 				);
 			}
 			
-			// Verificar se já existe customer no Stripe
+			// Verificar se o Payment Method já está anexado a um Customer
+			$existingCustomerId = $paymentMethod->customer ?? null;
+			
+			// Verificar se já existe customer no Stripe (do payment ou do Payment Method)
 			$stripeCustomer = null;
-			if (!empty($payment->customer_id) && self::isCustomerIdFromStripe($payment->customer_id)) {
+			if ($existingCustomerId) {
+				// Payment Method já está anexado a um Customer, usar esse Customer
+				try {
+					$stripeCustomer = \Stripe\Customer::retrieve($existingCustomerId);
+					
+					// Atualizar dados do customer
+					$stripeCustomer->description = $user->getFullName();
+					$stripeCustomer->email = $userEmail;
+					$stripeCustomer->save();
+					
+					\Log::info('Stripe: Payment Method já estava anexado ao Customer: ' . $existingCustomerId);
+				} catch (\Stripe\Exception\ApiErrorException $ex) {
+					\Log::warning('Stripe: Erro ao recuperar Customer existente: ' . $ex->getMessage());
+					$stripeCustomer = null;
+				}
+			}
+			
+			// Se não encontrou Customer do Payment Method, verificar se há no payment
+			if (!$stripeCustomer && !empty($payment->customer_id) && self::isCustomerIdFromStripe($payment->customer_id)) {
 				try {
 					$stripeCustomer = \Stripe\Customer::retrieve($payment->customer_id);
 					
@@ -433,8 +454,24 @@ class StripeLib implements IPayment
 				]);
 			}
 			
-			// Anexar Payment Method ao Customer
-			$paymentMethod->attach(['customer' => $stripeCustomer->id]);
+			// Anexar Payment Method ao Customer apenas se ainda não estiver anexado
+			if (!$existingCustomerId || $existingCustomerId !== $stripeCustomer->id) {
+				try {
+					$paymentMethod->attach(['customer' => $stripeCustomer->id]);
+				} catch (\Stripe\Exception\ApiErrorException $ex) {
+					// Se já estiver anexado a outro Customer, tentar desanexar e anexar ao novo
+					if (strpos($ex->getMessage(), 'already been attached') !== false && $existingCustomerId) {
+						\Log::info('Stripe: Payment Method já anexado, usando Customer existente: ' . $existingCustomerId);
+						// Usar o Customer existente
+						$stripeCustomer = \Stripe\Customer::retrieve($existingCustomerId);
+						$stripeCustomer->description = $user->getFullName();
+						$stripeCustomer->email = $userEmail;
+						$stripeCustomer->save();
+					} else {
+						throw $ex;
+					}
+				}
+			}
 			
 			// Definir como Payment Method padrão do customer
 			\Stripe\Customer::update($stripeCustomer->id, [
