@@ -78,12 +78,17 @@ class StripeLib implements IPayment
 	/**
 	 * Create a new credit card in Stripe
 	 * 
+	 * @deprecated Para Stripe, use createCardFromPaymentMethod() em vez deste método.
+	 * Este método ainda funciona para compatibilidade, mas o Stripe não aceita mais dados brutos.
+	 * 
 	 * @param Payment $payment Payment object with card information
 	 * @param User|null $user User object (optional, will be retrieved from payment if not provided)
 	 * @return array ['success' => bool, 'customer_id' => string, 'token' => string, 'card_token' => string, 'last_four' => string, 'card_type' => string, 'gateway' => string]
 	 * @throws \Stripe\Exception\ApiErrorException
 	 */
 	public function createCard(Payment $payment, User $user = null){
+		// Aviso: Stripe não aceita mais dados brutos
+		\Log::warning('StripeLib::createCard() está sendo usado com dados brutos. Use createCardFromPaymentMethod() em vez disso.');
 		
 		// Validações de entrada
 		if (empty($payment->getCardNumber())) {
@@ -537,9 +542,8 @@ class StripeLib implements IPayment
 	}
 
 	/**
-	 * Reference Link: https://stripe.com/docs/connect/destination-charges
-	 * 
-	 * Charge the user service using Split.
+	 * Charge the user service using Split with Payment Intents (modern Stripe API)
+	 * Reference Link: https://stripe.com/docs/connect/charges
 	 * 
 	 * @param Payment $payment Payment object with customer_id
 	 * @param Provider $provider Provider object with bank account
@@ -574,53 +578,118 @@ class StripeLib implements IPayment
 			);
 		}
 
-		// fix amount for payment (Total and provider value)
-		$totalAmount 		= round($totalAmount*100);
-		$providerAmount = round($providerAmount*100);
-		$destination = null ;
-
-		if($provider->getBankAccount()){
-			$destination =  array(
-                                                "amount"        => $providerAmount,
-                                                "account"       => $provider->getBankAccount()->recipient_id,
-                                        );
-
+		// Converter valores para centavos
+		$totalAmount = round($totalAmount * 100);
+		$providerAmount = round($providerAmount * 100);
+		
+		// Verificar se o provider tem conta Stripe Connect
+		$providerAccountId = null;
+		if ($provider->getBankAccount()) {
+			$providerAccountId = $provider->getBankAccount()->recipient_id;
 		}
 
 		try {
-			$charge = \Stripe\Charge::create(
-				array(
-					"amount" 		=> $totalAmount,
-					"currency" 		=> $this->getCurrency(),
-					"customer" 		=> $payment->customer_id,
-					"description" 	=> $description,
-					"capture"       => $capture,
-					"destination" 	=> $destination
-				)
-			);
-
-			if($charge->failure_code){
+			$this->setApiKey();
+			
+			// Obter payment_method_id do payment (se disponível)
+			$paymentMethodId = $payment->payment_method_id ?? null;
+			
+			// Se não tiver payment_method_id, tentar obter o padrão do customer
+			if (empty($paymentMethodId)) {
+				try {
+					$customer = \Stripe\Customer::retrieve($payment->customer_id);
+					$paymentMethodId = $customer->invoice_settings->default_payment_method ?? null;
+					
+					// Se ainda não tiver, buscar o primeiro payment method do customer
+					if (empty($paymentMethodId)) {
+						$paymentMethods = \Stripe\PaymentMethod::all([
+							'customer' => $payment->customer_id,
+							'type' => 'card',
+							'limit' => 1
+						]);
+						
+						if (!empty($paymentMethods->data)) {
+							$paymentMethodId = $paymentMethods->data[0]->id;
+						}
+					}
+				} catch (\Exception $e) {
+					\Log::warning('Stripe chargeWithSplit: Erro ao buscar payment method do customer: ' . $e->getMessage());
+				}
+			}
+			
+			// Criar Payment Intent com transfer_data para split
+			$paymentIntentData = [
+				'amount' => $totalAmount,
+				'currency' => strtolower($this->getCurrency()),
+				'customer' => $payment->customer_id,
+				'description' => $description,
+				'confirmation_method' => 'automatic',
+				'confirm' => true,
+			];
+			
+			// Adicionar payment_method se disponível
+			if (!empty($paymentMethodId)) {
+				$paymentIntentData['payment_method'] = $paymentMethodId;
+			}
+			
+			// Se não capturar imediatamente, usar manual capture
+			if (!$capture) {
+				$paymentIntentData['capture_method'] = 'manual';
+			}
+			
+			// Adicionar transfer_data para split payment (Stripe Connect)
+			if (!empty($providerAccountId)) {
+				$paymentIntentData['transfer_data'] = [
+					'destination' => $providerAccountId,
+					'amount' => $providerAmount
+				];
+			}
+			
+			$paymentIntent = \Stripe\PaymentIntent::create($paymentIntentData);
+			
+			// Verificar se requer ação adicional (3D Secure, etc)
+			if ($paymentIntent->status === 'requires_action' || $paymentIntent->status === 'requires_payment_method') {
 				return array(
-					"success" 			=> false ,
-					"type" 				=> 'card_error' ,
-					"code" 				=> $charge->failure_code ,
-					"message" 			=> trans("paymentError.".$charge->failure_code),
-					"transaction_id" 	=> $charge->id ,
+					"success" 			=> false,
+					"type" 				=> 'card_error',
+					"code" 				=> 'requires_action',
+					"message" 			=> 'Payment requires additional authentication',
+					"transaction_id" 	=> $paymentIntent->id,
+					"client_secret" 	=> $paymentIntent->client_secret,
+					"status" 			=> $paymentIntent->status
 				);
 			}
-
+			
+			// Verificar se falhou
+			if ($paymentIntent->status === 'canceled' || $paymentIntent->status === 'payment_failed') {
+				$errorMessage = 'Payment failed';
+				if (!empty($paymentIntent->last_payment_error)) {
+					$errorMessage = $paymentIntent->last_payment_error->message ?? 'Payment failed';
+				}
+				
+				return array(
+					"success" 			=> false,
+					"type" 				=> 'card_error',
+					"code" 				=> $paymentIntent->last_payment_error->code ?? 'payment_failed',
+					"message" 			=> $errorMessage,
+					"transaction_id" 	=> $paymentIntent->id
+				);
+			}
+			
+			// Sucesso
+			$isPaid = ($paymentIntent->status === 'succeeded');
+			$isCaptured = ($paymentIntent->status === 'succeeded' || $paymentIntent->status === 'requires_capture');
+			
 			return array(
-				"success" 			=> true ,
-				"paid" 				=> $charge->paid ,
-				"status" 			=> $this->getStatus($charge) ,
-				"captured" 			=> $charge->captured ,
-				"transaction_id" 	=> $charge->id ,
-				"status" 			=> $charge->status ,
+				"success" 			=> true,
+				"paid" 				=> $isPaid,
+				"status" 			=> $this->getPaymentIntentStatus($paymentIntent),
+				"captured" 			=> $isCaptured,
+				"transaction_id" 	=> $paymentIntent->id
 			);
 
 		}
 		catch(\Stripe\Exception\InvalidRequestException $ex){
-
 			\Log::error('Stripe chargeWithSplit error: ' . $ex->getMessage());
 
 			$body = $ex->getJsonBody();
@@ -651,9 +720,9 @@ class StripeLib implements IPayment
 	}
 
 	/**
-	 * Charge a credit card
+	 * Charge a credit card using Payment Intents (modern Stripe API)
 	 * 
-	 * @param Payment $payment Payment object with customer_id
+	 * @param Payment $payment Payment object with customer_id and payment_method_id
 	 * @param float $amount Amount to charge
 	 * @param string $description Description of the charge
 	 * @param bool $capture Whether to immediately capture the charge
@@ -684,36 +753,99 @@ class StripeLib implements IPayment
 			);
 		}
 
-		// fix amount for payment
-		$amount = round($amount*100) ;
+		// Converter valor para centavos
+		$amount = round($amount * 100);
 
 		try {
-			$charge = \Stripe\Charge::create(
-				array(
-					"amount" 		=> $amount,
-					"currency" 		=> $this->getCurrency(),
-					"customer" 		=> $payment->customer_id,
-					"description" 	=> $description,
-					"capture"       => $capture
-					)
-				);
-
-			if($charge->failure_code){
+			$this->setApiKey();
+			
+			// Obter payment_method_id do payment (se disponível)
+			$paymentMethodId = $payment->payment_method_id ?? null;
+			
+			// Se não tiver payment_method_id, tentar obter o padrão do customer
+			if (empty($paymentMethodId)) {
+				try {
+					$customer = \Stripe\Customer::retrieve($payment->customer_id);
+					$paymentMethodId = $customer->invoice_settings->default_payment_method ?? null;
+					
+					// Se ainda não tiver, buscar o primeiro payment method do customer
+					if (empty($paymentMethodId)) {
+						$paymentMethods = \Stripe\PaymentMethod::all([
+							'customer' => $payment->customer_id,
+							'type' => 'card',
+							'limit' => 1
+						]);
+						
+						if (!empty($paymentMethods->data)) {
+							$paymentMethodId = $paymentMethods->data[0]->id;
+						}
+					}
+				} catch (\Exception $e) {
+					\Log::warning('Stripe charge: Erro ao buscar payment method do customer: ' . $e->getMessage());
+				}
+			}
+			
+			// Criar Payment Intent
+			$paymentIntentData = [
+				'amount' => $amount,
+				'currency' => strtolower($this->getCurrency()),
+				'customer' => $payment->customer_id,
+				'description' => $description,
+				'confirmation_method' => 'automatic',
+				'confirm' => true,
+			];
+			
+			// Adicionar payment_method se disponível
+			if (!empty($paymentMethodId)) {
+				$paymentIntentData['payment_method'] = $paymentMethodId;
+			}
+			
+			// Se não capturar imediatamente, usar manual capture
+			if (!$capture) {
+				$paymentIntentData['capture_method'] = 'manual';
+			}
+			
+			$paymentIntent = \Stripe\PaymentIntent::create($paymentIntentData);
+			
+			// Verificar se requer ação adicional (3D Secure, etc)
+			if ($paymentIntent->status === 'requires_action' || $paymentIntent->status === 'requires_payment_method') {
 				return array(
-					"success" 			=> false ,
-					"type" 				=> 'card_error' ,
-					"code" 				=> $charge->failure_code ,
-					"message" 			=> trans("paymentError.".$charge->failure_code),
-					"transaction_id" 	=> $charge->id ,
+					"success" 			=> false,
+					"type" 				=> 'card_error',
+					"code" 				=> 'requires_action',
+					"message" 			=> 'Payment requires additional authentication',
+					"transaction_id" 	=> $paymentIntent->id,
+					"client_secret" 	=> $paymentIntent->client_secret,
+					"status" 			=> $paymentIntent->status
 				);
 			}
-
+			
+			// Verificar se falhou
+			if ($paymentIntent->status === 'canceled' || $paymentIntent->status === 'payment_failed') {
+				$errorMessage = 'Payment failed';
+				if (!empty($paymentIntent->last_payment_error)) {
+					$errorMessage = $paymentIntent->last_payment_error->message ?? 'Payment failed';
+				}
+				
+				return array(
+					"success" 			=> false,
+					"type" 				=> 'card_error',
+					"code" 				=> $paymentIntent->last_payment_error->code ?? 'payment_failed',
+					"message" 			=> $errorMessage,
+					"transaction_id" 	=> $paymentIntent->id
+				);
+			}
+			
+			// Sucesso
+			$isPaid = ($paymentIntent->status === 'succeeded');
+			$isCaptured = ($paymentIntent->status === 'succeeded' || $paymentIntent->status === 'requires_capture');
+			
 			return array(
-				"success" 			=> true ,
-				"paid" 				=> ($charge->paid && $charge->captured) ? true : false,
-				"status" 			=> $this->getStatus($charge) ,
-				"captured" 			=> $charge->captured ,
-				"transaction_id" 	=> $charge->id
+				"success" 			=> true,
+				"paid" 				=> $isPaid,
+				"status" 			=> $this->getPaymentIntentStatus($paymentIntent),
+				"captured" 			=> $isCaptured,
+				"transaction_id" 	=> $paymentIntent->id
 			);
 	
 		}
@@ -744,6 +876,29 @@ class StripeLib implements IPayment
 				"message" 			=> $error ? ($error["message"] ?? $ex->getMessage()) : $ex->getMessage() ,
 				"transaction_id" 	=> ''
 			);
+		}
+	}
+	
+	/**
+	 * Get status from Payment Intent
+	 * 
+	 * @param \Stripe\PaymentIntent $paymentIntent
+	 * @return string
+	 */
+	private function getPaymentIntentStatus($paymentIntent)
+	{
+		switch ($paymentIntent->status) {
+			case 'succeeded':
+				return 'paid';
+			case 'requires_capture':
+				return 'authorized';
+			case 'canceled':
+			case 'payment_failed':
+				return 'failed';
+			case 'processing':
+				return 'processing';
+			default:
+				return 'processing';
 		}
 	}
 
@@ -1464,6 +1619,10 @@ class StripeLib implements IPayment
 	/**
 	 * Create a Stripe token from card information
 	 * 
+	 * @deprecated O Stripe não aceita mais dados brutos de cartão. Use Payment Methods criados via Stripe Elements no frontend.
+	 * Este método ainda funciona para contas antigas que têm acesso às APIs de dados brutos habilitado,
+	 * mas não é recomendado para novas implementações.
+	 * 
 	 * @param string $cardNumber Card number
 	 * @param int $cardExpirationMonth Expiration month
 	 * @param int $cardExpirationYear Expiration year
@@ -1473,6 +1632,7 @@ class StripeLib implements IPayment
 	 * @throws \Stripe\Exception\ApiErrorException
 	 */
 	private function createToken($cardNumber, $cardExpirationMonth, $cardExpirationYear, $cardCvc, $cardHolder){
+		\Log::warning('StripeLib::createToken() está sendo usado. O Stripe não aceita mais dados brutos. Use Payment Methods em vez disso.');
 
 		try {
 			$token = \Stripe\Token::create(
