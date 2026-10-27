@@ -17,6 +17,7 @@ use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class BraspagCieloEcommerceApi
 {
+    public $apiGetUrl;
     private $apiUrl;
     private $subordinatesUrl;
     private $apiTokenUrl;

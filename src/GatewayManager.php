@@ -6,6 +6,7 @@ use Omnipay\Common\GatewayFactory;
 
 class GatewayManager
 {
+    public $factory;
     /**
      * The application instance.
      *

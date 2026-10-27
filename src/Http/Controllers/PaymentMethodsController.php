@@ -14,6 +14,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PaymentMethodsController extends Controller
 {
+    public $message;
+    public $response;
+    public $statusCode;
     
     /**
      * Recupera os métodos de pagamento ativos

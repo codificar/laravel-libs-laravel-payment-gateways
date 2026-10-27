@@ -25,6 +25,7 @@ use App;
 
 class CieloLib implements IPayment
 {
+	public $merchantId;
     /**
      * Payment status code
      */

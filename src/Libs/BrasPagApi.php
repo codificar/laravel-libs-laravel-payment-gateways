@@ -16,6 +16,7 @@ use Codificar\PaymentGateways\Libs\handle\phone\PhoneNumber;
 
 class BraspagApi
 {
+    public $apiGetUrl;
     private $apiUrl;
 
     private $prefixAccept = null;
