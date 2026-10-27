@@ -31,7 +31,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         try {
             $response = BrasPagApi::chargeWithSplit($payment, $provider, $totalAmount, $providerAmount, $description, $capture, $user);
@@ -73,7 +73,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */      
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         // $user = User::find($payment->user_id);
 
@@ -118,7 +118,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */         
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         \Log::error('split_not_implemented');
 
@@ -140,7 +140,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */       
-    public function capture(Transaction $transaction, $amount = null, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount = null, ?Payment $payment = null)
     {
         try {
 			$response = BancrypApi::capture($transaction);
@@ -227,7 +227,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
      */       
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         $transactionId = $transaction->gateway_transaction_id;
 
@@ -264,7 +264,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */      
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         \Log::error('create_card_not_implemented');
 
@@ -285,7 +285,7 @@ Class BancrypLib implements IPayment
      * 
      * @return Array ['success']
      */      
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         \Log::error('delete_card_not_implemented');
 

@@ -75,7 +75,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null, $payment_opt = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null, $payment_opt = null)
     {
         if ($payment_opt == 0) {
             try {
@@ -173,7 +173,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         try {
             $response = PagarmeApi::chargeWithOrNotSplit($payment, null, $amount, null, $capture);
@@ -318,7 +318,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         try {
             $retrievedCharge =  $this->retrieve($transaction);
@@ -390,7 +390,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
     {
         try {
             $retrieve = PagarmeApi::retrieve($transaction);
@@ -516,7 +516,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         try {
             $response = PagarmeApi::retrieve($transaction);
@@ -566,7 +566,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         $cardNumber 			= $payment->getCardNumber();
 
@@ -591,7 +591,7 @@ class PagarmeLib implements IPayment
      *
      * @return Array ['success']
      */
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         $result = array(
             'success'	=>	true

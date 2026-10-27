@@ -68,7 +68,7 @@ class BraspagCieloEcommerceApi
         $this->setHeader();
     }
 
-    public function chargeWithSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
+    public function chargeWithSplit(Payment $payment, ?Provider $provider, $totalAmount, $providerAmount = null, $description, $capture, $split)
     {
         $url = $this->apiUrl."/sales/";
 

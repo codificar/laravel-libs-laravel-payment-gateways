@@ -18,13 +18,13 @@ class DirectPayLib  implements IPayment
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 
 
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null){
 		$response = $this->charge($payment, $totalAmount, $description, $capture, $user);
         
         return $response;
 	}
 
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
 	{
 		try {
 			$response = DirectPayApi::chargeOrCapture($amount, $capture, $payment);
@@ -53,7 +53,7 @@ class DirectPayLib  implements IPayment
 		}
 	}
 
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
 	{
 		\Log::error('split_not_implemented');
 
@@ -66,7 +66,7 @@ class DirectPayLib  implements IPayment
 		);
 	}
 
-	public function capture(Transaction $transaction, $amount, Payment $payment = null)
+	public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
 		try {
 			$response = DirectPayApi::capture($amount, $transaction);
@@ -146,7 +146,7 @@ class DirectPayLib  implements IPayment
 		}
 	}
 
-	public function retrieve(Transaction $transaction, Payment $payment = null)
+	public function retrieve(Transaction $transaction, ?Payment $payment = null)
 	{
 		$transactionId = $transaction->gateway_transaction_id;
 
@@ -176,7 +176,7 @@ class DirectPayLib  implements IPayment
 		
 	}
 
-	public function createCard(Payment $payment, User $user = null)
+	public function createCard(Payment $payment, ?User $user = null)
 	{
 		$cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
@@ -203,7 +203,7 @@ class DirectPayLib  implements IPayment
 
 		
 	}
-	public function deleteCard(Payment $payment, User $user = null)
+	public function deleteCard(Payment $payment, ?User $user = null)
 	{
 		// $result = array (
 		// 	'success'	=>	true

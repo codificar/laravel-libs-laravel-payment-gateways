@@ -69,7 +69,7 @@ class ByeBankLib implements IPayment
         }        
     }
 
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         $response = $this->charge($payment, $totalAmount, $description, $capture, $user);
         

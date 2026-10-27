@@ -16,7 +16,7 @@ class CartoLib implements IPayment
 {
 	const AUTO_TRANSFER_PROVIDER = 'auto_transfer_provider_payment';
 	  
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
 	{
 		\Log::error('split_not_implemented');
 
@@ -29,7 +29,7 @@ class CartoLib implements IPayment
 		);
 	}
     
-    public function charge(Payment $payment, $amount, $description, $capture = false, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = false, ?User $user = null)
 	{
 		//Se for para realizar a captura sem pre autorizacao, chama o metodo capture
 		if($capture) {
@@ -67,7 +67,7 @@ class CartoLib implements IPayment
 		}
 	}
 			
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
 		\Log::error('split_not_implemented');
 
@@ -109,7 +109,7 @@ class CartoLib implements IPayment
 		}
 	}
 		  
-	public function capture(Transaction $transaction, $amount, Payment $payment = null)
+	public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
 		return $this->chargeAndCapture($amount, $payment);
 	}
@@ -153,12 +153,12 @@ class CartoLib implements IPayment
 		}
 	}
 		 
-	public function retrieve(Transaction $transaction, Payment $payment = null)
+	public function retrieve(Transaction $transaction, ?Payment $payment = null)
 	{
 
 	}
 		  
-	public function createCard(Payment $payment, User $user = null)
+	public function createCard(Payment $payment, ?User $user = null)
 	{
 		$cardNumber 			= $payment->getCardNumber();
 		
@@ -175,7 +175,7 @@ class CartoLib implements IPayment
 		return $result;
 	}
 		  
-	public function deleteCard(Payment $payment, User $user = null)
+	public function deleteCard(Payment $payment, ?User $user = null)
 	{
 		$result = array (
 			'success'	=>	true

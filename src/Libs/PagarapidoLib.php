@@ -18,7 +18,7 @@ use Settings;
 Class PagarapidoLib implements IPayment
 {
 
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null){
         \Log::error('chage_split_not_implemented');
 
         return array(
@@ -30,7 +30,7 @@ Class PagarapidoLib implements IPayment
         );
     }
     
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
 
         try {
@@ -197,7 +197,7 @@ Class PagarapidoLib implements IPayment
         // #todo
 	}
 
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         \Log::error('chage_split_not_implemented');
 
@@ -210,7 +210,7 @@ Class PagarapidoLib implements IPayment
         );
     }
     
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null) {
         \Log::error('capture_not_implemented');
 
         return array(
@@ -287,7 +287,7 @@ Class PagarapidoLib implements IPayment
 		}
     }
       
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         try {
             $gatewayKey = Settings::findByKey('pagarapido_gateway_key');
@@ -348,7 +348,7 @@ Class PagarapidoLib implements IPayment
 		
     }
      
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         $cardNumber = $payment->getCardNumber();
 
@@ -365,7 +365,7 @@ Class PagarapidoLib implements IPayment
 		return $result;
     }
     
-    public function deleteCard(Payment $payment, User $user = null){
+    public function deleteCard(Payment $payment, ?User $user = null){
         $result = array (
 			'success'	=>	true
 		);

@@ -103,7 +103,7 @@ class TransbankLib implements IPayment
      * @return array
      */
 
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         try {
 
@@ -166,7 +166,7 @@ class TransbankLib implements IPayment
      * @return array
      */
 
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
 
         try {
@@ -226,7 +226,7 @@ class TransbankLib implements IPayment
         }
     }
 
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         //não utilizado para transbank no momento
         return array(
@@ -238,7 +238,7 @@ class TransbankLib implements IPayment
         );
     }
 
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
     {
         //não utilizado para transbank no momento
         return array(
@@ -249,7 +249,7 @@ class TransbankLib implements IPayment
             "transaction_id" => ''
         );
     }
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         //não utilizado para transbank no momento
         return array(
@@ -323,7 +323,7 @@ class TransbankLib implements IPayment
      * @param $payment Payment - instância do pagamento
      * @return array
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         try {
 
@@ -370,7 +370,7 @@ class TransbankLib implements IPayment
      * @return array
      */
 
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         try {
 

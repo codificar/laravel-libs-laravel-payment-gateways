@@ -43,7 +43,7 @@ class AdiqApi
         return self::URL_DEV;
     }
 
-    public static function chargeWithOrNotSplit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description, $capture, $split)
+    public static function chargeWithOrNotSplit(Payment $payment, ?Provider $provider, $totalAmount, $providerAmount = null, $description, $capture, $split)
     {
         try {
             $cardExpirationMonth = $payment->getCardExpirationMonth();
@@ -119,7 +119,7 @@ class AdiqApi
         return $apiRequest;
     }
 
-    public static function debit(Payment $payment, Provider $provider = null, $totalAmount, $providerAmount = null, $description)
+    public static function debit(Payment $payment, ?Provider $provider, $totalAmount, $providerAmount = null, $description)
     {
         $cardExpirationMonth = $payment->getCardExpirationMonth();
         $cardExpirationYear  = $payment->getCardExpirationYear();

@@ -70,7 +70,7 @@ class GerenciaNetLib implements IPayment
 		return $this->api;
 	}
 
-	public function createCard(Payment $payment, User $user = null)
+	public function createCard(Payment $payment, ?User $user = null)
 	{
 	}
 
@@ -83,7 +83,7 @@ class GerenciaNetLib implements IPayment
 	 * @param $message - mensagem opcional a ser apresentada no boleto
 	 * @return array
 	 */
-	public function invoiceBilletCharge(Payment $payment = null, $items, User $user = null, $expire, $message = '', $invoice_id)
+	public function invoiceBilletCharge(?Payment $payment, $items, ?User $user, $expire, $message = '', $invoice_id)
 	{
 		// $discount = [ // configuração de descontos
 		// 	'type' => 'currency', // tipo de desconto a ser aplicado
@@ -143,7 +143,7 @@ class GerenciaNetLib implements IPayment
 	 * @param $user User - usuário da transação
 	 * @return array
 	 */
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
 	{
 		return $this->createAndPayCharge([
 			'items'		=> $this->formatItems($description, $amount),
@@ -152,7 +152,7 @@ class GerenciaNetLib implements IPayment
 	}
 
 	//TODO perguntar como obter "payee_code" do $provider
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
 	{
 		return $this->createAndPayCharge([
 			'items'		=> $this->formatItems($description, $totalAmount, $providerAmount / (float) $totalAmount, '8bf080a031063b9cf99656d33cfbd2fe'),
@@ -272,11 +272,11 @@ class GerenciaNetLib implements IPayment
 		];
 	}
 
-	public function capture(Transaction $transaction, $amount, Payment $payment = null)
+	public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
 		//
 	}
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
 	{
 		//
 	}
@@ -291,7 +291,7 @@ class GerenciaNetLib implements IPayment
 		//
 	}
 
-	public function retrieve(Transaction $transaction, Payment $payment = null)
+	public function retrieve(Transaction $transaction, ?Payment $payment = null)
 	{
 		try {
 			$charge = $this->getApi()->detailCharge(["id" => $transaction->gateway_transaction_id], []);
@@ -314,7 +314,7 @@ class GerenciaNetLib implements IPayment
 		}
 	}
 
-	public function deleteCard(Payment $payment, User $user = null)
+	public function deleteCard(Payment $payment, ?User $user = null)
 	{
 		//
 	}

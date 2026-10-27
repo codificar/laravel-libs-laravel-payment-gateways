@@ -54,7 +54,7 @@ class StripeLib implements IPayment
 		\Stripe\Stripe::setApiKey(Settings::findByKey('stripe_secret_key'));
 	}
 
-	public function createCard(Payment $payment, User $user = null){
+	public function createCard(Payment $payment, ?User $user = null){
 		
 		$cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
@@ -173,7 +173,7 @@ class StripeLib implements IPayment
 	 * 
 	 * Charge the user service using Split.
 	 */
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
 	{
 		// fix amount for payment (Total and provider value)
 		$totalAmount 		= round($totalAmount*100);
@@ -238,7 +238,7 @@ class StripeLib implements IPayment
 		}
 	}
 
-	public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+	public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
 	{
 
 		// fix amount for payment
@@ -290,7 +290,7 @@ class StripeLib implements IPayment
 		}
 	}
 
-	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+	public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
 	{
 		try
 		{
@@ -360,7 +360,7 @@ class StripeLib implements IPayment
 		}
 	}
     
-	public function capture(Transaction $transaction, $amount, Payment $payment = null)
+	public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
 
 		try
@@ -427,7 +427,7 @@ class StripeLib implements IPayment
 	}
 
 
-	public function refund(Transaction $transaction, Payment $payment = null){
+	public function refund(Transaction $transaction, ?Payment $payment = null){
 		
 		try
 		{
@@ -477,7 +477,7 @@ class StripeLib implements IPayment
 	/**
 	 * Do refund recovering value sent to Provider
 	 */
-	public function refundWithSplit(Transaction $transaction, Payment $payment = null){
+	public function refundWithSplit(Transaction $transaction, ?Payment $payment = null){
 
 		try
 		{
@@ -530,7 +530,7 @@ class StripeLib implements IPayment
 
 	}	
 
-	public function retrieve(Transaction $transaction, Payment $payment = null){
+	public function retrieve(Transaction $transaction, ?Payment $payment = null){
 
 		$stripeTransaction = \Stripe\Charge::retrieve($transaction->gateway_transaction_id);
 
@@ -853,7 +853,7 @@ class StripeLib implements IPayment
 	}
 
 
-	public function deleteCard(Payment $payment, User $user = null){
+	public function deleteCard(Payment $payment, ?User $user = null){
 		try{
 			self::setApiKey();
 

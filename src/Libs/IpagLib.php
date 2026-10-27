@@ -68,7 +68,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         try
         {
@@ -137,7 +137,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */      
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         try
         {
@@ -492,7 +492,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */         
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         try
         {
@@ -563,7 +563,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */    
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
     {
         try
         {
@@ -719,7 +719,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
      */       
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         try
         {
@@ -766,7 +766,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */      
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         $cardNumber 			= $payment->getCardNumber();
 		$cardExpirationMonth 	= $payment->getCardExpirationMonth();
@@ -801,7 +801,7 @@ Class IpagLib implements IPayment
      * 
      * @return Array ['success']
      */      
-    public function deleteCard(Payment $payment, User $user = null){
+    public function deleteCard(Payment $payment, ?User $user = null){
         $result = array (
 			'success'	=>	true
 		);

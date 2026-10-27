@@ -112,7 +112,7 @@ class CieloLib implements IPayment
      *                      'gateway'
      *                     ]
      */
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -174,7 +174,7 @@ class CieloLib implements IPayment
     }
 
     //finish
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         return array(
 			'success' => true
@@ -198,7 +198,7 @@ class CieloLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         $paymentDocument = null;
         $client = null;
@@ -441,7 +441,7 @@ class CieloLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -506,7 +506,7 @@ class CieloLib implements IPayment
      *                      'card_last_digits'
      *                     ]
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         $responseConf = $this->setApiKey();
         if(isset($responseConf['success']) && !$responseConf['success'])
@@ -600,7 +600,7 @@ class CieloLib implements IPayment
     }
 
     //finish
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         \Log::error('chage_split_not_implemented');
 
@@ -628,7 +628,7 @@ class CieloLib implements IPayment
     }
 
     //finish
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         \Log::error('capture_split_not_implemented');
 

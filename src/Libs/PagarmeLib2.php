@@ -48,7 +48,7 @@ class PagarmeLib2 implements IPayment
        return new PagarMe(Settings::findByKey('pagarme_api_key'));
     }
 
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         try {
             $pagarme = self::setApiKey();
@@ -220,7 +220,7 @@ class PagarmeLib2 implements IPayment
     }
 
     //realiza cobrança no cartão do usuário sem repassar valor algum ao prestador
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         try {
             $pagarme = self::setApiKey();
@@ -299,7 +299,7 @@ class PagarmeLib2 implements IPayment
 	}
 	
 	//relaliza cobrança no cartão do usuário com repasse ao prestador
-	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+	public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null){
 		
 		try
 		{
@@ -486,7 +486,7 @@ class PagarmeLib2 implements IPayment
 
         return $customer ;
     }
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
     {
         try {
             $pagarme = self::setApiKey();
@@ -604,7 +604,7 @@ class PagarmeLib2 implements IPayment
         return($this->refund($transaction, $payment));
     }
 
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         try {
             $pagarme = self::setApiKey();
@@ -683,7 +683,7 @@ class PagarmeLib2 implements IPayment
 		}
     }
 
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         $pagarme = self::setApiKey();
         $pagarmeTransaction = $pagarme->transactions()->get([
@@ -838,7 +838,7 @@ class PagarmeLib2 implements IPayment
 		}
     }
 
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         try {
             

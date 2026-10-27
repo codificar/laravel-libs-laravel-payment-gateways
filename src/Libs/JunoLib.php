@@ -20,7 +20,7 @@ use Finance;
 Class JunoLib implements IPayment
 {
 
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null){
         \Log::error('chage_split_not_implemented');
 
         return array(
@@ -32,7 +32,7 @@ Class JunoLib implements IPayment
         );
     }
     
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         try {
             $juno = new JunoApi();
@@ -165,7 +165,7 @@ Class JunoLib implements IPayment
 		
 	}
 
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         \Log::error('chage_split_not_implemented');
 
@@ -178,7 +178,7 @@ Class JunoLib implements IPayment
         );
     }
     
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null) {
         try {
             //valor a ser capturado nao pode ser maior que valor pre-autorizado. A responsabilidade de entrar com o valor certo e o projeto que utiliza essa biblioteca
             if($amount > $transaction->gross_value) {
@@ -268,7 +268,7 @@ Class JunoLib implements IPayment
 		}
     }
       
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
 
         try {
@@ -369,7 +369,7 @@ Class JunoLib implements IPayment
 		}
     }
      
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         $cardNumber = $payment->getCardNumber();
 
@@ -402,7 +402,7 @@ Class JunoLib implements IPayment
         
     }
     
-    public function deleteCard(Payment $payment, User $user = null){
+    public function deleteCard(Payment $payment, ?User $user = null){
         return array(
 			'success' => true
 		);

@@ -72,7 +72,7 @@ class BraspagLib implements IPayment
      *                      'gateway'
      *                     ]
      */
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         try {
 
@@ -95,7 +95,7 @@ class BraspagLib implements IPayment
     }
 
     //finish
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         return array(
 			'success' => true
@@ -119,7 +119,7 @@ class BraspagLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         $amount = floor($amount * 100);
 
@@ -174,7 +174,7 @@ class BraspagLib implements IPayment
 	 *			            'transaction_id'
      *                     ]
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
 	{
         $amount = floor($amount * 100);
 
@@ -221,7 +221,7 @@ class BraspagLib implements IPayment
      *                      'card_last_digits'
      *                     ]
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         try{
             $retrieve = $this->api->retrieve($transaction);
@@ -364,7 +364,7 @@ class BraspagLib implements IPayment
 	}
 
     //finish
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         \Log::error('chage_split_not_implemented');
 
@@ -392,7 +392,7 @@ class BraspagLib implements IPayment
     }
 
     //finish
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         \Log::error('capture_split_not_implemented');
 

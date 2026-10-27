@@ -56,7 +56,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null){
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null){
 
         \Log::error('chage_split_not_implemented');
 
@@ -80,7 +80,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null){
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null){
         
         \Log::error('chage_not_implemented');
 
@@ -152,7 +152,7 @@ class BancoInterLib implements IPayment
 	 * @param $message - mensagem opcional a ser apresentada no boleto
 	 * @return array
 	 */
-	public function invoiceBilletCharge(Payment $payment = null, $items, User $user = null, $expire, $message = '', $invoice_id)
+	public function invoiceBilletCharge(?Payment $payment, $items, ?User $user, $expire, $message = '', $invoice_id)
 	{
         try {
             $response = BancoInterApi::billetCharge($items['amount'], $user, null, $expire, $message);
@@ -237,7 +237,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null){
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null){
         
         \Log::error('capture_split_not_implemented');
 
@@ -259,7 +259,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'status', 'captured', 'paid', 'transaction_id']
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null){
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null){
        
         \Log::error('capture_not_implemented');
 
@@ -321,7 +321,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'transaction_id', 'amount', 'destination', 'status', 'card_last_digits']
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null){
+    public function retrieve(Transaction $transaction, ?Payment $payment = null){
         $transactionId = $transaction->gateway_transaction_id;
 
 		
@@ -356,7 +356,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success', 'token', 'card_token', 'customer_id', 'card_type', 'last_four']
      */
-    public function createCard(Payment $payment, User $user = null){
+    public function createCard(Payment $payment, ?User $user = null){
 
         \Log::error('create_card_not_implemented');
 
@@ -377,7 +377,7 @@ class BancoInterLib implements IPayment
      * 
      * @return Array ['success']
      */
-    public function deleteCard(Payment $payment, User $user = null){
+    public function deleteCard(Payment $payment, ?User $user = null){
         
         \Log::error('delete_card_not_implemented');
 

@@ -189,7 +189,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null) {
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null) {
 
         try {
 
@@ -270,7 +270,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function capture(Transaction $transaction, $amount, Payment $payment = null) {
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null) {
 
         try {
 
@@ -388,7 +388,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null) {
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null) {
 
         try {
 
@@ -445,7 +445,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function retrieve(Transaction $transaction, Payment $payment = null) {
+    public function retrieve(Transaction $transaction, ?Payment $payment = null) {
 
         //recupera transação
         $mpTransaction = MercadoPago\Payment::find_by_id($transaction->gateway_transaction_id);
@@ -470,7 +470,7 @@ class MercadoPagoLib implements IPayment {
      * @return array
      */
 
-    public function deleteCard(Payment $payment, User $user = null) {
+    public function deleteCard(Payment $payment, ?User $user = null) {
 
         try {
             //recupera cartão

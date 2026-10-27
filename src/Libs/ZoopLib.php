@@ -74,7 +74,7 @@ class ZoopLib implements IPayment
      * @param user User - instância do usuário para definir comprador  com dados do cartão
      * @return array
      */
-    public function createCard(Payment $payment, User $user = null)
+    public function createCard(Payment $payment, ?User $user = null)
     {
         try
         {
@@ -150,7 +150,7 @@ class ZoopLib implements IPayment
      * @param $capture Boolean - definição de captura da transação
      * @return array
      */
-    public function charge(Payment $payment, $amount, $description, $capture = true, User $user = null)
+    public function charge(Payment $payment, $amount, $description, $capture = true, ?User $user = null)
     {
         try
         {
@@ -327,7 +327,7 @@ class ZoopLib implements IPayment
      * @param $capture Boolean - definição de captura da transação
      * @return array
      */
-    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, User $user = null)
+    public function chargeWithSplit(Payment $payment, Provider $provider, $totalAmount, $providerAmount, $description, $capture = true, ?User $user = null)
     {
         try
         {
@@ -445,7 +445,7 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com dados do cartão
      * @return array
      */
-    public function capture(Transaction $transaction, $amount, Payment $payment = null)
+    public function capture(Transaction $transaction, $amount, ?Payment $payment = null)
     {
         try
         {
@@ -610,7 +610,7 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com dados do cartão
      * @return array
      */
-    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, Payment $payment = null)
+    public function captureWithSplit(Transaction $transaction, Provider $provider, $totalAmount, $providerAmount, ?Payment $payment = null)
     {
         try
         {
@@ -686,7 +686,7 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento
      * @return array
      */
-    public function retrieve(Transaction $transaction, Payment $payment = null)
+    public function retrieve(Transaction $transaction, ?Payment $payment = null)
     {
         //Recupera transação na ZOOP
         $zoopTransaction = ZoopChargesCNP::get($transaction->gateway_transaction_id);
@@ -876,7 +876,7 @@ class ZoopLib implements IPayment
      * @param $payment Payment - instância do pagamento com cartão
      * @return array
      */
-    public function deleteCard(Payment $payment, User $user = null)
+    public function deleteCard(Payment $payment, ?User $user = null)
     {
         try
         {
